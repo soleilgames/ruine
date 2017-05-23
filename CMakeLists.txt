@@ -28,12 +28,13 @@ add_executable(ruine
   main.cpp
   )
 
+
 target_link_libraries(ruine
-  ${SDL2MAIN_LIBRARY}
+  ruinelib
+  ${SDL2_LIBRARY}
   # ${SDL2IMAGE_LIBRARIES}
   # ${SDL2Mixer_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${GLEW_LIB}
-  ruinelib
   )
 
