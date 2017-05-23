@@ -165,8 +165,6 @@ namespace Soleil {
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    std::cout << toString("std::cos(", time.count(), ")", length) << "\n";
-
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     throwOnGlError();

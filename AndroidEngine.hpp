@@ -19,24 +19,45 @@
  * THE SOFTWARE.
  */
 
-#include <memory>
+#ifndef SOLEIL__ANDROIDENGINE_HPP_
+#define SOLEIL__ANDROIDENGINE_HPP_
 
 #include <android_native_app_glue.h>
 
-#include "AndroidEngine.hpp"
+#include "AndroidGLESContext.hpp"
+#include "OpenGLInclude.hpp"
 
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-void
-android_main(struct android_app* state)
-{
-  // Make sure glue isn't stripped.
-  app_dummy();
+namespace Soleil {
 
-  Soleil::AndroidEngine engine;
+  class AndroidEngine
+  {
+  public:
+    AndroidEngine();
+    virtual ~AndroidEngine();
 
-  engine.run(state);
-}
+  public:
+    void run(struct android_app* androidApp);
+
+  public:
+    static void HandleCommand(struct android_app* androidApp, int32_t command);
+
+  private:
+    void drawFrame();
+    void initDisplay(struct android_app* androidApp);
+    void terminateDisplay();
+    void loadResources();
+    void reloadResources();
+    void resize();
+    void setFocusGranted();
+    void setFocusLost();
+
+  private:
+    bool                inProgress;
+    bool                focus;
+    AndroidGLESContext* glContext;
+    bool                initialized;
+  };
+
+} // Soleil
+
+#endif /* SOLEIL__ANDROIDENGINE_HPP_ */

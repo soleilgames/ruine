@@ -10,6 +10,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 add_library(ruine-activity SHARED
   main.cpp
+  ${RUINE_SOURCES}/AndroidEngine.cpp
+  ${RUINE_SOURCES}/AndroidGLESContext.cpp
+
   ${RUINE_SOURCES}/Ruine.cpp
   )
 

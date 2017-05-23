@@ -43,3 +43,4 @@ build
 .externalNativeBuild
 .dir-locals.el
 core
+tmp.txt

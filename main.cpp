@@ -65,9 +65,9 @@ main(int /*argc*/
   SDL_Window*   window;
   SDL_GLContext glContext;
 
-  window =
-    SDL_CreateWindow("Ruine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                     1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+  window = SDL_CreateWindow(
+    "Ruine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
+    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP);
   if (window == nullptr) {
     throw std::runtime_error(
       toString("SDL Window initialization failed: ", SDL_GetError()));
