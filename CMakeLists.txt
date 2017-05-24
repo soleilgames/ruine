@@ -22,6 +22,7 @@ include_directories (SYSTEM
 
 add_library(ruinelib
   Ruine.cpp
+  Logger.cpp
   )
 
 add_executable(ruine

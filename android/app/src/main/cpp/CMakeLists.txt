@@ -14,6 +14,7 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/AndroidGLESContext.cpp
 
   ${RUINE_SOURCES}/Ruine.cpp
+  ${RUINE_SOURCES}/Logger.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE

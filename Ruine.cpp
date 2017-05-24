@@ -20,6 +20,7 @@
  */
 
 #include "Ruine.hpp"
+#include "Logger.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -62,11 +63,11 @@ namespace Soleil {
     if (isCompiled == GL_FALSE) {
       throw std::runtime_error(fin);
     } else {
-      std::cout << fin << "\n";
+      Logger::info(fin);
     }
   }
 
-  void Ruine::render(Timer time)
+  void Ruine::render(Timer /*time*/)
   {
     static const float vertexIDs[] = {0.0f, 1.0f, 2.0f};
 
@@ -93,8 +94,8 @@ namespace Soleil {
         "  colors[2] = vec4(0.0, 0.0, 1.0, 1.0);\n"
         "\n"
         "int i = int(vertexId);\n"
-        "  gl_Position = vertices[i] * vec4(time, time, time, 1.0f);\n"
-        "  color = colors[i] * vec4(time, time, time, 1.0f);\n"
+        "  gl_Position = vertices[i] * vec4(time, time, time, 1.0);\n"
+        "  color = colors[i] * vec4(time, time, time, 1.0);\n"
         "}\n"};
       const GLchar* fragmentShaderSource[] = {"#version 100\n"
                                               "\n"
