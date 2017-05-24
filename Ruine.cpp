@@ -28,8 +28,10 @@
 
 namespace Soleil {
 
-  Ruine::Ruine()
+  Ruine::Ruine(AssetService* assetService)
     : triangle(0)
+    , buffer(0)
+    , assetService(assetService)
   {
   }
 
@@ -73,31 +75,9 @@ namespace Soleil {
 
     /* Minimal gles2 test */
     if (triangle < 1) {
-      const GLchar* vertexShaderSource[] = {
-        "#version 100\n"
-        "\n"
-        "uniform float time;\n"
-        "attribute float vertexId;\n"
-        "\n"
-        "varying vec4 color;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "  vec4 vertices[3];\n"
-        "  vertices[0] = vec4(-1.0, -1.0, 0.0, 1.0);\n"
-        "  vertices[1] = vec4( 1.0, -1.0, 0.0, 1.0);\n"
-        "  vertices[2] = vec4( 0.0,  1.0, 0.0, 1.0);\n"
-        "\n"
-        "  vec4 colors[3];\n"
-        "  colors[0] = vec4(1.0, 0.0, 0.0, 1.0);\n"
-        "  colors[1] = vec4(0.0, 1.0, 0.0, 1.0);\n"
-        "  colors[2] = vec4(0.0, 0.0, 1.0, 1.0);\n"
-        "\n"
-        "int i = int(vertexId);\n"
-        "  gl_Position = vertices[i] * vec4(time, time, time, 1.0);\n"
-        "  color = colors[i] * vec4(time, time, time, 1.0);\n"
-        "}\n"};
-      const GLchar* fragmentShaderSource[] = {"#version 100\n"
+      const std::string src = assetService->asString("triangle.vert");
+      const GLchar*     vertexShaderSource[]   = {src.c_str()};
+      const GLchar*     fragmentShaderSource[] = {"#version 100\n"
                                               "\n"
                                               "precision lowp float;\n"
                                               "\n"

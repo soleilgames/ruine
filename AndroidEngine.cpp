@@ -23,6 +23,7 @@
 #include "types.hpp"
 
 #include "Ruine.hpp"
+#include "AndroidAssetService.hpp"
 
 namespace Soleil {
 
@@ -40,6 +41,7 @@ namespace Soleil {
   {
     androidApp->userData = this;
     androidApp->onAppCmd = AndroidEngine::HandleCommand;
+    assetService = std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
 
     while (inProgress) {
       int                         ident;
@@ -75,7 +77,7 @@ namespace Soleil {
       std::chrono::seconds(now.tv_sec) + std::chrono::nanoseconds(now.tv_nsec));
 
     // TODO: viewer->render(time);
-    static Soleil::Ruine r;
+    static Soleil::Ruine r(assetService.get());
     r.render(time);
 
     if (glContext->swap() == false) {

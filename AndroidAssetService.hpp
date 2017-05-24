@@ -19,23 +19,29 @@
  * THE SOFTWARE.
  */
 
-#include <memory>
+#ifndef SOLEIL__ANDROIDASSETSERVICE_HPP_
+#define SOLEIL__ANDROIDASSETSERVICE_HPP_
 
-#include <android_native_app_glue.h>
+#include "AssetService.hpp"
 
-#include "AndroidEngine.hpp"
+#include <android/asset_manager.h>
 
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-void
-android_main(struct android_app* state)
-{
-  // Make sure glue isn't stripped.
-  app_dummy();
+namespace Soleil {
 
-  Soleil::AndroidEngine engine;
-  engine.run(state);
-}
+  class AndroidAssetService : public AssetService
+  {
+  public:
+    AndroidAssetService(AAssetManager* assetManager);
+    virtual ~AndroidAssetService();
+
+  public:
+    std::string asString(const std::string& assetName) override;
+
+    
+  private:
+    AAssetManager* assetManager;
+  };
+
+} // Soleil
+
+#endif /* SOLEIL__ANDROIDASSETSERVICE_HPP_ */

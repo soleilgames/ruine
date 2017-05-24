@@ -22,6 +22,7 @@
 #ifndef SOLEIL__RUINE_HPP_
 #define SOLEIL__RUINE_HPP_
 
+#include "AssetService.hpp"
 #include "OpenGLInclude.hpp"
 #include "types.hpp"
 
@@ -29,15 +30,16 @@ namespace Soleil {
   class Ruine
   {
   public:
-    Ruine();
+    Ruine(AssetService* assetService);
     virtual ~Ruine();
 
   public:
     void render(Timer time);
 
   private:
-    GLuint triangle;
-    GLuint buffer;
+    GLuint        triangle;
+    GLuint        buffer;
+    AssetService* assetService;
   };
 
 } // Soleil

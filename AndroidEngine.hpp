@@ -26,6 +26,9 @@
 
 #include "AndroidGLESContext.hpp"
 #include "OpenGLInclude.hpp"
+#include "AssetService.hpp"
+
+#include <memory>
 
 namespace Soleil {
 
@@ -52,10 +55,11 @@ namespace Soleil {
     void setFocusLost();
 
   private:
-    bool                inProgress;
-    bool                focus;
-    AndroidGLESContext* glContext;
-    bool                initialized;
+    bool                          inProgress;
+    bool                          focus;
+    AndroidGLESContext*           glContext;
+    bool                          initialized;
+    std::unique_ptr<AssetService> assetService;
   };
 
 } // Soleil

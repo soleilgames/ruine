@@ -54,6 +54,11 @@ namespace Soleil {
     }
   }
 
+  void Logger::debug(const std::string& message) noexcept
+  {
+    GlobalLogger.log(Level::Debug, message);
+  }
+
   void Logger::info(const std::string& message) noexcept
   {
     GlobalLogger.log(Level::Info, message);

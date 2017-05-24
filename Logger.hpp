@@ -19,6 +19,10 @@
  * THE SOFTWARE.
  */
 
+#ifndef SOLEIL__LOGGER_HPP_
+#define SOLEIL__LOGGER_HPP_
+
+#include <cassert>
 #include <string>
 
 namespace Soleil {
@@ -40,9 +44,19 @@ namespace Soleil {
     void log(const Level level, const std::string& message) noexcept;
 
   public:
+    static void debug(const std::string& message) noexcept;
     static void info(const std::string& message) noexcept;
     static void warning(const std::string& message) noexcept;
     static void error(const std::string& message) noexcept;
   };
-
 } // Soleil
+
+#ifdef NDEBUG
+#define SOLEIL__LOGGER_DEBUG(...) ((void)0)
+#else
+#include "stringutils.hpp"
+#define SOLEIL__LOGGER_DEBUG(...)                                              \
+  ::Soleil::Logger::debug(::Soleil::toString(__VA_ARGS__))
+#endif // NDEBUG
+
+#endif /* SOLEIL__LOGGER_HPP_ */

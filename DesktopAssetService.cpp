@@ -19,23 +19,31 @@
  * THE SOFTWARE.
  */
 
-#include <memory>
+#include "DesktopAssetService.hpp"
+#include "stringutils.hpp"
 
-#include <android_native_app_glue.h>
+#include <fstream>
+#include <iostream>
 
-#include "AndroidEngine.hpp"
+namespace Soleil {
 
-/**
- * This is the main entry point of a native application that is using
- * android_native_app_glue.  It runs in its own thread, with its own
- * event loop for receiving input events and doing other things.
- */
-void
-android_main(struct android_app* state)
-{
-  // Make sure glue isn't stripped.
-  app_dummy();
+  DesktopAssetService::DesktopAssetService(const std::string& path)
+    : path(path)
+  {
+  }
 
-  Soleil::AndroidEngine engine;
-  engine.run(state);
-}
+  DesktopAssetService::~DesktopAssetService() {}
+
+  std::string DesktopAssetService::asString(const std::string& assetName)
+  {
+    const std::string fileName = path + assetName;
+    std::ifstream     in(fileName);
+
+    if (in.is_open() == false)
+      throw std::runtime_error(
+        toString("Failed to read file '", fileName, "'"));
+    return std::string((std::istreambuf_iterator<char>(in)),
+                       std::istreambuf_iterator<char>());
+  }
+
+} // Soleil
