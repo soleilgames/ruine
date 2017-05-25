@@ -42,6 +42,8 @@ namespace Soleil {
     AndroidGLESContext();
     virtual ~AndroidGLESContext();
 
+    AndroidGLESContext(const AndroidGLESContext&) = delete;
+
   public:
     void init(ANativeWindow* window);
     bool swap(void);
@@ -79,7 +81,8 @@ namespace Soleil {
   };
 
   inline void throwOnEGLError(const char* file, const int line);
-#define SOLEIL__THROW_ON_EGLERROR() ::Soleil::throwOnEGLError(__FILE__, __LINE__)
+#define SOLEIL__THROW_ON_EGLERROR()                                            \
+  ::Soleil::throwOnEGLError(__FILE__, __LINE__)
 
   typedef std::runtime_error EGLException;
 

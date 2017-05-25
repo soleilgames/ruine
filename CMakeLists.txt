@@ -24,6 +24,7 @@ add_library(ruinelib
   Ruine.cpp
   Logger.cpp
   DesktopAssetService.cpp
+  DesktopSoundService.cpp
   )
 
 add_executable(ruine

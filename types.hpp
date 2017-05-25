@@ -26,6 +26,11 @@
 
 namespace Soleil {
 
+  /**
+   * A timer in milliseconds
+   *
+   * Represent the default distance in time measurement
+   */
   typedef std::chrono::milliseconds Timer;
 
 }  // Soleil

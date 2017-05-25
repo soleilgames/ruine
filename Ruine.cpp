@@ -28,10 +28,11 @@
 
 namespace Soleil {
 
-  Ruine::Ruine(AssetService* assetService)
+  Ruine::Ruine(AssetService* assetService, SoundService* soundService)
     : triangle(0)
     , buffer(0)
     , assetService(assetService)
+    , soundService(soundService)
   {
   }
 
@@ -71,7 +72,13 @@ namespace Soleil {
 
   void Ruine::render(Timer /*time*/)
   {
-    static const float vertexIDs[] = {0.0f, 1.0f, 2.0f};
+    // clang-format off
+    //                               xxxx, yyyy, zzz, www, rrr, ggg, bbb, aaa
+    static const float vertices[] = {-1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
+				      1.0, -1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+				      0.0,  1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0
+    };
+    // clang-format on
 
     /* Minimal gles2 test */
     if (triangle < 1) {
@@ -79,7 +86,7 @@ namespace Soleil {
       const GLchar*     vertexShaderSource[]   = {src.c_str()};
       const GLchar*     fragmentShaderSource[] = {"#version 100\n"
                                               "\n"
-                                              "precision lowp float;\n"
+                                              "precision mediump float;\n"
                                               "\n"
                                               "varying vec4 color;\n"
                                               "\n"
@@ -101,7 +108,8 @@ namespace Soleil {
       compileShader(fragmentShader, "fragmentShader");
 
       triangle = glCreateProgram();
-      glBindAttribLocation(triangle, 0, "vertexId");
+      glBindAttribLocation(triangle, 0, "positionAttribute");
+      glBindAttribLocation(triangle, 1, "colorAttribute");
       glAttachShader(triangle, vertexShader);
       glAttachShader(triangle, fragmentShader);
       glLinkProgram(triangle);
@@ -112,10 +120,14 @@ namespace Soleil {
 
       glGenBuffers(1, &buffer);
       glBindBuffer(GL_ARRAY_BUFFER, buffer);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(vertexIDs), &vertexIDs[0],
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0],
                    GL_STATIC_DRAW);
       throwOnGlError();
       glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+      soundService->playMusic("fabulousWave");
+
+      SOLEIL__LOGGER_DEBUG("Initialization done");
     }
 
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
@@ -124,9 +136,12 @@ namespace Soleil {
 
     throwOnGlError();
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(vertexIDs[0]),
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
                           nullptr);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
+                          (GLvoid*)(4 * sizeof(vertices[0])));
     glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
     glUseProgram(triangle);
     GLint uniformTime = glGetUniformLocation(triangle, "time");
     if (uniformTime < 0) throw std::runtime_error("Cannot find uniform time");

@@ -24,6 +24,8 @@
 #include <android_native_app_glue.h>
 
 #include "AndroidEngine.hpp"
+#include "Logger.hpp"
+
 
 /**
  * This is the main entry point of a native application that is using
@@ -38,4 +40,6 @@ android_main(struct android_app* state)
 
   Soleil::AndroidEngine engine;
   engine.run(state);
+
+  SOLEIL__LOGGER_DEBUG("Thanks for having played :)");
 }

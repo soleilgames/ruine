@@ -25,8 +25,11 @@
 #include <android_native_app_glue.h>
 
 #include "AndroidGLESContext.hpp"
-#include "OpenGLInclude.hpp"
 #include "AssetService.hpp"
+#include "OpenGLInclude.hpp"
+#include "SoundService.hpp"
+
+#include "Ruine.hpp"
 
 #include <memory>
 
@@ -38,12 +41,15 @@ namespace Soleil {
     AndroidEngine();
     virtual ~AndroidEngine();
 
+    AndroidEngine(const AndroidEngine&) = delete;
+    
   public:
     void run(struct android_app* androidApp);
 
   public:
     static void HandleCommand(struct android_app* androidApp, int32_t command);
-
+    static int32_t HandleInput(struct android_app* app, AInputEvent* event);
+    
   private:
     void drawFrame();
     void initDisplay(struct android_app* androidApp);
@@ -60,6 +66,8 @@ namespace Soleil {
     AndroidGLESContext*           glContext;
     bool                          initialized;
     std::unique_ptr<AssetService> assetService;
+    std::unique_ptr<SoundService> soundService;
+    std::unique_ptr<Ruine>        ruine;
   };
 
 } // Soleil

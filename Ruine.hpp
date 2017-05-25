@@ -24,13 +24,14 @@
 
 #include "AssetService.hpp"
 #include "OpenGLInclude.hpp"
+#include "SoundService.hpp"
 #include "types.hpp"
 
 namespace Soleil {
   class Ruine
   {
   public:
-    Ruine(AssetService* assetService);
+    Ruine(AssetService* assetService, SoundService* soundService);
     virtual ~Ruine();
 
   public:
@@ -40,6 +41,7 @@ namespace Soleil {
     GLuint        triangle;
     GLuint        buffer;
     AssetService* assetService;
+    SoundService* soundService;
   };
 
 } // Soleil

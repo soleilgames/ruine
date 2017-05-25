@@ -21,13 +21,14 @@
 
 #include <SDL.h>
 #include <chrono>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
 
+#include "DesktopAssetService.hpp"
+#include "DesktopSoundService.hpp"
 #include "OpenGLInclude.hpp"
 #include "Ruine.hpp"
 #include "stringutils.hpp"
-#include "DesktopAssetService.hpp"
 
 using namespace Soleil;
 
@@ -89,8 +90,11 @@ main(int /*argc*/
       toString("Unable to initialize GLEW: ", glewGetErrorString(err)));
   }
 
-  std::unique_ptr<AssetService> assetService = std::make_unique<DesktopAssetService>("media/");
-  Soleil::Ruine r(assetService.get());
+  std::unique_ptr<AssetService> assetService =
+    std::make_unique<DesktopAssetService>("media/");
+  std::unique_ptr<SoundService> soundService =
+    std::make_unique<DesktopSoundService>();
+  Soleil::Ruine r(assetService.get(), soundService.get());
   render(window, r);
 
   SDL_DestroyWindow(window);

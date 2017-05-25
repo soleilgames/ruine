@@ -20,6 +20,7 @@
  */
 
 #include "AndroidGLESContext.hpp"
+#include "Logger.hpp"
 
 namespace Soleil {
   void throwOnEGLError(const char* file, const int line)
@@ -99,9 +100,14 @@ namespace Soleil {
     , context(EGL_NO_CONTEXT)
     , glVersion(0)
   {
+    SOLEIL__LOGGER_DEBUG("Constructing GLES Context");
   }
 
-  AndroidGLESContext::~AndroidGLESContext(void) { terminate(); }
+  AndroidGLESContext::~AndroidGLESContext(void)
+  {
+    SOLEIL__LOGGER_DEBUG("Destructing Android GLES Context");
+    terminate();
+  }
 
   void AndroidGLESContext::initGLES(void)
   {
@@ -131,8 +137,10 @@ namespace Soleil {
   bool AndroidGLESContext::initEGLSurface(void)
   {
     this->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    assert(this->display != EGL_NO_DISPLAY && "No 'Default' EGL Display");
 
     eglInitialize(display, nullptr, nullptr);
+    SOLEIL__THROW_ON_EGLERROR();
 
     const EGLint attribs[] = {EGL_RENDERABLE_TYPE,
                               EGL_OPENGL_ES2_BIT, // Request opengl ES2.0
@@ -157,8 +165,10 @@ namespace Soleil {
     if (numConfigs < 1) {
       throw EGLException("Device do not match minimum configuration");
     }
+    SOLEIL__THROW_ON_EGLERROR();
 
     surface = eglCreateWindowSurface(display, config, window, nullptr);
+    SOLEIL__THROW_ON_EGLERROR();
     eglQuerySurface(display, surface, EGL_WIDTH, &screenWidth);
     eglQuerySurface(display, surface, EGL_HEIGHT, &screenHeight);
 
@@ -172,6 +182,7 @@ namespace Soleil {
                               EGL_NONE};
 
     context = eglCreateContext(display, config, nullptr, attribs);
+    SOLEIL__THROW_ON_EGLERROR();
 
     if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
       SOLEIL__THROW_ON_EGLERROR();
@@ -208,11 +219,15 @@ namespace Soleil {
       EGLint err = eglGetError();
 
       if (err == EGL_BAD_SURFACE) {
+        SOLEIL__LOGGER_DEBUG("Bad surface while egl-swapping");
+
         initEGLSurface();
         return true; // Consider that the context is still valide
       } else if (err == EGL_CONTEXT_LOST || err == EGL_BAD_CONTEXT) {
-        terminate();
+        SOLEIL__LOGGER_DEBUG(
+          "Oups, err == EGL_CONTEXT_LOST || err == EGL_BAD_CONTEXT");
 
+        terminate();
         initEGLContext();
       }
       return false;

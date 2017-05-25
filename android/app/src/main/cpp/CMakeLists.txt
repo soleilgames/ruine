@@ -13,6 +13,7 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/AndroidEngine.cpp
   ${RUINE_SOURCES}/AndroidGLESContext.cpp
   ${RUINE_SOURCES}/AndroidAssetService.cpp
+  ${RUINE_SOURCES}/AndroidSoundService.cpp
 
   ${RUINE_SOURCES}/Ruine.cpp
   ${RUINE_SOURCES}/Logger.cpp

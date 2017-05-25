@@ -20,10 +20,13 @@
  */
 
 #include "AndroidEngine.hpp"
+#include "AndroidAssetService.hpp"
+#include "AndroidSoundService.hpp"
+#include "Ruine.hpp"
+#include "stringutils.hpp"
 #include "types.hpp"
 
-#include "Ruine.hpp"
-#include "AndroidAssetService.hpp"
+#include <stdexcept>
 
 namespace Soleil {
 
@@ -33,15 +36,22 @@ namespace Soleil {
     , glContext(AndroidGLESContext::getInstance())
     , initialized(false)
   {
+    SOLEIL__LOGGER_DEBUG("Creating Android Engine");
   }
 
-  AndroidEngine::~AndroidEngine() {}
+  AndroidEngine::~AndroidEngine()
+  {
+    SOLEIL__LOGGER_DEBUG("Destructing Android Engine");
+  }
 
   void AndroidEngine::run(struct android_app* androidApp)
   {
     androidApp->userData = this;
+    androidApp->onInputEvent = AndroidEngine::HandleInput;
     androidApp->onAppCmd = AndroidEngine::HandleCommand;
-    assetService = std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
+    assetService =
+      std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
+    soundService = std::make_unique<AndroidSoundService>();
 
     while (inProgress) {
       int                         ident;
@@ -58,7 +68,7 @@ namespace Soleil {
 
         // If we are exiting:
         if (androidApp->destroyRequested != 0) {
-          // TODO: Detroy engine
+          SOLEIL__LOGGER_DEBUG("Destroy requested");
           inProgress = false;
         }
       }
@@ -77,11 +87,10 @@ namespace Soleil {
       std::chrono::seconds(now.tv_sec) + std::chrono::nanoseconds(now.tv_nsec));
 
     // TODO: viewer->render(time);
-    static Soleil::Ruine r(assetService.get());
-    r.render(time);
+    ruine->render(time);
 
     if (glContext->swap() == false) {
-      // TODO: reloadResources();
+      reloadResources();
     }
   }
 
@@ -90,33 +99,47 @@ namespace Soleil {
   void AndroidEngine::HandleCommand(struct android_app* androidApp,
                                     int32_t             command)
   {
-    AndroidEngine* This = static_cast<AndroidEngine*>(androidApp->userData);
+    try {
+      AndroidEngine* This = (AndroidEngine*)androidApp->userData;
+      // static_cast<AndroidEngine*>(androidApp->userData);
 
-    switch (command) {
-      case APP_CMD_SAVE_STATE:
-        // The system has asked us to save our current state. Do so.
-        break;
-      case APP_CMD_INIT_WINDOW:
-        // The window is being shown, get it ready.
-        if (androidApp->window != NULL) {
-          This->initDisplay(androidApp);
+      switch (command) {
+        case APP_CMD_SAVE_STATE:
+          // The system has asked us to save our current state. Do so.
+          break;
+        case APP_CMD_INIT_WINDOW:
+          // The window is being shown, get it ready.
+          if (androidApp->window != NULL) {
+            This->initDisplay(androidApp);
+            This->drawFrame();
+          }
+          break;
+        case APP_CMD_TERM_WINDOW:
+          // The window is being hidden or closed, clean it up.
+          This->terminateDisplay();
+          This->setFocusLost();
+          break;
+        case APP_CMD_GAINED_FOCUS:
+          // When our app gains focus, we start monitoring the accelerometer.
+          This->setFocusGranted();
+          break;
+        case APP_CMD_LOST_FOCUS:
+          This->setFocusLost();
           This->drawFrame();
-        }
-        break;
-      case APP_CMD_TERM_WINDOW:
-        // The window is being hidden or closed, clean it up.
-        This->terminateDisplay();
-        This->setFocusLost();
-        break;
-      case APP_CMD_GAINED_FOCUS:
-        // When our app gains focus, we start monitoring the accelerometer.
-        This->setFocusGranted();
-        break;
-      case APP_CMD_LOST_FOCUS:
-        This->setFocusLost();
-        This->drawFrame();
-        break;
+          break;
+      }
+    } catch (const std::runtime_error& e) {
+      Logger::error(toString("Fatal error while handling command: ", e.what()));
+    } catch (...) {
+      assert(false && "Someone raised a non runtime_error exception");
+      Logger::error("Unknown error while handling command: ");
     }
+  }
+
+  int32_t AndroidEngine::HandleInput(struct android_app* /*app*/,
+                                     AInputEvent* /*event*/)
+  {
+    return 0;
   }
 
   void AndroidEngine::initDisplay(struct android_app* androidApp)
@@ -154,6 +177,7 @@ namespace Soleil {
     // TODO: sle =
     // std::make_unique<Android::AndroidAudioService>(assetService.get());
     // TODO: viewer = generateViewerHookFunction(assetService.get(), sle.get());
+    ruine = std::make_unique<Ruine>(assetService.get(), soundService.get());
 
     resize();
   }
