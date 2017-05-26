@@ -296,7 +296,9 @@ namespace Soleil {
     void playMusic(const std::string& trackName) override;
     bool pauseMusic(void) override;
     bool resumeMusic(void) override;
-    void fireSound(const std::string& sound) override;
+
+    void fireSound(const std::string&     sound,
+                   const SoundProperties& properties) override;
 
   private:
     const PcmBuffer& loadSound(const std::string& fileName);
@@ -319,6 +321,7 @@ namespace Soleil {
     SLPlayer        soundPlayer;
     SLBufferQueue   soundBuffer;
     SLEffectSendItf soundEffectSend;
+    SLVolumeItf     soundVolume;
     std::map<std::string, PcmBuffer> soundCache;
   };
 

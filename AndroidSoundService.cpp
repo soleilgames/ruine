@@ -65,7 +65,8 @@ namespace Soleil {
     const InterfaceRequestMap soundRequest = {
       {SL_IID_BUFFERQUEUE, SL_BOOLEAN_TRUE},
       {SL_IID_VOLUME, SL_BOOLEAN_TRUE},
-      {SL_IID_EFFECTSEND, SL_BOOLEAN_TRUE}};
+      {SL_IID_EFFECTSEND, SL_BOOLEAN_TRUE},
+      {SL_IID_VOLUME, SL_BOOLEAN_TRUE}};
 
     engine.createAudioPlayer(soundPlayerObj, audioSource, audioSink,
                              soundRequest);
@@ -74,6 +75,7 @@ namespace Soleil {
     // TODO: get the volume interface
     soundPlayerObj.getInterface(SL_IID_BUFFERQUEUE, &(soundBuffer.data()));
     soundPlayerObj.getInterface(SL_IID_EFFECTSEND, &(soundEffectSend));
+    soundPlayerObj.getInterface(SL_IID_VOLUME, &soundVolume);
 
     soundPlayer.setPlayState(PlayState::playing);
 
@@ -116,7 +118,7 @@ namespace Soleil {
 
     playerObj.getInterface(SL_IID_VOLUME, &volume);
 
-    //player.setPlayState(PlayState::playing);
+    // player.setPlayState(PlayState::playing);
   }
 
   bool AndroidSoundService::pauseMusic(void)
@@ -138,7 +140,8 @@ namespace Soleil {
     return false;
   }
 
-  void AndroidSoundService::fireSound(const std::string& sound)
+  void AndroidSoundService::fireSound(const std::string&     sound,
+                                      const SoundProperties& properties)
   {
     const auto buffer = loadSound(sound);
 
@@ -147,6 +150,14 @@ namespace Soleil {
       soundBuffer.clear();
       soundBuffer.enqueue(buffer);
       // soundPlayer.setPlayState(PlayState::playing);
+
+      const int level       = 10;
+      const int attenuation = 100 - properties.volume;
+      const int millibel    = attenuation * -50;
+      SLresult  result      = (*soundVolume)->SetVolumeLevel(soundVolume, millibel);
+      assert(SL_RESULT_SUCCESS == result &&
+             "Android state that this never fails");
+      (void)result;
     }
   }
 

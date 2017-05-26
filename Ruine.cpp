@@ -153,13 +153,13 @@ namespace Soleil {
       length    = 1.0f;
       direction = -0.01f;
 
-      soundService->fireSound("woot.pcm");
+      soundService->fireSound("woot.pcm", SoundProperties(100));
     }
     if (length < 0.0f) {
       length    = 0.0f;
       direction = 0.01f;
 
-      soundService->fireSound("woot.pcm");
+      soundService->fireSound("woot.pcm", SoundProperties(50));
     }
     glUniform1f(uniformTime, length);
 

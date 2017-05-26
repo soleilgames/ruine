@@ -26,13 +26,26 @@
 
 namespace Soleil {
 
+  typedef int8_t Percent;
+  struct SoundProperties
+  {
+    Percent volume; // TODO: Enfore percentage using litterals
+
+    SoundProperties(Percent volume)
+      : volume(volume)
+    {
+    }
+  };
+
   class SoundService
   {
   public:
     virtual void playMusic(const std::string& trackName) = 0;
     virtual bool pauseMusic(void)                        = 0;
     virtual bool resumeMusic(void)                       = 0;
-    virtual void fireSound(const std::string& sound)     = 0;
+
+    virtual void fireSound(const std::string&     sound,
+                           const SoundProperties& properties) = 0;
   };
 
 } // Soleil
