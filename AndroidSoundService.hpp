@@ -22,6 +22,7 @@
 #ifndef SOLEIL__ANDROIDSOUNDSERVICE_HPP_
 #define SOLEIL__ANDROIDSOUNDSERVICE_HPP_
 
+#include "AssetService.hpp"
 #include "Logger.hpp"
 #include "SoundService.hpp"
 
@@ -288,25 +289,32 @@ namespace Soleil {
   class AndroidSoundService : public SoundService
   {
   public:
-    AndroidSoundService();
+    AndroidSoundService(AssetService* assetService);
     virtual ~AndroidSoundService();
 
   public:
     void playMusic(const std::string& trackName) override;
-    void stopMusic(void) override;
+    bool pauseMusic(void) override;
+    bool resumeMusic(void) override;
     void fireSound(const std::string& sound) override;
+
+  private:
+    const PcmBuffer& loadSound(const std::string& fileName);
+
+  private:
+    AssetService* assetService;
 
   private:
     SLObject engineObj;
     SLEngine engine;
     SLObject outputMixObj;
 
-  private: // Can be a Player Class
+  private: // Music (long and continuous) Can be a Player Class
     SLObject    playerObj;
     SLPlayer    player;
     SLVolumeItf volume; // aka Music Volume
 
-  private: // main Sound queue
+  private: // A sound queue (play short PCM buffer) - might need multiples ones.
     SLObject        soundPlayerObj;
     SLPlayer        soundPlayer;
     SLBufferQueue   soundBuffer;

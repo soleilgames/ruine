@@ -30,7 +30,8 @@ namespace Soleil {
   {
   public:
     virtual void playMusic(const std::string& trackName) = 0;
-    virtual void stopMusic(void)                         = 0;
+    virtual bool pauseMusic(void)                        = 0;
+    virtual bool resumeMusic(void)                       = 0;
     virtual void fireSound(const std::string& sound)     = 0;
   };
 

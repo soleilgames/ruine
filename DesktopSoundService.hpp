@@ -34,7 +34,8 @@ namespace Soleil {
 
   public:
     void playMusic(const std::string& trackName) override;
-    void stopMusic(void) override;
+    bool pauseMusic(void) override;
+    bool resumeMusic(void) override;
     void fireSound(const std::string& sound) override;
   };
 

@@ -46,12 +46,12 @@ namespace Soleil {
 
   void AndroidEngine::run(struct android_app* androidApp)
   {
-    androidApp->userData = this;
+    androidApp->userData     = this;
     androidApp->onInputEvent = AndroidEngine::HandleInput;
-    androidApp->onAppCmd = AndroidEngine::HandleCommand;
+    androidApp->onAppCmd     = AndroidEngine::HandleCommand;
     assetService =
       std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
-    soundService = std::make_unique<AndroidSoundService>();
+    soundService = std::make_unique<AndroidSoundService>(assetService.get());
 
     while (inProgress) {
       int                         ident;
@@ -190,8 +190,16 @@ namespace Soleil {
     resize();
   }
 
-  void AndroidEngine::setFocusGranted() { focus = true; }
+  void AndroidEngine::setFocusGranted()
+  {
+    soundService->resumeMusic();
+    focus = true;
+  }
 
-  void AndroidEngine::setFocusLost() { focus = false; }
+  void AndroidEngine::setFocusLost()
+  {
+    soundService->pauseMusic();
+    focus = false;
+  }
 
 } // Soleil

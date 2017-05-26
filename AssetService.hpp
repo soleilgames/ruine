@@ -22,14 +22,43 @@
 #ifndef SOLEIL__ASSETSERVICE_HPP_
 #define SOLEIL__ASSETSERVICE_HPP_
 
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace Soleil {
+
+  class AssetDescriptor
+  {
+  public:
+    AssetDescriptor(int fd, off_t start, off_t length)
+      : fd(fd)
+      , start(start)
+      , length(length)
+    {
+    }
+
+    virtual ~AssetDescriptor() {}
+
+  public:
+    int   getFd(void) const { return fd; }
+    off_t getStart(void) const { return start; }
+    off_t getLength(void) const { return length; }
+
+  private:
+    int   fd;
+    off_t start;
+    off_t length;
+  };
+
+  typedef std::shared_ptr<AssetDescriptor> AssetDescriptorPtr;
 
   class AssetService
   {
   public:
-    virtual std::string asString(const std::string& assetName) = 0;
+    virtual std::string asString(const std::string& assetName)              = 0;
+    virtual AssetDescriptorPtr asDescriptor(const std::string& assetName)   = 0;
+    virtual std::vector<uint8_t> asDataVector(const std::string& assetName) = 0;
   };
 
 } // Soleil

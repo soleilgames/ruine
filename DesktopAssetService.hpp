@@ -32,10 +32,12 @@ namespace Soleil {
     DesktopAssetService(const std::string& path);
     virtual ~DesktopAssetService();
 
+    AssetDescriptorPtr asDescriptor(const std::string& assetName) override;
+    std::vector<uint8_t> asDataVector(const std::string& assetName) override;
+
   public:
     std::string asString(const std::string& assetName) override;
 
-    
   private:
     std::string path;
   };

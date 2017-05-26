@@ -34,7 +34,8 @@ namespace Soleil {
 
   SLresult SLException::getErrorCode(void) const noexcept { return errorCode; }
 
-  AndroidSoundService::AndroidSoundService()
+  AndroidSoundService::AndroidSoundService(AssetService* assetService)
+    : assetService(assetService)
   {
     /* Engine Interface */
     engineObj.invoke(slCreateEngine, 0, nullptr, 0, nullptr, nullptr);
@@ -84,8 +85,82 @@ namespace Soleil {
     SOLEIL__LOGGER_DEBUG("SL Engine destructed");
   }
 
-  void AndroidSoundService::playMusic(const std::string& trackName) {}
-  void AndroidSoundService::stopMusic(void) {}
-  void AndroidSoundService::fireSound(const std::string& sound) {}
+  void AndroidSoundService::playMusic(const std::string& trackName)
+  {
+    /* Unlikely to sound, we create a Player each time we want to play a new
+     * music*/
+    AssetDescriptorPtr ad = assetService->asDescriptor(trackName);
 
+    /* Configure Audio source */
+    SLDataLocator_AndroidFD locatorFd = {SL_DATALOCATOR_ANDROIDFD, ad->getFd(),
+                                         ad->getStart(), ad->getLength()};
+    SLDataFormat_MIME formatMime = {SL_DATAFORMAT_MIME, nullptr,
+                                    SL_CONTAINERTYPE_UNSPECIFIED};
+    SLDataSource audioSource = {&locatorFd, &formatMime};
+
+    /* Configure Audio sink: */
+    SLDataLocator_OutputMix locatorOutputMix = {SL_DATALOCATOR_OUTPUTMIX,
+                                                outputMixObj.getObject()};
+    SLDataSink audioSink = {&locatorOutputMix, nullptr};
+
+    // -----------
+
+    const InterfaceRequestMap request = {{SL_IID_SEEK, SL_BOOLEAN_TRUE},
+                                         {SL_IID_MUTESOLO, SL_BOOLEAN_TRUE},
+                                         {SL_IID_VOLUME, SL_BOOLEAN_TRUE}};
+    engine.createAudioPlayer(playerObj, audioSource, audioSink, request);
+
+    playerObj.realize(Async::False);
+
+    playerObj.getInterface(SL_IID_PLAY, &(player.getPlayer()));
+
+    playerObj.getInterface(SL_IID_VOLUME, &volume);
+
+    //player.setPlayState(PlayState::playing);
+  }
+
+  bool AndroidSoundService::pauseMusic(void)
+  {
+    if (player.isInitialized() && playerObj.isRealized()) {
+      player.setPlayState(PlayState::paused);
+      return true;
+    }
+    return false;
+  }
+
+  bool AndroidSoundService::resumeMusic(void)
+  {
+    if (player.isInitialized() && playerObj.isRealized()) {
+      // TODO:  if not playing ?
+      player.setPlayState(PlayState::playing);
+      return true;
+    }
+    return false;
+  }
+
+  void AndroidSoundService::fireSound(const std::string& sound)
+  {
+    const auto buffer = loadSound(sound);
+
+    if (soundPlayerObj.isRealized()) {
+      // soundPlayer.setPlayState(PlayState::paused);
+      soundBuffer.clear();
+      soundBuffer.enqueue(buffer);
+      // soundPlayer.setPlayState(PlayState::playing);
+    }
+  }
+
+  const PcmBuffer& AndroidSoundService::loadSound(const std::string& fileName)
+  {
+    // TODO: Might be better to allow load and caching sound while loading
+    // application.
+
+    auto const found = soundCache.find(fileName);
+    if (found != soundCache.end()) {
+      return found->second;
+    }
+
+    auto buffer = assetService->asDataVector(fileName.c_str());
+    return (soundCache.emplace(fileName, buffer).first)->second;
+  }
 } // Soleil

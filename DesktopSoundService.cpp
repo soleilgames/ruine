@@ -40,9 +40,16 @@ namespace Soleil {
     SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
   }
 
-  void DesktopSoundService::stopMusic(void)
+  bool DesktopSoundService::pauseMusic(void)
   {
-    SOLEIL__LOGGER_DEBUG("Stopping music");
+    SOLEIL__LOGGER_DEBUG("Pausing music");
+    return true;
+  }
+
+  bool DesktopSoundService::resumeMusic(void)
+  {
+    SOLEIL__LOGGER_DEBUG("Resuming music");
+    return true;
   }
 
   void DesktopSoundService::fireSound(const std::string& sound)

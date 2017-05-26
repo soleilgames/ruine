@@ -125,7 +125,7 @@ namespace Soleil {
       throwOnGlError();
       glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-      soundService->playMusic("fabulousWave");
+      soundService->playMusic("fabulous.wav");
 
       SOLEIL__LOGGER_DEBUG("Initialization done");
     }
@@ -152,10 +152,14 @@ namespace Soleil {
     if (length > 1.0f) {
       length    = 1.0f;
       direction = -0.01f;
+
+      soundService->fireSound("woot.pcm");
     }
     if (length < 0.0f) {
       length    = 0.0f;
       direction = 0.01f;
+
+      soundService->fireSound("woot.pcm");
     }
     glUniform1f(uniformTime, length);
 

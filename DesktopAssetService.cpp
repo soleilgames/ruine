@@ -46,4 +46,17 @@ namespace Soleil {
                        std::istreambuf_iterator<char>());
   }
 
+  AssetDescriptorPtr DesktopAssetService::asDescriptor(
+    const std::string& /*assetName*/)
+  {
+    throw std::runtime_error(
+      "I'm not using that right now"); // TODO: To implement on the need
+  }
+
+  std::vector<uint8_t> DesktopAssetService::asDataVector(const std::string& /*assetName*/)
+  {
+    throw std::runtime_error(
+      "I'm not using that right now"); // TODO: To implement on the need
+  }
+
 } // Soleil

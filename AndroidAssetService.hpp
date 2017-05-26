@@ -36,7 +36,8 @@ namespace Soleil {
 
   public:
     std::string asString(const std::string& assetName) override;
-
+    AssetDescriptorPtr asDescriptor(const std::string& assetName) override;
+    std::vector<uint8_t> asDataVector(const std::string& assetName) override;
     
   private:
     AAssetManager* assetManager;

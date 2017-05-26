@@ -20,8 +20,8 @@
  */
 
 #include "AndroidAssetService.hpp"
-#include "stringutils.hpp"
 #include "Logger.hpp"
+#include "stringutils.hpp"
 
 namespace Soleil {
 
@@ -63,6 +63,31 @@ namespace Soleil {
       AAsset*           asset;
     };
 
+    class AssetGuard
+    {
+    public:
+      AssetGuard(AAssetManager* assetManager, const std::string& assetName)
+        : asset(AAssetManager_open(assetManager, assetName.c_str(),
+                                   AASSET_MODE_UNKNOWN))
+      {
+        if (asset == nullptr) {
+          throw std::runtime_error(
+            Soleil::toString("Cannot locate asset ", assetName));
+        }
+      }
+
+      virtual ~AssetGuard()
+      {
+        if (asset != nullptr) {
+          AAsset_close(asset);
+          asset = nullptr;
+        }
+      }
+
+    public:
+      AAsset* asset;
+    };
+
   } //
 
   AndroidAssetService::AndroidAssetService(AAssetManager* assetManager)
@@ -77,11 +102,40 @@ namespace Soleil {
     AssetFile asset(assetManager, assetName);
 
     std::string fileAsString(static_cast<const char*>(asset.getBuffer()),
-                       asset.getLength());
-    
+                             asset.getLength());
+
     SOLEIL__LOGGER_DEBUG("From asset: ", fileAsString);
 
     return fileAsString;
+  }
+
+  AssetDescriptorPtr AndroidAssetService::asDescriptor(
+    const std::string& assetName)
+  {
+    AssetGuard asset(assetManager, assetName);
+
+    off_t start;
+    off_t length;
+    int   fd = AAsset_openFileDescriptor(asset.asset, &start, &length);
+
+    if (fd < 0) {
+      throw std::runtime_error(
+        toString("Cannot get fd for resource: ", assetName));
+    }
+
+    return std::make_shared<AssetDescriptor>(fd, start, length);
+  }
+
+  std::vector<uint8_t> AndroidAssetService::asDataVector(
+    const std::string& assetName)
+  {
+    AssetGuard asset(assetManager, assetName);
+
+    const off_t    length = AAsset_getLength(asset.asset);
+    const uint8_t* buffer =
+      static_cast<const uint8_t*>(AAsset_getBuffer(asset.asset));
+
+    return std::vector<uint8_t>(buffer, buffer + length);
   }
 
 } // Soleil
