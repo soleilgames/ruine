@@ -44,3 +44,4 @@ build
 .dir-locals.el
 core
 tmp.txt
+Makefile
