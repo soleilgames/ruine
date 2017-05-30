@@ -26,6 +26,8 @@
 #include <iostream>
 #include <vector>
 
+#include <glm/vec3.hpp>
+
 namespace Soleil {
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService)

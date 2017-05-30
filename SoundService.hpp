@@ -29,7 +29,7 @@ namespace Soleil {
   typedef int8_t Percent;
   struct SoundProperties
   {
-    Percent volume; // TODO: Enfore percentage using litterals
+    Percent volume; // TODO: Enforce percentage using litterals
 
     SoundProperties(Percent volume)
       : volume(volume)

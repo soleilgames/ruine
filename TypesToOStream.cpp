@@ -19,43 +19,45 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopSoundService.hpp"
-#include "Logger.hpp"
+#include "TypesToOStream.hpp"
 
-namespace Soleil {
+namespace glm {
 
-  /**
-   * I've not found a good 3D Sound library on Desktop that fullfill my needs:
-   * Cross Platform, Free (Freedom&Price), Easy. And as my target is currently
-   * only on Android, I provide an empty implementation on Desktop. My dream
-   * would be to implement a quick OpenSL Implementation.
-   **/
-
-  DesktopSoundService::DesktopSoundService() {}
-
-  DesktopSoundService::~DesktopSoundService() {}
-
-  void DesktopSoundService::playMusic(const std::string& trackName)
+  std::ostream& operator<<(std::ostream& os, const glm::mat4& mat)
   {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
+    os << glm::to_string(mat);
+    return os;
   }
 
-  bool DesktopSoundService::pauseMusic(void)
+  std::ostream& operator<<(std::ostream& os, const glm::vec4& vec)
   {
-    SOLEIL__LOGGER_DEBUG("Pausing music");
-    return true;
+    os << glm::to_string(vec);
+
+    return os;
   }
 
-  bool DesktopSoundService::resumeMusic(void)
+  std::ostream& operator<<(std::ostream& os, const glm::vec3& vec)
   {
-    SOLEIL__LOGGER_DEBUG("Resuming music");
-    return true;
+    os << glm::to_string(vec);
+
+    return os;
   }
 
-  void DesktopSoundService::fireSound(const std::string& sound,
-                                      const SoundProperties& /*properties*/)
+  std::ostream& operator<<(std::ostream& os, const glm::vec2& vec)
   {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing sound: ", sound);
-  }
+    os << glm::to_string(vec);
 
-} // Soleil
+    return os;
+  }
+}
+
+namespace std {
+  namespace chrono {
+    std::ostream& operator<<(std::ostream&                    os,
+                             const std::chrono::milliseconds& ms)
+    {
+      os << ms.count() << "ms";
+      return os;
+    }
+  }
+}

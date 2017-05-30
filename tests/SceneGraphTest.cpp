@@ -19,43 +19,27 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopSoundService.hpp"
-#include "Logger.hpp"
+#include "mcut.hpp"
 
-namespace Soleil {
+#include "Node.hpp"
+#include "TypesToOStream.hpp"
 
-  /**
-   * I've not found a good 3D Sound library on Desktop that fullfill my needs:
-   * Cross Platform, Free (Freedom&Price), Easy. And as my target is currently
-   * only on Android, I provide an empty implementation on Desktop. My dream
-   * would be to implement a quick OpenSL Implementation.
-   **/
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-  DesktopSoundService::DesktopSoundService() {}
+static void NodeTranslation()
+{
+  Soleil::Node n(0, "test");
+  glm::mat4 transformation = glm::translate(glm::mat4(), glm::vec3(21.0f, 42.0f, 84.42f));
+  n.translate(glm::vec3(21.0f, 42.0f, 84.42f));
+  
+  mcut::assertEquals(transformation, n.getTransformation());
+}
 
-  DesktopSoundService::~DesktopSoundService() {}
-
-  void DesktopSoundService::playMusic(const std::string& trackName)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
-  }
-
-  bool DesktopSoundService::pauseMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Pausing music");
-    return true;
-  }
-
-  bool DesktopSoundService::resumeMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Resuming music");
-    return true;
-  }
-
-  void DesktopSoundService::fireSound(const std::string& sound,
-                                      const SoundProperties& /*properties*/)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing sound: ", sound);
-  }
-
-} // Soleil
+int main(int , char *[])
+{
+  mcut::TestSuite basics("Basics");
+  basics.add(NodeTranslation);
+  basics.run();
+  return 0;
+}

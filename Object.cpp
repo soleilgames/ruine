@@ -19,43 +19,20 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopSoundService.hpp"
-#include "Logger.hpp"
+#include "Object.hpp"
 
 namespace Soleil {
 
-  /**
-   * I've not found a good 3D Sound library on Desktop that fullfill my needs:
-   * Cross Platform, Free (Freedom&Price), Easy. And as my target is currently
-   * only on Android, I provide an empty implementation on Desktop. My dream
-   * would be to implement a quick OpenSL Implementation.
-   **/
-
-  DesktopSoundService::DesktopSoundService() {}
-
-  DesktopSoundService::~DesktopSoundService() {}
-
-  void DesktopSoundService::playMusic(const std::string& trackName)
+  Object::Object(HashType type, const std::string& name)
+    : type(type)
+    , name(name)
   {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
   }
 
-  bool DesktopSoundService::pauseMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Pausing music");
-    return true;
-  }
+  Object::~Object() {}
 
-  bool DesktopSoundService::resumeMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Resuming music");
-    return true;
-  }
+  HashType Object::getType() const noexcept { return type; }
 
-  void DesktopSoundService::fireSound(const std::string& sound,
-                                      const SoundProperties& /*properties*/)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing sound: ", sound);
-  }
+  const std::string& Object::getName() const noexcept { return name; }
 
 } // Soleil

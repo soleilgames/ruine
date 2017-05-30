@@ -19,43 +19,33 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopSoundService.hpp"
-#include "Logger.hpp"
+#ifndef SOLEIL__TYPESTOOSTREAM_HPP_
+#define SOLEIL__TYPESTOOSTREAM_HPP_
 
-namespace Soleil {
+#include <chrono>
+#include <iostream>
 
-  /**
-   * I've not found a good 3D Sound library on Desktop that fullfill my needs:
-   * Cross Platform, Free (Freedom&Price), Easy. And as my target is currently
-   * only on Android, I provide an empty implementation on Desktop. My dream
-   * would be to implement a quick OpenSL Implementation.
-   **/
+#include <utility>
 
-  DesktopSoundService::DesktopSoundService() {}
+#include <glm/gtx/string_cast.hpp>
+#include <glm/matrix.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
-  DesktopSoundService::~DesktopSoundService() {}
+namespace glm {
 
-  void DesktopSoundService::playMusic(const std::string& trackName)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
-  }
+  std::ostream& operator<<(std::ostream& os, const glm::mat4& mat);
+  std::ostream& operator<<(std::ostream& os, const glm::vec4& vec);
+  std::ostream& operator<<(std::ostream& os, const glm::vec3& vec);
+  std::ostream& operator<<(std::ostream& os, const glm::vec2& vec);
 
-  bool DesktopSoundService::pauseMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Pausing music");
-    return true;
-  }
+} // glm
 
-  bool DesktopSoundService::resumeMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Resuming music");
-    return true;
-  }
+namespace std {
+  namespace chrono {
+    std::ostream& operator<<(std::ostream&                    os,
+                             const std::chrono::milliseconds& ms);
+  };
+};
 
-  void DesktopSoundService::fireSound(const std::string& sound,
-                                      const SoundProperties& /*properties*/)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing sound: ", sound);
-  }
-
-} // Soleil
+#endif /* SOLEIL__TYPESTOOSTREAM_HPP_ */

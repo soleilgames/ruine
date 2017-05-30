@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (ruine)
+project(ruine)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 find_package(SDL2 REQUIRED)
@@ -16,15 +16,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories (SYSTEM
   ${SDL2_INCLUDE_DIR}  
   ${OPENGL_INCLUDE_DIR}
-  # glm/glm/
+  glm/glm/
   )
+
+include_directories(
+  ./
+  )
+
 
 
 add_library(ruinelib
   Ruine.cpp
+  
   Logger.cpp
+  TypesToOStream.cpp
   DesktopAssetService.cpp
   DesktopSoundService.cpp
+  Object.cpp
+  Node.cpp
   )
 
 add_executable(ruine
@@ -44,3 +53,14 @@ target_link_libraries(ruine
 add_custom_command(TARGET ruine PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/media" "$<TARGET_FILE_DIR:ruine>/media"
   )
+
+
+enable_testing()
+add_subdirectory(tests)
+
+add_test(SceneGraphTest tests/sceneGraphTest)
+
+
+add_custom_command(TARGET ruine POST_BUILD
+  COMMAND ctest -V -C $<CONFIGURATION> --output-on-failure)
+

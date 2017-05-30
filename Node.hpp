@@ -19,43 +19,36 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopSoundService.hpp"
-#include "Logger.hpp"
+#ifndef SOLEIL__NODE_HPP_
+#define SOLEIL__NODE_HPP_
+
+#include "Object.hpp"
+
+#include <glm/mat4x4.hpp>
 
 namespace Soleil {
 
-  /**
-   * I've not found a good 3D Sound library on Desktop that fullfill my needs:
-   * Cross Platform, Free (Freedom&Price), Easy. And as my target is currently
-   * only on Android, I provide an empty implementation on Desktop. My dream
-   * would be to implement a quick OpenSL Implementation.
-   **/
-
-  DesktopSoundService::DesktopSoundService() {}
-
-  DesktopSoundService::~DesktopSoundService() {}
-
-  void DesktopSoundService::playMusic(const std::string& trackName)
+  class Node : Object
   {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing music: ", trackName);
-  }
+  public:
+    Node(HashType type, const std::string& name);
+    virtual ~Node();
 
-  bool DesktopSoundService::pauseMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Pausing music");
-    return true;
-  }
+  public:
+    void setTransformation(const glm::mat4& transformation);
+    const glm::mat4& getTransformation(void) const noexcept;
 
-  bool DesktopSoundService::resumeMusic(void)
-  {
-    SOLEIL__LOGGER_DEBUG("Resuming music");
-    return true;
-  }
+  public:
+    Node* getParent(void) const noexcept;
 
-  void DesktopSoundService::fireSound(const std::string& sound,
-                                      const SoundProperties& /*properties*/)
-  {
-    SOLEIL__LOGGER_DEBUG("Beep beep playing sound: ", sound);
-  }
+  public:
+    void translate(glm::vec3 translation);
+
+  private:
+    glm::mat4 transformation;
+    Node*     parent;
+  };
 
 } // Soleil
+
+#endif /* SOLEIL__NODE_HPP_ */
