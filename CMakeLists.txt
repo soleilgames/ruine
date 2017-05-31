@@ -33,6 +33,7 @@ add_library(ruinelib
   Logger.cpp
   TypesToOStream.cpp
   OpenGLInclude.cpp
+  AssetService.cpp
   Object.cpp
   Node.cpp
   Shader.cpp

@@ -19,43 +19,19 @@
  * THE SOFTWARE.
  */
 
-#include "DesktopAssetService.hpp"
-#include "stringutils.hpp"
-
-#include <fstream>
-#include <iostream>
+#include "AssetService.hpp"
+#include <cassert>
 
 namespace Soleil {
 
-  DesktopAssetService::DesktopAssetService(const std::string& path)
-    : path(path)
+  std::shared_ptr<AssetService> AssetService::Instance;
+
+  std::string AssetService::LoadAsString(const std::string& assetName)
   {
+    assert(Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
+
+    return Instance->asString(assetName);
   }
 
-  DesktopAssetService::~DesktopAssetService() {}
-
-  std::string DesktopAssetService::asString(const std::string& assetName)
-  {
-    const std::string fileName = path + assetName;
-    std::ifstream     in(fileName);
-
-    if (in.is_open() == false)
-      throw std::runtime_error(
-        toString("Failed to read file '", fileName, "'"));
-    return std::string((std::istreambuf_iterator<char>(in)),
-                       std::istreambuf_iterator<char>());
-  }
-
-  AssetDescriptorPtr DesktopAssetService::asDescriptor(
-    const std::string& /*assetName*/)
-  {
-    throw std::runtime_error(
-      "I'm not using that right now"); // TODO: To implement on the need
-  }
-
-  std::vector<uint8_t> DesktopAssetService::asDataVector(const std::string& /*assetName*/)
-  {
-    throw std::runtime_error(
-      "I'm not using that right now"); // TODO: To implement on the need
-  }
 } // Soleil
