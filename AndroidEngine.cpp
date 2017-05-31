@@ -49,9 +49,9 @@ namespace Soleil {
     androidApp->userData     = this;
     androidApp->onInputEvent = AndroidEngine::HandleInput;
     androidApp->onAppCmd     = AndroidEngine::HandleCommand;
-    assetService =
+    AssetService::Instance =
       std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
-    soundService = std::make_unique<AndroidSoundService>(assetService.get());
+    soundService = std::make_unique<AndroidSoundService>(AssetService::Instance.get());
 
     while (inProgress) {
       int                         ident;
@@ -177,7 +177,7 @@ namespace Soleil {
     // TODO: sle =
     // std::make_unique<Android::AndroidAudioService>(assetService.get());
     // TODO: viewer = generateViewerHookFunction(assetService.get(), sle.get());
-    ruine = std::make_unique<Ruine>(assetService.get(), soundService.get());
+    ruine = std::make_unique<Ruine>(AssetService::Instance.get(), soundService.get());
 
     resize();
   }

@@ -20,7 +20,10 @@
  */
 
 #include "Ruine.hpp"
+#include "Drawable.hpp"
 #include "Logger.hpp"
+#include "Pristine.hpp"
+#include "Shape.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -74,101 +77,143 @@ namespace Soleil {
 
   void Ruine::render(Timer /*time*/)
   {
-    // clang-format off
-    //                               xxxx, yyyy, zzz, www, rrr, ggg, bbb, aaa
-    static const float vertices[] = {-1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
-				      1.0, -1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-				      0.0,  1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0
-    };
-    // clang-format on
+    static std::shared_ptr<Drawable> triangle;
 
-    /* Minimal gles2 test */
-    if (triangle < 1) {
-      const std::string src = assetService->asString("triangle.vert");
-      const GLchar*     vertexShaderSource[]   = {src.c_str()};
-      const GLchar*     fragmentShaderSource[] = {"#version 100\n"
-                                              "\n"
-                                              "precision mediump float;\n"
-                                              "\n"
-                                              "varying vec4 color;\n"
-                                              "\n"
-                                              "void main()\n"
-                                              "{\n"
-                                              "  gl_FragColor = color;\n"
-                                              "}\n"};
+    static Pristine FirstLoop;
+    if (FirstLoop) {
+      std::vector<Vertex> vertices = {
+        Vertex(glm::vec4(-1.0, -1.0, 0.0, 1.0), glm::vec3(1.0f),
+               glm::vec4(1.0, 0.0, 0.0, 1.0)),
+        Vertex(glm::vec4(1.0, -1.0, 0.0, 1.0), glm::vec3(1.0f),
+               glm::vec4(0.0, 1.0, 0.0, 1.0)),
+        Vertex(glm::vec4(0.0, 1.0, 0.0, 1.0), glm::vec3(1.0f),
+               glm::vec4(0.0, 0.0, 1.0, 1.0)),
+      };
 
-      GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-      glShaderSource(vertexShader, 1, vertexShaderSource, nullptr);
-      glCompileShader(vertexShader);
-      throwOnGlError();
-      compileShader(vertexShader, "vertexShader");
+      ShapePtr shape = std::make_shared<Shape>(vertices);
 
-      GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-      glShaderSource(fragmentShader, 1, fragmentShaderSource, nullptr);
-      glCompileShader(fragmentShader);
-      throwOnGlError();
-      compileShader(fragmentShader, "fragmentShader");
-
-      triangle = glCreateProgram();
-      glBindAttribLocation(triangle, 0, "positionAttribute");
-      glBindAttribLocation(triangle, 1, "colorAttribute");
-      glAttachShader(triangle, vertexShader);
-      glAttachShader(triangle, fragmentShader);
-      glLinkProgram(triangle);
-      throwOnGlError();
-
-      glDeleteShader(vertexShader);
-      glDeleteShader(fragmentShader);
-
-      glGenBuffers(1, &buffer);
-      glBindBuffer(GL_ARRAY_BUFFER, buffer);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0],
-                   GL_STATIC_DRAW);
-      throwOnGlError();
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-      soundService->playMusic("fabulous.wav");
-
-      SOLEIL__LOGGER_DEBUG("Initialization done");
+      triangle = std::make_shared<Drawable>(shape);
     }
 
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
-
     glClear(GL_COLOR_BUFFER_BIT);
+    triangle->render();
 
-    throwOnGlError();
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
-                          nullptr);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
-                          (GLvoid*)(4 * sizeof(vertices[0])));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glUseProgram(triangle);
-    GLint uniformTime = glGetUniformLocation(triangle, "time");
-    if (uniformTime < 0) throw std::runtime_error("Cannot find uniform time");
+    // clang-format off
+    //                               xxxx, yyyy, zzz, www, rrr, ggg, bbb, aaa
+    // static const float vertices[] = {-1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
+    // 				      1.0, -1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+    // 				      0.0,  1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0
+    // };
+    // clang-format on
 
-    static float length    = 0.0f;
-    static float direction = 0.01f;
-    length += direction;
-    if (length > 1.0f) {
-      length    = 1.0f;
-      direction = -0.01f;
+    /* Minimal gles2 test */
+    // if (triangle < 1) {
+    //   const std::string src = assetService->asString("triangle.vert");
+    //   const GLchar*     vertexShaderSource[]   = {src.c_str()};
+    //   const GLchar*     fragmentShaderSource[] = {"#version 100\n"
+    //                                           "\n"
+    //                                           "precision mediump float;\n"
+    //                                           "\n"
+    //                                           "varying vec4 color;\n"
+    //                                           "\n"
+    //                                           "void main()\n"
+    //                                           "{\n"
+    //                                           "  gl_FragColor = color;\n"
+    //                                           "}\n"};
 
-      soundService->fireSound("woot.pcm", SoundProperties(100));
-    }
-    if (length < 0.0f) {
-      length    = 0.0f;
-      direction = 0.01f;
+    //   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    //   glShaderSource(vertexShader, 1, vertexShaderSource, nullptr);
+    //   glCompileShader(vertexShader);
+    //   throwOnGlError();
+    //   compileShader(vertexShader, "vertexShader");
 
-      soundService->fireSound("woot.pcm", SoundProperties(50));
-    }
-    glUniform1f(uniformTime, length);
+    //   GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    //   glShaderSource(fragmentShader, 1, fragmentShaderSource, nullptr);
+    //   glCompileShader(fragmentShader);
+    //   throwOnGlError();
+    //   compileShader(fragmentShader, "fragmentShader");
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    //   triangle = glCreateProgram();
+    //   glBindAttribLocation(triangle, 0, "positionAttribute");
+    //   glBindAttribLocation(triangle, 1, "colorAttribute");
+    //   glAttachShader(triangle, vertexShader);
+    //   glAttachShader(triangle, fragmentShader);
+    //   glLinkProgram(triangle);
+    //   throwOnGlError();
 
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    throwOnGlError();
+    //   glDeleteShader(vertexShader);
+    //   glDeleteShader(fragmentShader);
+
+    //   glGenBuffers(1, &buffer);
+    //   glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    //   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0],
+    //                GL_STATIC_DRAW);
+    //   throwOnGlError();
+    //   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    //   soundService->playMusic("fabulous.wav");
+
+    //   SOLEIL__LOGGER_DEBUG("Initialization done");
+    // }
+
+    // glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
+
+    // glClear(GL_COLOR_BUFFER_BIT);
+
+    // throwOnGlError();
+    // glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    // glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
+    //                       nullptr);
+    // glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertices[0]) * 8,
+    //                       (GLvoid*)(4 * sizeof(vertices[0])));
+    // glEnableVertexAttribArray(0);
+    // glEnableVertexAttribArray(1);
+    // glUseProgram(triangle);
+    // GLint uniformTime = glGetUniformLocation(triangle, "time");
+    // if (uniformTime < 0) throw std::runtime_error("Cannot find uniform
+    // time");
+
+    // static float length    = 0.0f;
+    // static float direction = 0.01f;
+    // length += direction;
+    // if (length > 1.0f) {
+    //   length    = 1.0f;
+    //   direction = -0.01f;
+
+    //   soundService->fireSound("woot.pcm", SoundProperties(100));
+    // }
+    // if (length < 0.0f) {
+    //   length    = 0.0f;
+    //   direction = 0.01f;
+
+    //   soundService->fireSound("woot.pcm", SoundProperties(50));
+    // }
+    // glUniform1f(uniformTime, length);
+
+    // glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // glEnableVertexAttribArray(0);
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // throwOnGlError();
+
+    // clang-format off
+    // static Shape shape = Wavefront::Load("file.obj");
+    // static ShapeNode shapeNode(shape);
+    // static {
+    //   ShapeInstanced shapeInstanced(shape);
+
+    //   shapeInstance.pushInstance(glm::translate());
+    //   shapeInstance.pushInstance(glm::translate());
+    //   shapeInstance.pushInstance(glm::translate());
+    //   shapeInstance.pushInstance(glm::translate());
+    //   shapeInstance.pushInstance(glm::translate());
+    // }
+
+    // static Shape shape = Wavefront::Load("file.obj");
+    // glm::mat4 transformation;
+    // Shape::draw(shape, transformation);
+
+    // clang-format on
   }
 } // Soleil

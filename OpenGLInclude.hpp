@@ -33,8 +33,9 @@
 #else
 
 #include <GL/glew.h>
-#include <GL/glext.h>
+
 #include <GL/gl.h>
+#include <GL/glext.h>
 
 #include <glm/glm.hpp>
 
@@ -83,6 +84,71 @@ namespace Soleil {
     if (errored && throwOnError)
       throw std::runtime_error("GL Error occured (see logs).");
   }
+
+  // Below are RAII Wrapper for OpenGL -----------------------------------------
+
+  namespace gl {
+
+    void GlGenFramebuffers(GLsizei i, GLuint* names);
+    void GlGenRenderbuffers(GLsizei i, GLuint* names);
+    void GlGenTextures(GLsizei i, GLuint* names);
+    void GlGenBuffers(GLsizei i, GLuint* names);
+
+    void GlDeleteFramebuffers(GLsizei i, const GLuint* names);
+    void GlDeleteRenderbuffers(GLsizei i, const GLuint* names);
+    void GlDeleteTextures(GLsizei i, const GLuint* names);
+    void GlDeleteBuffers(GLsizei i, const GLuint* names);
+
+    void GlBindFramebuffer(GLenum target, GLuint name);
+    void GlBindRenderbuffer(GLenum target, GLuint name);
+    void GlBindTexture(GLenum target, GLuint name);
+    void GlBindBuffer(GLenum target, GLuint name);
+
+    template <void GenFunction(GLsizei, GLuint*),
+              void DeleteFunction(GLsizei, const GLuint*)>
+    class Generator
+    {
+    public:
+      Generator()
+      {
+        GenFunction(1, &name);
+        throwOnGlError();
+      }
+
+      virtual ~Generator() { DeleteFunction(1, &name); }
+
+      GLuint operator*(void) { return name; }
+
+    private:
+      GLuint name;
+    };
+
+    template <void BindFunction(GLenum, GLuint), GLuint defValue>
+    class BindGuard
+    {
+    public:
+      BindGuard(GLenum target, GLuint name)
+        : target(target)
+      {
+        BindFunction(target, name);
+      }
+
+      virtual ~BindGuard() { BindFunction(target, defValue); }
+
+    private:
+      GLenum target;
+    };
+
+    typedef Generator<GlGenTextures, GlDeleteTextures>           Texture;
+    typedef Generator<GlGenFramebuffers, GlDeleteFramebuffers>   rameBuffer;
+    typedef Generator<GlGenRenderbuffers, GlDeleteRenderbuffers> RenderBuffer;
+    typedef Generator<GlGenBuffers, GlDeleteBuffers>             Buffer;
+    typedef BindGuard<GlBindFramebuffer, 0>  BindFrameBuffer;
+    typedef BindGuard<GlBindRenderbuffer, 0> BindRenderBuffer;
+    typedef BindGuard<GlBindTexture, 0>      BindTexture;
+    typedef BindGuard<GlBindBuffer, 0>       BindBuffer;
+
+  } // GL
 
 } // Soleil
 

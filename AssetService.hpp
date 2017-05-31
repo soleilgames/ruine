@@ -59,6 +59,17 @@ namespace Soleil {
     virtual std::string asString(const std::string& assetName)              = 0;
     virtual AssetDescriptorPtr asDescriptor(const std::string& assetName)   = 0;
     virtual std::vector<uint8_t> asDataVector(const std::string& assetName) = 0;
+
+    /**
+     * I Was against the Singletons pattern, but after watched different C++
+     * Con. I cannot tell anymore what is good or not. I think that the most
+     * important
+     * is to try and to see with experience what is the most valuable. Here I
+     * try to work on my GongFu code. Let see if I will take a slap.
+     */
+  public:
+    static std::shared_ptr<AssetService> Instance;
+    static std::string LoadAsString(const std::string& assetName);
   };
 
 } // Soleil

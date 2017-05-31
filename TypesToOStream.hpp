@@ -27,6 +27,7 @@
 
 #include <utility>
 
+#define GLM_ENABLE_EXPERIMENTAL // Required to compile with string_cast
 #include <glm/gtx/string_cast.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>

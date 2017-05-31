@@ -19,28 +19,27 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__DESKTOPASSETSERVICE_HPP_
-#define SOLEIL__DESKTOPASSETSERVICE_HPP_
+#ifndef SOLEIL__SHADER_HPP_
+#define SOLEIL__SHADER_HPP_
 
-#include "AssetService.hpp"
+#include "OpenGLInclude.hpp"
 
 namespace Soleil {
 
-  class DesktopAssetService : public AssetService
+  class Shader
   {
   public:
-    DesktopAssetService(const std::string& path);
-    virtual ~DesktopAssetService();
+    Shader(GLenum shaderType, const std::string& source);
+    virtual ~Shader();
 
   public:
-    std::string asString(const std::string& assetName) override;
-    AssetDescriptorPtr asDescriptor(const std::string& assetName) override;
-    std::vector<uint8_t> asDataVector(const std::string& assetName) override;
+    GLuint operator*(void);
 
   private:
-    std::string path;
+    GLuint      shader;
+    std::string name;
   };
 
 } // Soleil
 
-#endif /* SOLEIL__DESKTOPASSETSERVICE_HPP_ */
+#endif /* SOLEIL__SHADER_HPP_ */

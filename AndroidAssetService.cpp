@@ -138,4 +138,15 @@ namespace Soleil {
     return std::vector<uint8_t>(buffer, buffer + length);
   }
 
+  // TODO: Might be in a Asset.cpp file (not platform dependant)
+  std::shared_ptr<AssetService> AssetService::Instance;
+
+  std::string AssetService::LoadAsString(const std::string& assetName)
+  {
+    assert(Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
+
+    return Instance->asString(assetName);
+  }
+
 } // Soleil

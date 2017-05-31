@@ -19,28 +19,30 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__DESKTOPASSETSERVICE_HPP_
-#define SOLEIL__DESKTOPASSETSERVICE_HPP_
-
-#include "AssetService.hpp"
+#include "Shape.hpp"
 
 namespace Soleil {
 
-  class DesktopAssetService : public AssetService
+  Shape::Shape(const std::vector<Vertex>& vertices)
+    : Object(GetType(), GetClassName())
+    , vertices(vertices)
+    , buffer()
   {
-  public:
-    DesktopAssetService(const std::string& path);
-    virtual ~DesktopAssetService();
+    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
 
-  public:
-    std::string asString(const std::string& assetName) override;
-    AssetDescriptorPtr asDescriptor(const std::string& assetName) override;
-    std::vector<uint8_t> asDataVector(const std::string& assetName) override;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), &vertices[0],
+                 GL_STATIC_DRAW);
+    
+    throwOnGlError();
+  }
 
-  private:
-    std::string path;
-  };
+  Shape::~Shape() {}
+
+  const std::vector<Vertex>& Shape::getVertices(void) const noexcept
+  {
+    return vertices;
+  }
+
+  GLuint Shape::getBuffer() noexcept { return *buffer; }
 
 } // Soleil
-
-#endif /* SOLEIL__DESKTOPASSETSERVICE_HPP_ */

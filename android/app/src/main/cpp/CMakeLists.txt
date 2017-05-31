@@ -8,6 +8,10 @@ add_library(app-glue STATIC
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
+include_directories (SYSTEM
+  ${RUINE_SOURCES}/glm/
+  )
+
 add_library(ruine-activity SHARED
   main.cpp
   ${RUINE_SOURCES}/AndroidEngine.cpp
@@ -17,6 +21,13 @@ add_library(ruine-activity SHARED
 
   ${RUINE_SOURCES}/Ruine.cpp
   ${RUINE_SOURCES}/Logger.cpp
+  ${RUINE_SOURCES}/TypesToOStream.cpp
+  ${RUINE_SOURCES}/OpenGLInclude.cpp
+  ${RUINE_SOURCES}/Object.cpp
+  ${RUINE_SOURCES}/Node.cpp
+  ${RUINE_SOURCES}/Shader.cpp
+  ${RUINE_SOURCES}/Shape.cpp
+  ${RUINE_SOURCES}/Drawable.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE

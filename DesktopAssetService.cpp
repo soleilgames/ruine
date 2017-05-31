@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <cassert>
 
 namespace Soleil {
 
@@ -57,6 +58,16 @@ namespace Soleil {
   {
     throw std::runtime_error(
       "I'm not using that right now"); // TODO: To implement on the need
+  }
+
+
+  std::shared_ptr<AssetService> AssetService::Instance;
+  
+  std::string AssetService::LoadAsString(const std::string &assetName)
+  {
+    assert(Instance != nullptr && "Instance has to be set once at the program start-up");
+    
+    return Instance->asString(assetName);
   }
 
 } // Soleil

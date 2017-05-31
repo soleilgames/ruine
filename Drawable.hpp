@@ -19,28 +19,28 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__DESKTOPASSETSERVICE_HPP_
-#define SOLEIL__DESKTOPASSETSERVICE_HPP_
+#ifndef SOLEIL__DRAWABLE_HPP_
+#define SOLEIL__DRAWABLE_HPP_
 
-#include "AssetService.hpp"
+#include "Node.hpp"
+#include "Shape.hpp"
 
 namespace Soleil {
 
-  class DesktopAssetService : public AssetService
+  class Drawable : public Node
   {
   public:
-    DesktopAssetService(const std::string& path);
-    virtual ~DesktopAssetService();
+    Drawable(ShapePtr shape);
+    virtual ~Drawable();
 
   public:
-    std::string asString(const std::string& assetName) override;
-    AssetDescriptorPtr asDescriptor(const std::string& assetName) override;
-    std::vector<uint8_t> asDataVector(const std::string& assetName) override;
+    void render(/* // TODO: here Frame and Viewport */);
 
   private:
-    std::string path;
+    ShapePtr shape;
+    GLuint   triangle; // TODO: Temporary
   };
 
 } // Soleil
 
-#endif /* SOLEIL__DESKTOPASSETSERVICE_HPP_ */
+#endif /* SOLEIL__DRAWABLE_HPP_ */

@@ -16,7 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories (SYSTEM
   ${SDL2_INCLUDE_DIR}  
   ${OPENGL_INCLUDE_DIR}
-  glm/glm/
+  glm/
   )
 
 include_directories(
@@ -26,14 +26,18 @@ include_directories(
 
 
 add_library(ruinelib
-  Ruine.cpp
-  
-  Logger.cpp
-  TypesToOStream.cpp
   DesktopAssetService.cpp
   DesktopSoundService.cpp
+  
+  Ruine.cpp  
+  Logger.cpp
+  TypesToOStream.cpp
+  OpenGLInclude.cpp
   Object.cpp
   Node.cpp
+  Shader.cpp
+  Shape.cpp
+  Drawable.cpp
   )
 
 add_executable(ruine

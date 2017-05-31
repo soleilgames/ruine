@@ -90,11 +90,12 @@ main(int /*argc*/
       toString("Unable to initialize GLEW: ", glewGetErrorString(err)));
   }
 
-  std::unique_ptr<AssetService> assetService =
-    std::make_unique<DesktopAssetService>("media/");
+  AssetService::Instance =
+    std::make_shared<DesktopAssetService>("media/");
   std::unique_ptr<SoundService> soundService =
     std::make_unique<DesktopSoundService>();
-  Soleil::Ruine r(assetService.get(), soundService.get());
+  
+  Soleil::Ruine r(AssetService::Instance.get(), soundService.get());
   render(window, r);
 
   SDL_DestroyWindow(window);

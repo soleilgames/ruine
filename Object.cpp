@@ -23,8 +23,9 @@
 
 namespace Soleil {
 
-  Object::Object(HashType type, const std::string& name)
+  Object::Object(HashType type, const std::string& className, const std::string &name)
     : type(type)
+    , className(className)
     , name(name)
   {
   }
@@ -33,6 +34,10 @@ namespace Soleil {
 
   HashType Object::getType() const noexcept { return type; }
 
-  const std::string& Object::getName() const noexcept { return name; }
+  const std::string& Object::getClassName() const noexcept { return className; }
+
+  const std::string& Object::getName(void) const noexcept { return name; }
+
+  void Object::setName(const std::string& name) { this->name = name; }
 
 } // Soleil

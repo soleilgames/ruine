@@ -19,13 +19,16 @@
  * THE SOFTWARE.
  */
 
-#include <typeinfo>
+#ifndef SOLEIL__OBJECT_HPP_
+#define SOLEIL__OBJECT_HPP_
+
 #include <string>
+#include <typeinfo>
 
 namespace Soleil {
 
   typedef size_t HashType;
-  
+
   /**
    * This is a base class to name and type every objects.
    *
@@ -34,17 +37,48 @@ namespace Soleil {
   class Object
   {
   public:
-    Object(HashType type, const std::string& name);
+    /**
+     * @param type Represent the type of the class
+     * @param className A human readable name for logging
+     * @param name The name of the instance
+     */
+    Object(HashType type, const std::string& className,
+           const std::string& name = "");
     virtual ~Object();
 
   public:
+    /**
+     * Represent the type of the class.
+     *
+     * It should be the same for all the instances. It's an helper to compare
+     * quickly objects not a way to overwrite polymorphism.
+     */
     HashType getType(void) const noexcept;
+
+    /**
+     * Represents the class Name of the object (human readable).
+     *
+     * It's mostly used for logging. It must never be empty and should be the
+     * same for all the instances.
+     */
+    const std::string& getClassName(void) const noexcept;
+
+    /**
+     * Represents the name of the Instance.
+     */
     const std::string& getName(void) const noexcept;
 
+    /**
+     * Set the name of the instance
+     */
+    void setName(const std::string& name);
+
   private:
-    HashType type;
+    HashType    type;
+    std::string className;
     std::string name;
   };
 
+} // Soleil
 
-}  // Soleil
+#endif /* SOLEIL__OBJECT_HPP_ */
