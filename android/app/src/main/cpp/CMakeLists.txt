@@ -23,10 +23,13 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/Logger.cpp
   ${RUINE_SOURCES}/TypesToOStream.cpp
   ${RUINE_SOURCES}/OpenGLInclude.cpp
+  ${RUINE_SOURCES}/AssetService.cpp
+  ${RUINE_SOURCES}/SoundService.cpp
   ${RUINE_SOURCES}/Object.cpp
   ${RUINE_SOURCES}/Node.cpp
   ${RUINE_SOURCES}/Shader.cpp
   ${RUINE_SOURCES}/Shape.cpp
+  ${RUINE_SOURCES}/Program.cpp
   ${RUINE_SOURCES}/Drawable.cpp
   )
 

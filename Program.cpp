@@ -19,55 +19,61 @@
  * THE SOFTWARE.
  */
 
-#include "Shader.hpp"
+#include "Program.hpp"
 #include "Logger.hpp"
-#include "AssetService.hpp"
-
-#include <vector>
 
 namespace Soleil {
 
-  Shader::Shader(GLenum shaderType, const std::string& fileName)
-    : shader(glCreateShader(shaderType))
-    , name(fileName)
+  Program::Program()
+    : program(glCreateProgram())
   {
-    const std::string source = AssetService::LoadAsString(fileName);
-    const GLchar* sources[] = {static_cast<const GLchar*>(source.c_str())};
-
-    glShaderSource(shader, 1, sources, nullptr);
   }
 
-  Shader::~Shader() { glDeleteShader(shader); }
+  Program::~Program() { glDeleteProgram(program); }
 
-  GLuint Shader::operator*() const
+  void Program::attachShader(const Shader& shader)
   {
-    glCompileShader(shader);
+    glAttachShader(program, *shader);
+  }
 
+  void Program::compile(void)
+  {
+    glLinkProgram(program);
+
+    GLint infoLen    = 0;
     GLint isCompiled = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+
+    glGetProgramiv(program, GL_LINK_STATUS, &isCompiled);
     std::string state = (isCompiled == GL_FALSE) ? "FAILED" : "SUCCESS";
 
-    GLint maxLength = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-    // The maxLength includes the NULL character
-    std::vector<GLchar> errorLog(maxLength);
-    glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLen);
 
     std::string logs;
-    if (maxLength > 1) {
+    if (infoLen > 1) {
+      std::vector<GLchar> errorLog(infoLen);
+      glGetProgramInfoLog(program, infoLen, nullptr, &errorLog[0]);
       logs = ":" + std::string(errorLog.begin(), errorLog.end());
     }
 
-    std::string fin = toString("[COMPILATION] Shader (", name, ") compilation ",
-                               state, logs);
+    std::string fin =
+      toString("[COMPILATION] Program compilation ", state, logs);
 
     if (isCompiled == GL_FALSE) {
+      glDeleteProgram(program); // Destructor whill never be reached
       throw std::runtime_error(fin);
     } else {
       Logger::info(fin);
     }
 
-    return shader;
+    throwOnGlError();
+  }
+
+  GLint Program::getUniform(const GLchar* name)
+  {
+    GLint location = glGetUniformLocation(program, name);
+    if (location < 0)
+      throw std::runtime_error(toString("Cannot find location: ", name));
+    return location;
   }
 
 } // Soleil

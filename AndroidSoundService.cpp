@@ -118,7 +118,7 @@ namespace Soleil {
 
     playerObj.getInterface(SL_IID_VOLUME, &volume);
 
-    // player.setPlayState(PlayState::playing);
+    player.setPlayState(PlayState::playing);
   }
 
   bool AndroidSoundService::pauseMusic(void)

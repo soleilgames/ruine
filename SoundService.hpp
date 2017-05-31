@@ -22,6 +22,7 @@
 #ifndef SOLEIL__SOUNDSERVICE_HPP_
 #define SOLEIL__SOUNDSERVICE_HPP_
 
+#include <memory>
 #include <string>
 
 namespace Soleil {
@@ -46,6 +47,23 @@ namespace Soleil {
 
     virtual void fireSound(const std::string&     sound,
                            const SoundProperties& properties) = 0;
+
+    /**
+     * I Was against the Singletons pattern for a long time, but after watched
+     * different (and a lot of) C++ Con. I cannot tell anymore what is good or
+     * not. I hink that the most important is to try and to see with experience
+     * what is the most valuable. Here I try to work on my GongFu code. Let see
+     * if I will take a slap. Just the important thing is: Keep it simple and
+     * stable.
+     */
+  public:
+    static std::shared_ptr<SoundService> Instance;
+    static void PlayMusic(const std::string& trackName);
+    static void FireSound(const std::string&     sound,
+                          const SoundProperties& properties);
+    static bool PauseMusic(void);
+    static bool ResumeMusic(void);
+
   };
 
 } // Soleil

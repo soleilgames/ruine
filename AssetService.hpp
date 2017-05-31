@@ -61,11 +61,12 @@ namespace Soleil {
     virtual std::vector<uint8_t> asDataVector(const std::string& assetName) = 0;
 
     /**
-     * I Was against the Singletons pattern, but after watched different C++
-     * Con. I cannot tell anymore what is good or not. I think that the most
-     * important
-     * is to try and to see with experience what is the most valuable. Here I
-     * try to work on my GongFu code. Let see if I will take a slap.
+     * I Was against the Singletons pattern for a long time, but after watched
+     * different (and a lot of) C++ Con. I cannot tell anymore what is good or
+     * not. I think that the most important is to try and to see with experience
+     * what is the most valuable. Here I try to work on my GongFu code. Let see
+     * if I will take a slap. Just the important thing is: Keep it simple and
+     * stable.
      */
   public:
     static std::shared_ptr<AssetService> Instance;

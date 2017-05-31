@@ -33,7 +33,7 @@ namespace Soleil {
     virtual ~Shader();
 
   public:
-    GLuint operator*(void);
+    GLuint operator*(void) const;
 
   private:
     GLuint      shader;

@@ -29,9 +29,8 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include <vector>
 #include <memory>
-
+#include <vector>
 
 namespace Soleil {
 
@@ -65,7 +64,7 @@ namespace Soleil {
 
   public:
     const std::vector<Vertex>& getVertices(void) const noexcept;
-    GLuint getBuffer() noexcept;
+    GLuint                     getBuffer() noexcept;
 
   private:
     std::vector<Vertex> vertices;

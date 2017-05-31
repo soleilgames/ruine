@@ -34,11 +34,13 @@ add_library(ruinelib
   TypesToOStream.cpp
   OpenGLInclude.cpp
   AssetService.cpp
+  SoundService.cpp
   Object.cpp
   Node.cpp
   Shader.cpp
   Shape.cpp
   Drawable.cpp
+  Program.cpp
   )
 
 add_executable(ruine

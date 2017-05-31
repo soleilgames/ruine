@@ -51,7 +51,8 @@ namespace Soleil {
     androidApp->onAppCmd     = AndroidEngine::HandleCommand;
     AssetService::Instance =
       std::make_unique<AndroidAssetService>(androidApp->activity->assetManager);
-    soundService = std::make_unique<AndroidSoundService>(AssetService::Instance.get());
+    SoundService::Instance =
+      std::make_unique<AndroidSoundService>(AssetService::Instance.get());
 
     while (inProgress) {
       int                         ident;
@@ -167,6 +168,9 @@ namespace Soleil {
 
     // TODO: viewer->resize(glContext->getScreenWidth(),
     // glContext->getScreenHeight());
+
+    // TODO: Temporary:
+    glViewport(0, 0, glContext->getScreenWidth(), glContext->getScreenHeight());
   }
 
   void AndroidEngine::loadResources(void)
@@ -177,7 +181,11 @@ namespace Soleil {
     // TODO: sle =
     // std::make_unique<Android::AndroidAudioService>(assetService.get());
     // TODO: viewer = generateViewerHookFunction(assetService.get(), sle.get());
-    ruine = std::make_unique<Ruine>(AssetService::Instance.get(), soundService.get());
+
+    glViewport(0, 0, glContext->getScreenWidth(), glContext->getScreenHeight());
+
+    ruine = std::make_unique<Ruine>(AssetService::Instance.get(),
+                                    SoundService::Instance.get());
 
     resize();
   }
@@ -192,13 +200,13 @@ namespace Soleil {
 
   void AndroidEngine::setFocusGranted()
   {
-    soundService->resumeMusic();
+    SoundService::ResumeMusic();
     focus = true;
   }
 
   void AndroidEngine::setFocusLost()
   {
-    soundService->pauseMusic();
+    SoundService::PauseMusic();
     focus = false;
   }
 

@@ -23,6 +23,7 @@
 #define SOLEIL__DRAWABLE_HPP_
 
 #include "Node.hpp"
+#include "Program.hpp"
 #include "Shape.hpp"
 
 namespace Soleil {
@@ -38,7 +39,7 @@ namespace Soleil {
 
   private:
     ShapePtr shape;
-    GLuint   triangle; // TODO: Temporary
+    Program  triangle; // TODO: Temporary
   };
 
 } // Soleil

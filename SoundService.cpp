@@ -19,31 +19,44 @@
  * THE SOFTWARE.
  */
 
-#include "Shape.hpp"
+#include "SoundService.hpp"
+
+#include <cassert>
 
 namespace Soleil {
 
-  Shape::Shape(const std::vector<Vertex>& vertices)
-    : Object(GetType(), GetClassName())
-    , vertices(vertices)
-    , buffer()
+  std::shared_ptr<SoundService> SoundService::Instance;
+
+  void SoundService::PlayMusic(const std::string& trackName)
   {
-    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+    assert(SoundService::Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                 vertices.data(), GL_STATIC_DRAW);
-
-    throwOnGlError();
+    SoundService::Instance->playMusic(trackName);
   }
 
-  Shape::~Shape() {}
-
-  const std::vector<Vertex>& Shape::getVertices(void) const noexcept
+  void SoundService::FireSound(const std::string&     sound,
+                               const SoundProperties& properties)
   {
-    return vertices;
+    assert(SoundService::Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
+
+    SoundService::Instance->fireSound(sound, properties);
   }
 
-  GLuint Shape::getBuffer() noexcept { return *buffer; }
+  bool SoundService::PauseMusic(void)
+  {
+    assert(SoundService::Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
+
+    return SoundService::Instance->pauseMusic();
+  }
+  bool SoundService::ResumeMusic(void)
+  {
+    assert(SoundService::Instance != nullptr &&
+           "Instance has to be set once at the program start-up");
+
+    return SoundService::Instance->resumeMusic();
+  }
 
 } // Soleil

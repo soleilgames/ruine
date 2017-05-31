@@ -19,31 +19,33 @@
  * THE SOFTWARE.
  */
 
-#include "Shape.hpp"
+#ifndef SOLEIL__PROGRAM_HPP_
+#define SOLEIL__PROGRAM_HPP_
+
+#include "OpenGLInclude.hpp"
+#include "Shader.hpp"
+
+#include <vector>
 
 namespace Soleil {
 
-  Shape::Shape(const std::vector<Vertex>& vertices)
-    : Object(GetType(), GetClassName())
-    , vertices(vertices)
-    , buffer()
+  class Program
   {
-    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+  public:
+    Program();
+    virtual ~Program();
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                 vertices.data(), GL_STATIC_DRAW);
+  public:
+    void attachShader(const Shader& shader);
+    void compile(void);
+    
+  public:
+    GLint getUniform(const GLchar* name);
 
-    throwOnGlError();
-  }
-
-  Shape::~Shape() {}
-
-  const std::vector<Vertex>& Shape::getVertices(void) const noexcept
-  {
-    return vertices;
-  }
-
-  GLuint Shape::getBuffer() noexcept { return *buffer; }
+  public:
+    GLuint program;
+  };
 
 } // Soleil
+
+#endif /* SOLEIL__PROGRAM_HPP_ */

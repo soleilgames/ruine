@@ -19,31 +19,34 @@
  * THE SOFTWARE.
  */
 
-#include "Shape.hpp"
+#ifndef SOLEIL__PRISTINE_HPP_
+#define SOLEIL__PRISTINE_HPP_
 
 namespace Soleil {
 
-  Shape::Shape(const std::vector<Vertex>& vertices)
-    : Object(GetType(), GetClassName())
-    , vertices(vertices)
-    , buffer()
+  class Pristine
   {
-    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+  public:
+    Pristine()
+      : pristine(true)
+    {
+    }
+    virtual ~Pristine() {}
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                 vertices.data(), GL_STATIC_DRAW);
+    inline operator bool(void) noexcept
+    {
+      if (pristine) {
+        pristine = false;
 
-    throwOnGlError();
-  }
+        return true;
+      }
+      return false;
+    }
 
-  Shape::~Shape() {}
-
-  const std::vector<Vertex>& Shape::getVertices(void) const noexcept
-  {
-    return vertices;
-  }
-
-  GLuint Shape::getBuffer() noexcept { return *buffer; }
+  private:
+    bool pristine;
+  };
 
 } // Soleil
+
+#endif /* SOLEIL__PRISTINE_HPP_ */

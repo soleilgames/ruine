@@ -92,10 +92,10 @@ main(int /*argc*/
 
   AssetService::Instance =
     std::make_shared<DesktopAssetService>("media/");
-  std::unique_ptr<SoundService> soundService =
+  SoundService::Instance =
     std::make_unique<DesktopSoundService>();
   
-  Soleil::Ruine r(AssetService::Instance.get(), soundService.get());
+  Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get());
   render(window, r);
 
   SDL_DestroyWindow(window);
