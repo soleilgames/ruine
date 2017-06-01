@@ -31,7 +31,8 @@ namespace Soleil {
   class Ruine
   {
   public:
-    Ruine(AssetService* assetService, SoundService* soundService);
+    Ruine(AssetService* assetService, SoundService* soundService,
+          int viewportWidth, int viewportHeight);
     virtual ~Ruine();
 
   public:
@@ -42,6 +43,8 @@ namespace Soleil {
     GLuint        buffer;
     AssetService* assetService;
     SoundService* soundService;
+    int           viewportWidth;
+    int           viewportHeight;
   };
 
 } // Soleil

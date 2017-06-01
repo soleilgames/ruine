@@ -25,28 +25,30 @@
 #include "Shader.hpp"
 #include "SoundService.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace Soleil {
 
   Drawable::Drawable(ShapePtr shape)
     : Node(typeid(Drawable).hash_code(), "Drawable")
     , shape(shape)
-    , triangle()
+    , rendering()
   {
 
-    triangle.attachShader(Shader(GL_VERTEX_SHADER, "triangle.vert"));
-    triangle.attachShader(Shader(GL_FRAGMENT_SHADER, "triangle.frag"));
+    rendering.attachShader(Shader(GL_VERTEX_SHADER, "shape.vert"));
+    rendering.attachShader(Shader(GL_FRAGMENT_SHADER, "shape.frag"));
 
-    glBindAttribLocation(triangle.program, 0, "positionAttribute");
-    glBindAttribLocation(triangle.program, 1, "colorAttribute");
+    glBindAttribLocation(rendering.program, 0, "positionAttribute");
+    glBindAttribLocation(rendering.program, 1, "colorAttribute");
 
-    triangle.compile();
-    
+    rendering.compile();
+
     SoundService::PlayMusic("fabulous.wav");
   }
 
   Drawable::~Drawable() {}
 
-  void Drawable::render()
+  void Drawable::render(const Frame& frame)
   {
     const std::vector<Vertex>& vertices = shape->getVertices();
     constexpr GLsizei          stride   = sizeof(Vertex);
@@ -58,25 +60,14 @@ namespace Soleil {
                           (const GLvoid*)offsetof(Vertex, color));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    glUseProgram(triangle.program);
-    GLint uniformTime = triangle.getUniform("time");
+    glUseProgram(rendering.program);
 
-    static float length    = 0.0f;
-    static float direction = 0.01f;
-    length += direction;
-    if (length > 1.0f) {
-      length    = 1.0f;
-      direction = -0.01f;
+    GLint uniformModel = rendering.getUniform(
+      "Model"); // TODO: Save uniform until OpenGL Context is reseted
 
-      SoundService::FireSound("woot.pcm", SoundProperties(100));
-    }
-    if (length < 0.0f) {
-      length    = 0.0f;
-      direction = 0.01f;
-
-      SoundService::FireSound("woot.pcm", SoundProperties(50));
-    }
-    glUniform1f(uniformTime, length);
+    auto ViewProjectionModel = frame.ViewProjection * getTransformation();
+    glUniformMatrix4fv(uniformModel, 1, GL_FALSE,
+                       glm::value_ptr(ViewProjectionModel));
 
     glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 

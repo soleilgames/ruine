@@ -25,6 +25,7 @@
 #include "Node.hpp"
 #include "Program.hpp"
 #include "Shape.hpp"
+#include "types.hpp"
 
 namespace Soleil {
 
@@ -35,11 +36,11 @@ namespace Soleil {
     virtual ~Drawable();
 
   public:
-    void render(/* // TODO: here Frame and Viewport */);
+    void render(const Frame& frame);
 
   private:
     ShapePtr shape;
-    Program  triangle; // TODO: Temporary
+    Program  rendering; // TODO: Has to be recreated on GL Context lost
   };
 
 } // Soleil

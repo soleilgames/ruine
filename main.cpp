@@ -35,7 +35,7 @@ using namespace Soleil;
 static void
 render(SDL_Window* window, Ruine& r)
 {
-  for (int i = 0; i < 500; i++) {
+  while (true) {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
       switch (e.type) {
@@ -52,8 +52,8 @@ render(SDL_Window* window, Ruine& r)
     r.render(std::chrono::milliseconds(time));
     SDL_GL_SwapWindow(window);
 
-    if (60 > (SDL_GetTicks() - time)) {
-      SDL_Delay(60 - (SDL_GetTicks() - time));
+    if (16 > (SDL_GetTicks() - time)) {
+      SDL_Delay(16 - (SDL_GetTicks() - time));
     }
   }
 }
@@ -67,9 +67,11 @@ main(int /*argc*/
   SDL_Init(SDL_INIT_VIDEO);
   SDL_Window*   window;
   SDL_GLContext glContext;
+  int           width  = 1920;
+  int           height = 1080;
 
   window = SDL_CreateWindow(
-    "Ruine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080,
+    "Ruine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height,
     SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP);
   if (window == nullptr) {
     throw std::runtime_error(
@@ -90,12 +92,11 @@ main(int /*argc*/
       toString("Unable to initialize GLEW: ", glewGetErrorString(err)));
   }
 
-  AssetService::Instance =
-    std::make_shared<DesktopAssetService>("media/");
-  SoundService::Instance =
-    std::make_unique<DesktopSoundService>();
-  
-  Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get());
+  AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
+  SoundService::Instance = std::make_unique<DesktopSoundService>();
+
+  Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get(),
+                  width, height);
   render(window, r);
 
   SDL_DestroyWindow(window);

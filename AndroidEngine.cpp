@@ -184,8 +184,9 @@ namespace Soleil {
 
     glViewport(0, 0, glContext->getScreenWidth(), glContext->getScreenHeight());
 
-    ruine = std::make_unique<Ruine>(AssetService::Instance.get(),
-                                    SoundService::Instance.get());
+    ruine = std::make_unique<Ruine>(
+      AssetService::Instance.get(), SoundService::Instance.get(),
+      glContext->getScreenWidth(), glContext->getScreenHeight());
 
     resize();
   }

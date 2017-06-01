@@ -24,6 +24,11 @@
 
 #include <chrono>
 
+#include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
 namespace Soleil {
 
   /**
@@ -33,6 +38,29 @@ namespace Soleil {
    */
   typedef std::chrono::milliseconds Timer;
 
-}  // Soleil
+  typedef glm::vec4 Point;
+  typedef glm::vec4 Color;
+  typedef glm::vec3 Normal;
+  typedef glm::vec2 Coord2D;
+
+  /**
+   * Provide information on the current frame
+   */
+  struct Frame
+  {
+    /**
+     * Time since beginning of the application.
+     */
+    Timer time;
+
+    glm::vec2 viewportSize;
+
+    /**
+     * An up to date View * Projection Matrix
+     */
+    glm::mat4 ViewProjection;
+  };
+
+} // Soleil
 
 #endif /* SOLEIL__TYPES_HPP_ */
