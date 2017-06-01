@@ -65,8 +65,15 @@ namespace Soleil {
                Color(1.0, 0.0, 0.0, 1.0)),
         Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
                Color(0.0, 1.0, 0.0, 1.0)),
-        Vertex(Point(0.0, 1.0, 0.5, 1.0), Normal(1.0f),
+        Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
+               Color(1.0, 1.0, 1.0, 1.0)),
+
+	Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
+               Color(0.0, 1.0, 0.0, 1.0)),
+        Vertex(Point(1.0, 1.0, 0.5, 1.0), Normal(1.0f),
                Color(0.0, 0.0, 1.0, 1.0)),
+        Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
+               Color(1.0, 1.0, 1.0, 1.0)),
       };
 
       ShapePtr shape = std::make_shared<Shape>(vertices);

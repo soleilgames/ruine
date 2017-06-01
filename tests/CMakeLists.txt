@@ -10,3 +10,9 @@ add_executable(sceneGraphTest
 target_link_libraries(sceneGraphTest
 
   ruinelib)
+
+
+add_executable(checkElementGain
+
+  CheckElementGain.cpp
+  )
