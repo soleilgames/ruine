@@ -24,22 +24,25 @@
 
 #include "Object.hpp"
 
+#include <memory>
+
 #include <glm/mat4x4.hpp>
 
 namespace Soleil {
 
-  class Node : Object
+  class Node : public Object
   {
   public:
     Node(HashType type, const std::string& name);
     virtual ~Node();
 
   public:
-    void setTransformation(const glm::mat4& transformation);
+    virtual void setTransformation(const glm::mat4& transformation);
     const glm::mat4& getTransformation(void) const noexcept;
 
   public:
     Node* getParent(void) const noexcept;
+    void setParent(Node* parent);
 
   public:
     void translate(glm::vec3 translation);
@@ -48,6 +51,10 @@ namespace Soleil {
     glm::mat4 transformation;
     Node*     parent;
   };
+
+  typedef std::shared_ptr<Node> NodePtr;
+
+  std::ostream& operator<<(std::ostream& os, const Node& mat);
 
 } // Soleil
 

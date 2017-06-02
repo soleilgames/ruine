@@ -42,6 +42,7 @@ add_library(ruinelib
   Drawable.cpp
   Program.cpp
   WavefrontLoader.cpp
+  Group.cpp
   )
 
 add_executable(ruine

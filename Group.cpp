@@ -19,55 +19,36 @@
  * THE SOFTWARE.
  */
 
-#include "mcut.hpp"
-
 #include "Group.hpp"
-#include "Node.hpp"
-#include "TypesToOStream.hpp"
+#include "Logger.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+namespace Soleil {
 
-using namespace Soleil;
+  Group::Group()
+    : Node(typeid(Group).hash_code(), "Group")
+  {
+  }
 
-static void
-NodeTranslation()
-{
-  Node      n(0, "test");
-  glm::mat4 transformation =
-    glm::translate(glm::mat4(), glm::vec3(21.0f, 42.0f, 84.42f));
-  n.translate(glm::vec3(21.0f, 42.0f, 84.42f));
+  Group::~Group() {}
 
-  mcut::assertEquals(transformation, n.getTransformation());
-}
+  void Group::addChild(NodePtr child)
+  {
+    if (child->getParent() != nullptr) {
+      throw std::runtime_error(
+        toString("Node: '", *child, "' has already a parent"));
+    }
 
-static void
-GroupAndChildren()
-{
-  Group   boat;
-  NodePtr passenger1 = std::make_shared<Node>(0, "passenger1");
+    child->setParent(this);
+    this->children.push_back(child);
+  }
 
-  boat.addChild(passenger1);
+  void Group::setTransformation(const glm::mat4& transformation)
+  {
+    Node::setTransformation(transformation);
 
-  // Sailing on our boat
-  const glm::mat4 transformation =
-    glm::translate(glm::mat4(), glm::vec3(10.0f, 0.0f, 0.0f));
-  boat.setTransformation(transformation);
+    for (auto child : children) {
+      child->setTransformation(transformation);
+    }
+  }
 
-  // The passenger as also moved:
-  mcut::assertEquals(transformation, passenger1->getTransformation());  
-}
-
-int
-main(int, char* [])
-{
-  mcut::TestSuite basics("Basics");
-  basics.add(NodeTranslation);
-  basics.run();
-
-  mcut::TestSuite groups("Groups");
-  groups.add(GroupAndChildren);
-  groups.run();
-
-  return 0;
-}
+} // Soleil

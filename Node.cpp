@@ -23,6 +23,8 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <iostream>
+
 namespace Soleil {
 
   Node::Node(HashType type, const std::string& name)
@@ -46,9 +48,21 @@ namespace Soleil {
 
   Node* Node::getParent(void) const noexcept { return parent; }
 
+  void Node::setParent(Node* parent) { this->parent = parent; }
+
   void Node::translate(glm::vec3 translation)
   {
     transformation = glm::translate(transformation, translation);
+  }
+
+  std::ostream& operator<<(std::ostream& os, const Node& n)
+  {
+    os << "Node(" << n.getClassName();
+    if (n.getName().empty() == false) {
+      os << ": " << n.getName();
+    }
+    os << ")";
+    return os;
   }
 
 } // Soleil
