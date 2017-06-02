@@ -75,8 +75,6 @@ namespace Soleil {
     v.w = 1.0f;
 
     vertices->push_back(v);
-
-    SOLEIL__LOGGER_DEBUG("------------ PUSHED: ", vertices->size());
   }
 
   void commandTextureCoords(std::vector<glm::vec2>* textureCoords,
@@ -221,8 +219,8 @@ namespace Soleil {
         const std::string command   = line.substr(0, pos);
         const std::string arguments = line.substr(pos + 1);
 
-        SOLEIL__LOGGER_DEBUG("COMMAND='", command, "' ARGUMENT='", arguments,
-                             "'");
+        // SOLEIL__LOGGER_DEBUG("COMMAND='", command, "' ARGUMENT='", arguments,
+        //                      "'");
         commands[command](arguments);
       }
     }
