@@ -41,6 +41,7 @@ add_library(ruinelib
   Shape.cpp
   Drawable.cpp
   Program.cpp
+  WavefrontLoader.cpp
   )
 
 add_executable(ruine
@@ -48,13 +49,15 @@ add_executable(ruine
   )
 
 
-target_link_libraries(ruine
+set(RUINELIBS
   ruinelib
   ${SDL2_LIBRARY}
-  # ${SDL2IMAGE_LIBRARIES}
-  # ${SDL2Mixer_LIBRARY}
   ${OPENGL_LIBRARIES}
   ${GLEW_LIB}
+  )
+
+target_link_libraries(ruine
+  ${RUINELIBS}
   )
 
 add_custom_command(TARGET ruine PRE_BUILD
@@ -66,6 +69,7 @@ enable_testing()
 add_subdirectory(tests)
 
 add_test(SceneGraphTest tests/sceneGraphTest)
+add_test(WavefrontTest tests/wavefrontTest)
 
 
 add_custom_command(TARGET ruine POST_BUILD

@@ -19,30 +19,25 @@
  * THE SOFTWARE.
  */
 
-#include "mcut.hpp"
+#ifndef SOLEIL__WAVEFRONTLOADER_HPP_
+#define SOLEIL__WAVEFRONTLOADER_HPP_
 
-#include "Node.hpp"
-#include "TypesToOStream.hpp"
+#include "Shape.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <memory>
 
-static void
-NodeTranslation()
-{
-  Soleil::Node n(0, "test");
-  glm::mat4    transformation =
-    glm::translate(glm::mat4(), glm::vec3(21.0f, 42.0f, 84.42f));
-  n.translate(glm::vec3(21.0f, 42.0f, 84.42f));
+namespace Soleil {
 
-  mcut::assertEquals(transformation, n.getTransformation());
-}
+  class WavefrontLoader
+  {
+  public:
+    static std::shared_ptr<Shape> fromContent(const std::string& content);
 
-int
-main(int, char* [])
-{
-  mcut::TestSuite basics("Basics");
-  basics.add(NodeTranslation);
-  basics.run();
-  return 0;
-}
+  public:
+    static void executeCommand(const std::string& command,
+                               const std::string& arguments);
+  };
+
+} // Soleil
+
+#endif /* SOLEIL__WAVEFRONTLOADER_HPP_ */

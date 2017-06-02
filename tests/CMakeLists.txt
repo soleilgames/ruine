@@ -2,17 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(ruine)
 
-add_executable(sceneGraphTest
+add_executable(sceneGraphTest SceneGraphTest.cpp)
+target_link_libraries(sceneGraphTest ruinelib)
 
-  SceneGraphTest.cpp
-  )
-
-target_link_libraries(sceneGraphTest
-
-  ruinelib)
+add_executable(wavefrontTest WavefrontTest.cpp)
+target_link_libraries(wavefrontTest ${RUINELIBS})
 
 
-add_executable(checkElementGain
 
-  CheckElementGain.cpp
-  )
+add_executable(checkElementGain CheckElementGain.cpp)

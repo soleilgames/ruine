@@ -31,6 +31,7 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/Shape.cpp
   ${RUINE_SOURCES}/Program.cpp
   ${RUINE_SOURCES}/Drawable.cpp
+  ${RUINE_SOURCES}/WavefrontLoader.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE

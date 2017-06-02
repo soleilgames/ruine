@@ -5,7 +5,8 @@
 *.slo
 *.lo
 *.o
-*.obj
+# Also a Wavefront format
+#*.obj
 
 # Precompiled Headers
 *.gch

@@ -49,6 +49,19 @@ namespace Soleil {
       , uv(uv)
     {
     }
+
+    bool operator==(const Vertex& other) const noexcept
+    {
+      if (this == &other) return true;
+
+      return position == other.position && normal == other.normal &&
+             color == other.color && uv == other.uv;
+    }
+
+    bool operator!=(const Vertex& other) const noexcept
+    {
+      return !(*this == other);
+    }
   };
 
   /**

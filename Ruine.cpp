@@ -20,10 +20,12 @@
  */
 
 #include "Ruine.hpp"
+#include "AssetService.hpp"
 #include "Drawable.hpp"
 #include "Logger.hpp"
 #include "Pristine.hpp"
 #include "Shape.hpp"
+#include "WavefrontLoader.hpp"
 #include "types.hpp"
 
 #include <cmath>
@@ -68,7 +70,7 @@ namespace Soleil {
         Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
                Color(1.0, 1.0, 1.0, 1.0)),
 
-	Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
+        Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
                Color(0.0, 1.0, 0.0, 1.0)),
         Vertex(Point(1.0, 1.0, 0.5, 1.0), Normal(1.0f),
                Color(0.0, 0.0, 1.0, 1.0)),
@@ -76,34 +78,44 @@ namespace Soleil {
                Color(1.0, 1.0, 1.0, 1.0)),
       };
 
-      ShapePtr shape = std::make_shared<Shape>(vertices);
+      // ShapePtr shape = std::make_shared<Shape>(vertices);
+      const std::string content = AssetService::LoadAsString("wallcube.obj");
+      ShapePtr          shape   = WavefrontLoader::fromContent(content);
 
       triangle = std::make_shared<Drawable>(shape);
     }
 
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     static const glm::mat4 projection = glm::perspective(
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       10.0f);
     static const glm::mat4 view =
-      glm::lookAt(glm::vec3(0.0f, 2.0f, 2.0f), glm::vec3(0.0f),
+      glm::lookAt(glm::vec3(0.0f, 5.0f, 5.0f), glm::vec3(0.0f),
                   glm::vec3(0.0f, 1.0f, 0.0f));
 
     static Frame frame;
     frame.time           = time;
     frame.ViewProjection = projection * view;
 
+    glEnable(GL_DEPTH_TEST);
     triangle->render(frame);
 
     static float angle = 0.1f;
 
-    static const glm::mat4 translation =
-      glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -0.5f));
-    static const glm::mat4 inverseTranslation =
-      glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.5f));
+    /* The triangle is not centered */
+    // static const glm::mat4 translation =
+    //   glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -0.5f));
+    // static const glm::mat4 inverseTranslation =
+    //   glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.5f));
 
+    /* The cube is already centered */
+    static const glm::mat4 translation;
+    static const glm::mat4 inverseTranslation;
+
+
+    
     // Make it rotate on its own axis
     glm::mat4 transformation =
       glm::rotate(inverseTranslation, angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
