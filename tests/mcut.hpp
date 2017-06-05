@@ -21,6 +21,8 @@
 #ifndef _SOLEIL__MCUT_HPP_
 #define _SOLEIL__MCUT_HPP_
 
+#include <cassert>
+#include <csignal>
 #include <functional>
 #include <iostream>
 #include <sstream>
@@ -29,6 +31,17 @@
 #include <vector>
 
 namespace mcut {
+
+  constexpr char static redColor[]     = "\x1b[31m";
+  constexpr char static greenColor[]   = "\x1b[32m";
+  constexpr char static whiteColor[]   = "\x1b[37m";
+  constexpr char static defaultColor[] = "\x1b[0m";
+
+#define MCUT__ASSERT(condition, message)                                       \
+  if (condition) return;                                                       \
+  std::cerr << redColor << message << defaultColor << "\n";                    \
+  std::raise(SIGINT);
+
   template <typename... T> std::string toString(T&&... t)
   {
     std::stringstream ss;
@@ -40,9 +53,11 @@ namespace mcut {
 
   template <typename T, typename U> void assertEquals(T expected, U actual)
   {
-    if (expected == actual) return;
-    throw std::runtime_error(
-      toString("Expected: ", expected, ". Got: ", actual, "."));
+    // if (expected == actual) return;
+    // throw std::runtime_error(
+    //   toString("Expected: ", expected, ". Got: ", actual, "."));
+    MCUT__ASSERT(expected == actual,
+                 toString("Expected: ", expected, ". Got: ", actual, "."));
   }
 
   template <typename T> void assertTrue(T actual)
@@ -58,11 +73,6 @@ namespace mcut {
   }
 
   typedef std::function<void(void)> TestMethod;
-
-  constexpr char static redColor[]     = "\x1b[31m";
-  constexpr char static greenColor[]   = "\x1b[32m";
-  constexpr char static whiteColor[]   = "\x1b[37m";
-  constexpr char static defaultColor[] = "\x1b[0m";
 
   class WasRun
   {

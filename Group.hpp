@@ -41,10 +41,23 @@ namespace Soleil {
   public:
     virtual void setTransformation(const glm::mat4& transformation) override;
 
-    
+  protected:
+    virtual void updatePositionFromParent(void) override;
+
+  public: // Allow to use foreach
+    typedef std::vector<NodePtr>::iterator       iterator;
+    typedef std::vector<NodePtr>::const_iterator const_iterator;
+
+    iterator       begin() { return children.begin(); }
+    const_iterator begin() const { return children.begin(); }
+    iterator       end() { return children.end(); }
+    const_iterator end() const { return children.end(); }
+
   private:
     std::vector<NodePtr> children;
   };
+
+  typedef std::shared_ptr<Group> GroupPtr;
 
 } // Soleil
 

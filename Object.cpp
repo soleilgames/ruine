@@ -21,16 +21,20 @@
 
 #include "Object.hpp"
 
+#include "Logger.hpp"
+
 namespace Soleil {
 
-  Object::Object(HashType type, const std::string& className, const std::string &name)
+  Object::Object(HashType type, const std::string& className,
+                 const std::string& name)
     : type(type)
     , className(className)
     , name(name)
   {
+    SOLEIL__LOGGER_DEBUG(toString("Constructing: ", *this));
   }
 
-  Object::~Object() {}
+  Object::~Object() { SOLEIL__LOGGER_DEBUG(toString("~Destructing: ", *this)); }
 
   HashType Object::getType() const noexcept { return type; }
 
@@ -39,5 +43,15 @@ namespace Soleil {
   const std::string& Object::getName(void) const noexcept { return name; }
 
   void Object::setName(const std::string& name) { this->name = name; }
+
+  std::ostream& operator<<(std::ostream& os, const Object& object)
+  {
+    os << "Object(" << object.getClassName();
+    if (object.getName().empty() == false) {
+      os << ": " << object.getName();
+    }
+    os << ")";
+    return os;
+  }
 
 } // Soleil

@@ -44,18 +44,48 @@ NodeTranslation()
 static void
 GroupAndChildren()
 {
-  Group   boat;
-  NodePtr passenger1 = std::make_shared<Node>(0, "passenger1");
+  Group    boat;
+  GroupPtr boatBench  = std::make_shared<Group>();
+  NodePtr  passenger1 = std::make_shared<Node>(0, "passenger1");
+  NodePtr  passenger2 = std::make_shared<Node>(0, "passenger2");
 
   boat.addChild(passenger1);
+  boat.addChild(boatBench);
+
+  passenger1->translate(
+    glm::vec3(0.0f, 1.0f, 0.0f)); // Passenger is on the bridge
+
+  boatBench->addChild(passenger2);
 
   // Sailing on our boat
-  const glm::mat4 transformation =
-    glm::translate(glm::mat4(), glm::vec3(10.0f, 0.0f, 0.0f));
-  boat.setTransformation(transformation);
+  for (int i = 1; i <= 10; ++i) {
+    const glm::mat4 transformation =
+      glm::translate(glm::mat4(), glm::vec3(i, 0.0f, 0.0f));
+    boat.setTransformation(transformation);
+  }
 
-  // The passenger as also moved:
-  mcut::assertEquals(transformation, passenger1->getTransformation());  
+  // The passengers have also moved:
+  {
+    const glm::mat4 transformation =
+      glm::translate(glm::mat4(), glm::vec3(10.0f, 1.0f, 0.0f));
+    mcut::assertEquals(transformation, passenger1->getTransformation());
+  }
+  {
+    const glm::mat4 transformation =
+      glm::translate(glm::mat4(), glm::vec3(10.0f, 0.0f, 0.0f));
+    mcut::assertEquals(transformation, passenger2->getTransformation());
+
+  }
+
+  
+  // He saw an iceberg and move to the front of the boat:
+  passenger1->translate(glm::vec3(1.0f, 0.0f, 0.0f));
+
+  {
+    const glm::mat4 transformation =
+      glm::translate(glm::mat4(), glm::vec3(11.0f, 1.0f, 0.0f));
+    mcut::assertEquals(transformation, passenger1->getTransformation());
+  }
 }
 
 int

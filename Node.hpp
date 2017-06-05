@@ -30,6 +30,11 @@
 
 namespace Soleil {
 
+  /**
+   * 
+   */
+  //class Group;
+  
   class Node : public Object
   {
   public:
@@ -39,6 +44,7 @@ namespace Soleil {
   public:
     virtual void setTransformation(const glm::mat4& transformation);
     const glm::mat4& getTransformation(void) const noexcept;
+    const glm::mat4& getLocalTransformation(void) const noexcept;
 
   public:
     Node* getParent(void) const noexcept;
@@ -47,14 +53,20 @@ namespace Soleil {
   public:
     void translate(glm::vec3 translation);
 
+  protected:
+    virtual void updatePositionFromParent(void);
+
   private:
-    glm::mat4 transformation;
+    glm::mat4 transformation;     // World transformation
+    glm::mat4 nodeTransformation; // Transformation of this node
     Node*     parent;
+
+    friend class Group;
   };
 
   typedef std::shared_ptr<Node> NodePtr;
 
-  std::ostream& operator<<(std::ostream& os, const Node& mat);
+  std::ostream& operator<<(std::ostream& os, const Node& node);
 
 } // Soleil
 

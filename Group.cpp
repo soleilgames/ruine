@@ -47,7 +47,16 @@ namespace Soleil {
     Node::setTransformation(transformation);
 
     for (auto child : children) {
-      child->setTransformation(transformation);
+      child->updatePositionFromParent();
+    }
+  }
+
+  void Group::updatePositionFromParent(void)
+  {
+    Node::updatePositionFromParent();
+
+    for (auto child : children) {
+      child->updatePositionFromParent();
     }
   }
 

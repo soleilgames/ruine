@@ -22,6 +22,7 @@
 #include "Ruine.hpp"
 #include "AssetService.hpp"
 #include "Drawable.hpp"
+#include "Group.hpp"
 #include "Logger.hpp"
 #include "Pristine.hpp"
 #include "Shape.hpp"
@@ -56,33 +57,66 @@ namespace Soleil {
     }
   }
 
+  static void renderSceneGraph(const Group& group, const Soleil::Frame& frame)
+  {
+    /* This is not the most efficient way to Render a Scene Graph but it will
+     * make the job for two elements. Let's optimize that afterward. */
+    for (NodePtr node : group) {
+      auto drawable = std::dynamic_pointer_cast<Drawable>(node);
+      if (drawable) {
+        drawable->render(frame);
+      }
+
+      auto childGroup = std::dynamic_pointer_cast<Group>(node);
+      if (childGroup) {
+        renderSceneGraph(*childGroup, frame);
+      }
+    }
+  }
+
   void Ruine::render(Timer time)
   {
-    static std::shared_ptr<Drawable> triangle;
+    // static std::shared_ptr<Drawable> triangle;
+    static Group group;
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      std::vector<Vertex> vertices = {
-        Vertex(Point(-1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-               Color(1.0, 0.0, 0.0, 1.0)),
-        Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-               Color(0.0, 1.0, 0.0, 1.0)),
-        Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-               Color(1.0, 1.0, 1.0, 1.0)),
+      // std::vector<Vertex> vertices = {
+      //   Vertex(Point(-1.0, -1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(1.0, 0.0, 0.0, 1.0)),
+      //   Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(0.0, 1.0, 0.0, 1.0)),
+      //   Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(1.0, 1.0, 1.0, 1.0)),
 
-        Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-               Color(0.0, 1.0, 0.0, 1.0)),
-        Vertex(Point(1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-               Color(0.0, 0.0, 1.0, 1.0)),
-        Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-               Color(1.0, 1.0, 1.0, 1.0)),
-      };
-
+      //   Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(0.0, 1.0, 0.0, 1.0)),
+      //   Vertex(Point(1.0, 1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(0.0, 0.0, 1.0, 1.0)),
+      //   Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
+      //          Color(1.0, 1.0, 1.0, 1.0)),
+      // };
       // ShapePtr shape = std::make_shared<Shape>(vertices);
+
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
 
-      triangle = std::make_shared<Drawable>(shape);
+      std::shared_ptr<Drawable> platform = std::make_shared<Drawable>(shape);
+      std::shared_ptr<Drawable> cube     = std::make_shared<Drawable>(shape);
+      std::shared_ptr<Group>    platformGroup = std::make_shared<Group>();
+
+      platform->setName("Platform");
+      cube->setName("Cube");
+      platformGroup->setName("PlatformGroup");
+
+      platform->setTransformation(
+        glm::scale(glm::mat4(), glm::vec3(2.0f, 0.1f, 2.0f)));
+
+      platformGroup->addChild(cube);
+      group.addChild(platform);
+      group.addChild(platformGroup);
+
+      SoundService::PlayMusic("fabulous.wav");
     }
 
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
@@ -100,7 +134,10 @@ namespace Soleil {
     frame.ViewProjection = projection * view;
 
     glEnable(GL_DEPTH_TEST);
-    triangle->render(frame);
+    // triangle->render(frame);
+
+    /* Way to render the scene-graph. Optimization may follow */
+    renderSceneGraph(group, frame);
 
     static float angle = 0.1f;
 
@@ -114,8 +151,6 @@ namespace Soleil {
     static const glm::mat4 translation;
     static const glm::mat4 inverseTranslation;
 
-
-    
     // Make it rotate on its own axis
     glm::mat4 transformation =
       glm::rotate(inverseTranslation, angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
@@ -127,6 +162,7 @@ namespace Soleil {
       angle = 0.0f;
     }
 
-    triangle->setTransformation(transformation);
+    group.setTransformation(transformation);
+    // TODO: triangle->setTransformation(transformation);
   }
 } // Soleil

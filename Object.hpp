@@ -79,6 +79,8 @@ namespace Soleil {
     std::string name;
   };
 
+  std::ostream& operator<<(std::ostream& os, const Object& object);
+
 } // Soleil
 
 #endif /* SOLEIL__OBJECT_HPP_ */

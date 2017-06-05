@@ -45,6 +45,15 @@ add_library(ruinelib
   Group.cpp
   )
 
+
+enable_testing()
+add_subdirectory(tests)
+
+add_test(SceneGraphTest tests/sceneGraphTest)
+add_test(WavefrontTest tests/wavefrontTest)
+
+
+
 add_executable(ruine
   main.cpp
   )
@@ -64,13 +73,6 @@ target_link_libraries(ruine
 add_custom_command(TARGET ruine PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/media" "$<TARGET_FILE_DIR:ruine>/media"
   )
-
-
-enable_testing()
-add_subdirectory(tests)
-
-add_test(SceneGraphTest tests/sceneGraphTest)
-add_test(WavefrontTest tests/wavefrontTest)
 
 
 add_custom_command(TARGET ruine POST_BUILD

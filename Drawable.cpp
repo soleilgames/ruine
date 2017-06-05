@@ -23,7 +23,6 @@
 #include "AssetService.hpp"
 #include "Logger.hpp"
 #include "Shader.hpp"
-#include "SoundService.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -43,7 +42,6 @@ namespace Soleil {
 
     rendering.compile();
 
-    SoundService::PlayMusic("fabulous.wav");
   }
 
   Drawable::~Drawable() {}

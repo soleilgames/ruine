@@ -20,6 +20,7 @@
  */
 
 #include "Node.hpp"
+#include "Logger.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -38,12 +39,22 @@ namespace Soleil {
 
   void Node::setTransformation(const glm::mat4& transformation)
   {
-    this->transformation = transformation;
+    this->nodeTransformation = transformation;
+    if (parent) {
+      this->transformation = parent->getTransformation() * nodeTransformation;
+    } else {
+      this->transformation = this->nodeTransformation;
+    }
   }
 
   const glm::mat4& Node::getTransformation(void) const noexcept
   {
     return transformation;
+  }
+
+  const glm::mat4& Node::getLocalTransformation(void) const noexcept
+  {
+    return nodeTransformation;
   }
 
   Node* Node::getParent(void) const noexcept { return parent; }
@@ -52,7 +63,13 @@ namespace Soleil {
 
   void Node::translate(glm::vec3 translation)
   {
-    transformation = glm::translate(transformation, translation);
+    setTransformation(glm::translate(nodeTransformation, translation));
+  }
+
+  void Node::updatePositionFromParent(void)
+  {
+    assert(parent != nullptr && "Method should be used only for a child");
+    this->transformation = parent->getTransformation() * nodeTransformation;
   }
 
   std::ostream& operator<<(std::ostream& os, const Node& n)
