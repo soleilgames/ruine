@@ -33,7 +33,7 @@ namespace Soleil {
     , shape(shape)
     , rendering()
   {
-
+    // TODO: Compute once this program
     rendering.attachShader(Shader(GL_VERTEX_SHADER, "shape.vert"));
     rendering.attachShader(Shader(GL_FRAGMENT_SHADER, "shape.frag"));
 
@@ -41,7 +41,6 @@ namespace Soleil {
     glBindAttribLocation(rendering.program, 1, "colorAttribute");
 
     rendering.compile();
-
   }
 
   Drawable::~Drawable() {}

@@ -19,6 +19,7 @@
  * THE SOFTWARE.
  */
 
+#include "TypesToOStream.hpp"
 #include "Ruine.hpp"
 #include "AssetService.hpp"
 #include "Drawable.hpp"
@@ -76,6 +77,24 @@ namespace Soleil {
 
   void Ruine::render(Timer time)
   {
+#ifndef NDEBUG
+    /* --- Peformance log --- */
+    static Timer      firstTime = time;
+    static unsigned   frames    = 0;
+    static const auto oneSec    = std::chrono::milliseconds(1000);
+
+    frames++;
+    if (time - firstTime > oneSec) {
+      SOLEIL__LOGGER_DEBUG(
+        toString("Time to draw previous frame: ", (time - firstTime) / frames),
+        " (FPS=", frames, ")");
+
+      firstTime = time;
+      frames    = 0;
+    }
+/* ---------------------- */
+#endif
+
     // static std::shared_ptr<Drawable> triangle;
     static Group group;
 
