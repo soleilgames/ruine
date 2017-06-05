@@ -73,15 +73,19 @@ namespace Soleil {
   {
   public:
     Shape(const std::vector<Vertex>& vertices);
+    Shape(const std::vector<Vertex>&   vertices,
+          const std::vector<GLushort>& indices);
     virtual ~Shape();
 
   public:
-    const std::vector<Vertex>& getVertices(void) const noexcept;
-    GLuint                     getBuffer() noexcept;
+    const std::vector<Vertex>&   getVertices(void) const noexcept;
+    GLuint                       getBuffer() noexcept;
+    const std::vector<GLushort>& getIndices(void) const noexcept;
 
   private:
-    std::vector<Vertex> vertices;
-    gl::Buffer          buffer;
+    std::vector<Vertex>   vertices;
+    std::vector<GLushort> indices;
+    gl::Buffer            buffer;
 
   public:
     static HashType GetType(void) noexcept { return typeid(Shape).hash_code(); }

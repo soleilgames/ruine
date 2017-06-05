@@ -225,13 +225,19 @@ namespace Soleil {
       }
     }
 
+#ifdef SOLEIL__DRAWARRAYS
+    /* If we are using glDrawArrays, we need to duplicate all the vertices
+     * before creating the shape */
     std::vector<Vertex> vertices;
 
     for (GLushort index : commands.store.indexElements) {
       vertices.push_back(commands.store.vertexElements[index]);
     }
-
     return std::make_shared<Shape>(vertices);
+#else
+    return std::make_shared<Shape>(commands.store.vertexElements,
+                                   commands.store.indexElements);
+#endif
   }
 
 } // Soleil

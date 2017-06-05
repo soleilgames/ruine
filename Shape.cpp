@@ -37,6 +37,22 @@ namespace Soleil {
     throwOnGlError();
   }
 
+  Shape::Shape(const std::vector<Vertex>&   vertices,
+               const std::vector<GLushort>& indices)
+    : Object(GetType(), GetClassName())
+    , vertices(vertices)
+    , indices(indices)
+    , buffer()
+  {
+    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
+                 vertices.data(), GL_STATIC_DRAW);
+
+    throwOnGlError();
+  }
+
   Shape::~Shape() {}
 
   const std::vector<Vertex>& Shape::getVertices(void) const noexcept
@@ -45,5 +61,13 @@ namespace Soleil {
   }
 
   GLuint Shape::getBuffer() noexcept { return *buffer; }
+
+  const std::vector<GLushort>& Shape::getIndices(void) const noexcept
+  {
+#ifdef SOLEIL__DRAWARRAYS
+    throw std::runtime_error("No indices when built with SOLEIL__DRAWARRAYS");
+#endif
+    return indices;
+  }
 
 } // Soleil

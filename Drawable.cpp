@@ -47,8 +47,7 @@ namespace Soleil {
 
   void Drawable::render(const Frame& frame)
   {
-    const std::vector<Vertex>& vertices = shape->getVertices();
-    constexpr GLsizei          stride   = sizeof(Vertex);
+    constexpr GLsizei stride = sizeof(Vertex);
 
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
     glBindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
@@ -66,7 +65,14 @@ namespace Soleil {
     glUniformMatrix4fv(uniformModel, 1, GL_FALSE,
                        glm::value_ptr(ViewProjectionModel));
 
+#ifdef SOLEIL__DRAWARRAYS
+    const std::vector<Vertex>& vertices = shape->getVertices();
     glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+#else
+    const std::vector<GLushort>& indices = shape->getIndices();
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
+                   indices.data());
+#endif
 
     throwOnGlError();
   }
