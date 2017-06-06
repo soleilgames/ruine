@@ -68,7 +68,7 @@ namespace Soleil {
     throwOnGlError();
   }
 
-  GLint Program::getUniform(const GLchar* name)
+  GLint Program::getUniform(const GLchar* name) const
   {
     GLint location = glGetUniformLocation(program, name);
     if (location < 0)

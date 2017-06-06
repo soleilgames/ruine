@@ -22,6 +22,7 @@
 #include "Drawable.hpp"
 #include "AssetService.hpp"
 #include "Logger.hpp"
+#include "OpenGLDataInstance.hpp"
 #include "Shader.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -31,23 +32,15 @@ namespace Soleil {
   Drawable::Drawable(ShapePtr shape)
     : Node(typeid(Drawable).hash_code(), "Drawable")
     , shape(shape)
-    , rendering()
   {
-    // TODO: Compute once this program
-    rendering.attachShader(Shader(GL_VERTEX_SHADER, "shape.vert"));
-    rendering.attachShader(Shader(GL_FRAGMENT_SHADER, "shape.frag"));
-
-    glBindAttribLocation(rendering.program, 0, "positionAttribute");
-    glBindAttribLocation(rendering.program, 1, "colorAttribute");
-
-    rendering.compile();
   }
 
   Drawable::~Drawable() {}
 
   void Drawable::render(const Frame& frame)
   {
-    constexpr GLsizei stride = sizeof(Vertex);
+    constexpr GLsizei stride    = sizeof(Vertex);
+    const Program&    rendering = OpenGLDataInstance::Instance().drawable;
 
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
     glBindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());

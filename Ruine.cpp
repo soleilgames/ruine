@@ -19,14 +19,15 @@
  * THE SOFTWARE.
  */
 
-#include "TypesToOStream.hpp"
 #include "Ruine.hpp"
 #include "AssetService.hpp"
 #include "Drawable.hpp"
 #include "Group.hpp"
 #include "Logger.hpp"
+#include "OpenGLDataInstance.hpp"
 #include "Pristine.hpp"
 #include "Shape.hpp"
+#include "TypesToOStream.hpp"
 #include "WavefrontLoader.hpp"
 #include "types.hpp"
 
@@ -42,21 +43,15 @@ namespace Soleil {
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
                int viewportWidth, int viewportHeight)
-    : triangle(0)
-    , buffer(0)
-    , assetService(assetService)
+    : assetService(assetService)
     , soundService(soundService)
     , viewportWidth(viewportWidth)
     , viewportHeight(viewportHeight)
   {
+    OpenGLDataInstance::Initialize();
   }
 
-  Ruine::~Ruine()
-  {
-    if (triangle > 0) {
-      glDeleteProgram(triangle);
-    }
-  }
+  Ruine::~Ruine() {}
 
   static void renderSceneGraph(const Group& group, const Soleil::Frame& frame)
   {

@@ -43,6 +43,7 @@ add_library(ruinelib
   Program.cpp
   WavefrontLoader.cpp
   Group.cpp
+  OpenGLDataInstance.cpp
   )
 
 

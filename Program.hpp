@@ -40,7 +40,7 @@ namespace Soleil {
     void compile(void);
     
   public:
-    GLint getUniform(const GLchar* name);
+    GLint getUniform(const GLchar* name) const;
 
   public:
     GLuint program;

@@ -19,32 +19,29 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__RUINE_HPP_
-#define SOLEIL__RUINE_HPP_
 
-#include "AssetService.hpp"
-#include "OpenGLInclude.hpp"
-#include "SoundService.hpp"
-#include "types.hpp"
+#include "OpenGLDataInstance.hpp"
+
 
 namespace Soleil {
-  class Ruine
+
+  std::unique_ptr<OpenGLDataInstance> OpenGLDataInstance::instance;
+  
+  void OpenGLDataInstance::Initialize(void)
   {
-  public:
-    Ruine(AssetService* assetService, SoundService* soundService,
-          int viewportWidth, int viewportHeight);
-    virtual ~Ruine();
+    OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
+    
+    Program& drawable = OpenGLDataInstance::Instance().drawable;
+    
+    drawable.attachShader(Shader(GL_VERTEX_SHADER, "shape.vert"));
+    drawable.attachShader(Shader(GL_FRAGMENT_SHADER, "shape.frag"));
 
-  public:
-    void render(Timer time);
+    glBindAttribLocation(drawable.program, 0, "positionAttribute");
+    glBindAttribLocation(drawable.program, 1, "colorAttribute");
 
-  private:
-    AssetService* assetService;
-    SoundService* soundService;
-    int           viewportWidth;
-    int           viewportHeight;
-  };
+    drawable.compile();
 
-} // Soleil
+    
+  }
 
-#endif /* SOLEIL__RUINE_HPP_ */
+}  // Soleil

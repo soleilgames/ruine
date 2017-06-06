@@ -28,6 +28,7 @@ namespace Soleil {
     , vertices(vertices)
     , buffer()
   {
+    // TODO: In case of GL Context reseted we need to renew the buffer
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
     glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 

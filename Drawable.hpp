@@ -23,7 +23,6 @@
 #define SOLEIL__DRAWABLE_HPP_
 
 #include "Node.hpp"
-#include "Program.hpp"
 #include "Shape.hpp"
 #include "types.hpp"
 
@@ -40,7 +39,6 @@ namespace Soleil {
 
   private:
     ShapePtr shape;
-    Program  rendering; // TODO: Has to be recreated on GL Context lost
   };
 
 } // Soleil

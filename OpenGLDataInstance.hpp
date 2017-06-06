@@ -19,32 +19,38 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__RUINE_HPP_
-#define SOLEIL__RUINE_HPP_
+#ifndef SOLEIL__OPENGLDATAINSTANCE_HPP_
+#define SOLEIL__OPENGLDATAINSTANCE_HPP_
 
-#include "AssetService.hpp"
 #include "OpenGLInclude.hpp"
-#include "SoundService.hpp"
-#include "types.hpp"
+#include "Program.hpp"
+#include "Shader.hpp"
+
+#include <cassert>
+#include <memory>
 
 namespace Soleil {
-  class Ruine
-  {
-  public:
-    Ruine(AssetService* assetService, SoundService* soundService,
-          int viewportWidth, int viewportHeight);
-    virtual ~Ruine();
 
-  public:
-    void render(Timer time);
+  struct OpenGLDataInstance
+  {
+    Program drawable;
+
+    static OpenGLDataInstance& Instance(void) noexcept
+    {
+#ifndef NDEBUG
+      assert(instance != nullptr &&
+             "OpenGLDataInstance::Intialized not called yet");
+#endif
+
+      return *instance;
+    }
+
+    static void Initialize(void);
 
   private:
-    AssetService* assetService;
-    SoundService* soundService;
-    int           viewportWidth;
-    int           viewportHeight;
+    static std::unique_ptr<OpenGLDataInstance> instance;
   };
 
 } // Soleil
 
-#endif /* SOLEIL__RUINE_HPP_ */
+#endif /* SOLEIL__OPENGLDATAINSTANCE_HPP_ */
