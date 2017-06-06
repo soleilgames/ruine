@@ -19,50 +19,21 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__STRINGUTILS_HPP_
-#define SOLEIL__STRINGUTILS_HPP_
+#ifndef SOLEIL__MTLLOADER_HPP_
+#define SOLEIL__MTLLOADER_HPP_
 
-#include <algorithm>
-#include <iostream>
-#include <sstream>
-#include <string>
+#include "Shape.hpp"
+
+#include <vector>
 
 namespace Soleil {
-  template <typename... T> std::string toCommaString(T&&... t)
+
+  class MTLLoader
   {
-    std::stringstream ss;
-    bool              noComma = true;
-    (void)std::initializer_list<bool>{
-      (ss << (noComma ? "" : ", ") << t, noComma = false)...};
-    return ss.str();
-  }
+  public:
+    static std::vector<Material> fromContent(const std::string& content);
+  };
 
-  template <typename... T> std::string toString(T&&... t)
-  {
-    std::stringstream ss;
+} // Soleil
 
-    (void)std::initializer_list<bool>{(ss << t, true)...};
-
-    return ss.str();
-  }
-
-  template <typename... T> std::wstring toWString(T&&... t)
-  {
-    std::wstringstream ss;
-
-    (void)std::initializer_list<bool>{(ss << t, true)...};
-
-    return ss.str();
-  }
-
-  inline std::string trim(const std::string& s)
-  {
-    std::string str = s;
-    str.erase(str.begin(),
-              std::find_if(str.begin(), str.end(),
-                           std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return str;
-  }
-}
-
-#endif /* SOLEIL__STRINGUTILS_HPP_ */
+#endif /* SOLEIL__MTLLOADER_HPP_ */

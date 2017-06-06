@@ -24,6 +24,7 @@
 #include "Logger.hpp"
 #include "OpenGLDataInstance.hpp"
 #include "Shader.hpp"
+#include "TypesToOStream.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -41,6 +42,7 @@ namespace Soleil {
   {
     constexpr GLsizei stride    = sizeof(Vertex);
     const Program&    rendering = OpenGLDataInstance::Instance().drawable;
+    const Material&   material  = shape->getMaterial();
 
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
     glBindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
@@ -51,12 +53,19 @@ namespace Soleil {
     glEnableVertexAttribArray(1);
     glUseProgram(rendering.program);
 
-    GLint uniformModel = rendering.getUniform(
+    const GLint uniformModel = rendering.getUniform(
       "Model"); // TODO: Save uniform until OpenGL Context is reseted
 
     auto ViewProjectionModel = frame.ViewProjection * getTransformation();
     glUniformMatrix4fv(uniformModel, 1, GL_FALSE,
                        glm::value_ptr(ViewProjectionModel));
+
+    const GLint uniformMaterial =
+      rendering.getUniform("material.ambiantColor"); // TODO: Save uniform until
+                                                     // OpenGL Context is
+                                                     // reseted
+
+    glUniform3fv(uniformMaterial, 1, glm::value_ptr(material.ambiantColor));
 
 #ifdef SOLEIL__DRAWARRAYS
     const std::vector<Vertex>& vertices = shape->getVertices();

@@ -64,6 +64,14 @@ namespace Soleil {
     }
   };
 
+  struct Material
+  {
+    glm::vec3 ambiantColor;
+    glm::vec3 diffuseColor;
+    glm::vec3 specularColor;
+    float     shininess;
+  };
+
   /**
    * Shape holds informations on a 3D Model object.
    *
@@ -72,19 +80,21 @@ namespace Soleil {
   class Shape : public Object
   {
   public:
-    Shape(const std::vector<Vertex>& vertices);
+    Shape(const std::vector<Vertex>& vertices, const Material& material);
     Shape(const std::vector<Vertex>&   vertices,
-          const std::vector<GLushort>& indices);
+          const std::vector<GLushort>& indices, const Material& material);
     virtual ~Shape();
 
   public:
     const std::vector<Vertex>&   getVertices(void) const noexcept;
-    GLuint                       getBuffer() noexcept;
     const std::vector<GLushort>& getIndices(void) const noexcept;
+    const Material&              getMaterial(void) const noexcept;
+    GLuint                       getBuffer() noexcept;
 
   private:
     std::vector<Vertex>   vertices;
     std::vector<GLushort> indices;
+    Material              material;
     gl::Buffer            buffer;
 
   public:

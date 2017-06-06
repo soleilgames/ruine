@@ -23,9 +23,10 @@
 
 namespace Soleil {
 
-  Shape::Shape(const std::vector<Vertex>& vertices)
+  Shape::Shape(const std::vector<Vertex>& vertices, const Material& material)
     : Object(GetType(), GetClassName())
     , vertices(vertices)
+    , material(material)
     , buffer()
   {
     // TODO: In case of GL Context reseted we need to renew the buffer
@@ -39,10 +40,11 @@ namespace Soleil {
   }
 
   Shape::Shape(const std::vector<Vertex>&   vertices,
-               const std::vector<GLushort>& indices)
+               const std::vector<GLushort>& indices, const Material& material)
     : Object(GetType(), GetClassName())
     , vertices(vertices)
     , indices(indices)
+    , material(material)
     , buffer()
   {
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
@@ -61,6 +63,11 @@ namespace Soleil {
     return vertices;
   }
 
+  const Material& Shape::getMaterial(void) const noexcept
+  {
+    return material;
+  }
+  
   GLuint Shape::getBuffer() noexcept { return *buffer; }
 
   const std::vector<GLushort>& Shape::getIndices(void) const noexcept

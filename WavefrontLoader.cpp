@@ -25,7 +25,9 @@
 #include <regex>
 #include <set>
 
+#include "AssetService.hpp"
 #include "Logger.hpp"
+#include "MTLLoader.hpp"
 #include "WavefrontLoader.hpp"
 
 namespace Soleil {
@@ -55,16 +57,19 @@ namespace Soleil {
 
     std::vector<Vertex>   vertexElements;
     std::vector<GLushort> indexElements;
+
+    std::vector<Material> materials;
   };
 
-  void commandNOOP(const std::string& command, const std::string& arguments)
+  static void commandNOOP(const std::string& command,
+                          const std::string& arguments)
   {
     SOLEIL__LOGGER_DEBUG("Noop for command: ", command, " with arguments: ",
                          arguments);
   }
 
-  void commandVector(std::vector<glm::vec4>* vertices,
-                     const std::string&      arguments)
+  static void commandVector(std::vector<glm::vec4>* vertices,
+                            const std::string&      arguments)
   {
     glm::vec4 v;
 
@@ -89,8 +94,8 @@ namespace Soleil {
     textureCoords->push_back(v);
   }
 
-  void commandNormals(std::vector<glm::vec3>* normals,
-                      const std::string&      arguments)
+  static void commandNormals(std::vector<glm::vec3>* normals,
+                             const std::string&      arguments)
   {
     glm::vec3 v;
 
@@ -102,7 +107,7 @@ namespace Soleil {
     normals->push_back(v);
   }
 
-  void commandMatchFace(ObjectStore* store, const std::string& arguments)
+  static void commandMatchFace(ObjectStore* store, const std::string& arguments)
   {
     static const std::regex faceVertex("([0-9]+)(/([0-9]*)(/([0-9]+))?)?");
     enum GROUPS
@@ -118,7 +123,8 @@ namespace Soleil {
 
     // TODO: An ugly hack to skip the fact there is no lights nor materials
     // yet
-    glm::vec4 color;
+    glm::vec4 color(1.0f);
+#if 0
     {
       static int coco = 0;
       switch (coco) {
@@ -132,6 +138,7 @@ namespace Soleil {
       coco++;
       if (coco > 5) coco = 0;
     }
+#endif
 
     int i = 0;
     while (std::regex_search(inprogress, matched, faceVertex)) {
@@ -164,6 +171,12 @@ namespace Soleil {
     }
   }
 
+  static void commandLoadMTL(std::vector<Material>* materials,
+                             const std::string      fileName)
+  {
+    *materials = MTLLoader::fromContent(AssetService::LoadAsString(fileName));
+  }
+
   typedef std::function<void(const std::string&)> Command;
 
   class Commands
@@ -173,11 +186,12 @@ namespace Soleil {
     {
       using std::placeholders::_1;
 
-      this->map.emplace("mtllib", std::bind(commandNOOP, "mtllib", _1));
+      this->map.emplace("usemtl", std::bind(commandNOOP, "usemtl", _1));
       this->map.emplace("o", std::bind(commandNOOP, "o", _1));
       this->map.emplace("s", std::bind(commandNOOP, "s", _1));
-      this->map.emplace("usemtl", std::bind(commandNOOP, "usemtl", _1));
 
+      this->map.emplace("mtllib",
+                        std::bind(commandLoadMTL, &(store.materials), _1));
       this->map.emplace("v", std::bind(commandVector, &(store.vertices), _1));
       this->map.emplace(
         "vt", std::bind(commandTextureCoords, &(store.textureCoords), _1));
@@ -209,7 +223,7 @@ namespace Soleil {
     Commands           commands;
 
     for (std::string line; getline(in, line);) {
-      if (line[0] != '#') {
+      if (trim(line).empty() == false && line[0] != '#') {
         auto pos = line.find(' ');
         if (pos == std::string::npos || pos < 1) {
           throw std::runtime_error(
@@ -233,10 +247,13 @@ namespace Soleil {
     for (GLushort index : commands.store.indexElements) {
       vertices.push_back(commands.store.vertexElements[index]);
     }
-    return std::make_shared<Shape>(vertices);
+    return std::make_shared<Shape>(vertices, store.materials[0]);
 #else
+    assert(commands.store.materials.size() == 1 &&
+           "Currently only ONE (not even zero) material are supported");
     return std::make_shared<Shape>(commands.store.vertexElements,
-                                   commands.store.indexElements);
+                                   commands.store.indexElements,
+                                   commands.store.materials[0]);
 #endif
   }
 
