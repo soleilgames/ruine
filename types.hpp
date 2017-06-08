@@ -56,9 +56,33 @@ namespace Soleil {
     glm::vec2 viewportSize;
 
     /**
+     * Camera position for rendering lights
+     */
+    glm::vec3 cameraPosition;
+    
+    /**
      * An up to date View * Projection Matrix
+     * @see updateViewProjectionMatrices(const glm::mat4& view, const glm::mat4
+     * projection)
      */
     glm::mat4 ViewProjection;
+
+    /**
+     * the View without the projection
+     * @see updateViewProjectionMatrices(const glm::mat4& view, const glm::mat4
+     * projection)
+     */
+    glm::mat4 View;
+
+    /**
+     * Update related matrices and set the MVP one.
+     */
+    inline void updateViewProjectionMatrices(const glm::mat4& view,
+                                             const glm::mat4  projection)
+    {
+      this->View           = view;
+      this->ViewProjection = projection * view;
+    }
   };
 
 } // Soleil

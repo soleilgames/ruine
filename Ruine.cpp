@@ -73,21 +73,28 @@ namespace Soleil {
   void Ruine::render(Timer time)
   {
 #ifndef NDEBUG
-    /* --- Peformance log --- */
-    static Timer      firstTime = time;
-    static unsigned   frames    = 0;
-    static const auto oneSec    = std::chrono::milliseconds(1000);
+    {
+      /* --- Peformance log --- */
+      static Timer      firstTime = time;
+      static unsigned   frames    = 0;
+      static const auto oneSec    = std::chrono::milliseconds(1000);
 
-    frames++;
-    if (time - firstTime > oneSec) {
-      SOLEIL__LOGGER_DEBUG(
-        toString("Time to draw previous frame: ", (time - firstTime) / frames),
-        " (FPS=", frames, ")");
+      frames++;
+      if (time - firstTime > oneSec) {
+        SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
+                                      (time - firstTime) / frames),
+                             " (FPS=", frames, ")");
 
-      firstTime = time;
-      frames    = 0;
+        firstTime = time;
+        frames    = 0;
+      }
+      /* ---------------------- */
+      static Pristine FirstLoop;
+      if (FirstLoop) {
+        SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
+                                      sizeof(OpenGLDataInstance::Instance())));
+      }
     }
-/* ---------------------- */
 #endif
 
     // static std::shared_ptr<Drawable> triangle;
@@ -114,19 +121,22 @@ namespace Soleil {
 
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
+      ShapePtr          ball    = WavefrontLoader::fromContent(
+        AssetService::LoadAsString("colored-ball.obj"));
 
       std::shared_ptr<Drawable> platform = std::make_shared<Drawable>(shape);
-      std::shared_ptr<Drawable> cube     = std::make_shared<Drawable>(shape);
       std::shared_ptr<Group>    platformGroup = std::make_shared<Group>();
+      // std::shared_ptr<Drawable> cube     = std::make_shared<Drawable>(shape);
 
       platform->setName("Platform");
-      cube->setName("Cube");
+      // cube->setName("Cube");
       platformGroup->setName("PlatformGroup");
 
       platform->setTransformation(
-        glm::scale(glm::mat4(), glm::vec3(2.0f, 0.1f, 2.0f)));
+        glm::scale(glm::mat4(), glm::vec3(6.0f, 0.1f, 6.0f)));
 
-      platformGroup->addChild(cube);
+      // platformGroup->addChild(cube);
+      platformGroup->addChild(std::make_shared<Drawable>(ball));
       group.addChild(platform);
       group.addChild(platformGroup);
 
@@ -138,14 +148,23 @@ namespace Soleil {
 
     static const glm::mat4 projection = glm::perspective(
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
-      10.0f);
-    static const glm::mat4 view =
-      glm::lookAt(glm::vec3(0.0f, 5.0f, 5.0f), glm::vec3(0.0f),
-                  glm::vec3(0.0f, 1.0f, 0.0f));
+      50.0f);
+
+    static float cameraRotationAngle = 0.1f;
+    glm::vec3 cameraPosition = glm::vec3(
+      glm::rotate(glm::mat4(), cameraRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)) *
+        glm::vec4(0.0f, 5.0f, 5.0f, 1.0f));
+#if 0
+    cameraRotationAngle += 0.0055f;
+#endif
+    
+    glm::mat4 view =
+      glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     static Frame frame;
     frame.time           = time;
-    frame.ViewProjection = projection * view;
+    frame.cameraPosition = cameraPosition;
+    frame.updateViewProjectionMatrices(view, projection);
 
     glEnable(GL_DEPTH_TEST);
     // triangle->render(frame);
@@ -153,7 +172,7 @@ namespace Soleil {
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
 
-    static float angle = 0.1f;
+    static float angle = 0.55f;
 
     /* The triangle is not centered */
     // static const glm::mat4 translation =
@@ -169,14 +188,15 @@ namespace Soleil {
     glm::mat4 transformation =
       glm::rotate(inverseTranslation, angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
       translation;
-    angle += 0.1f;
+#if 0
 
+    angle += 0.1f;
     if (angle >= glm::two_pi<float>()) {
       SoundService::FireSound("woot.pcm", SoundProperties(100));
       angle = 0.0f;
     }
+#endif
 
     group.setTransformation(transformation);
-    // TODO: triangle->setTransformation(transformation);
   }
 } // Soleil

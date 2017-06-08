@@ -19,29 +19,50 @@
  * THE SOFTWARE.
  */
 
-
 #include "OpenGLDataInstance.hpp"
-
 
 namespace Soleil {
 
   std::unique_ptr<OpenGLDataInstance> OpenGLDataInstance::instance;
-  
-  void OpenGLDataInstance::Initialize(void)
+
+  static inline void initializeDrawable()
   {
-    OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
-    
-    Program& drawable = OpenGLDataInstance::Instance().drawable;
-    
+    OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
+    Program&            drawable = instance.drawable;
+
     drawable.attachShader(Shader(GL_VERTEX_SHADER, "shape.vert"));
     drawable.attachShader(Shader(GL_FRAGMENT_SHADER, "shape.frag"));
 
     glBindAttribLocation(drawable.program, 0, "positionAttribute");
-    glBindAttribLocation(drawable.program, 1, "colorAttribute");
+    glBindAttribLocation(drawable.program, 1, "normalAttribute");
+    glBindAttribLocation(drawable.program, 2, "colorAttribute");
 
     drawable.compile();
 
-    
+    instance.drawableMVPMatrix    = drawable.getUniform("MVPMatrix");
+    instance.drawableMVMatrix     = drawable.getUniform("MVMatrix");
+    instance.drawableNormalMatrix = drawable.getUniform("NormalMatrix");
+    instance.drawableMaterialAmbiant =
+      drawable.getUniform("material.ambiantColor");
+    instance.drawableMaterialShininess =
+      drawable.getUniform("material.shininess");
+    instance.drawableAmbiantLight = drawable.getUniform("AmbiantLight");
+    instance.drawableEyeDirection = drawable.getUniform("EyeDirection");
+    // instance.drawableConstantAttenuation =
+    //   drawable.getUniform("ConstantAttenuation");
+    instance.drawablePointLightPosition =
+      drawable.getUniform("pointLight.position");
+    instance.drawablePointLightColor = drawable.getUniform("pointLight.color");
+    instance.drawablePointLightLinearAttenuation =
+      drawable.getUniform("pointLight.linearAttenuation");
+    instance.drawablePointLightQuadraticAttenuation =
+      drawable.getUniform("pointLight.quadraticAttenuation");
   }
 
-}  // Soleil
+  void OpenGLDataInstance::Initialize(void)
+  {
+    OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
+    initializeDrawable();
+  }
+
+} // Soleil

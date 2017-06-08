@@ -34,6 +34,19 @@ namespace Soleil {
   struct OpenGLDataInstance
   {
     Program drawable;
+    /* Uniforms */
+    GLint drawableMVPMatrix;
+    GLint drawableMVMatrix;
+    GLint drawableNormalMatrix;
+    GLint drawableMaterialAmbiant;
+    GLint drawableMaterialShininess;
+    GLint drawableAmbiantLight;
+    GLint drawableEyeDirection;
+    GLint drawableConstantAttenuation;
+    GLint drawablePointLightPosition;
+    GLint drawablePointLightColor;
+    GLint drawablePointLightLinearAttenuation;
+    GLint drawablePointLightQuadraticAttenuation;
 
     static OpenGLDataInstance& Instance(void) noexcept
     {
@@ -46,6 +59,9 @@ namespace Soleil {
     }
 
     static void Initialize(void);
+
+    OpenGLDataInstance(){};
+    OpenGLDataInstance(const OpenGLDataInstance&) = delete;
 
   private:
     static std::unique_ptr<OpenGLDataInstance> instance;
