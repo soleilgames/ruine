@@ -20,7 +20,9 @@
  */
 
 #include "Group.hpp"
+
 #include "Logger.hpp"
+#include "stringutils.hpp"
 
 namespace Soleil {
 

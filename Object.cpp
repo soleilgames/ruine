@@ -23,6 +23,8 @@
 
 #include "Logger.hpp"
 
+#include <iostream>
+
 namespace Soleil {
 
   Object::Object(HashType type, const std::string& className,

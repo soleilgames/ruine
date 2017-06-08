@@ -19,7 +19,7 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/AndroidAssetService.cpp
   ${RUINE_SOURCES}/AndroidSoundService.cpp
 
-  ${RUINE_SOURCES}/Ruine.cpp
+  ${RUINE_SOURCES}/Ruine.cpp  
   ${RUINE_SOURCES}/Logger.cpp
   ${RUINE_SOURCES}/TypesToOStream.cpp
   ${RUINE_SOURCES}/OpenGLInclude.cpp
@@ -29,9 +29,12 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/Node.cpp
   ${RUINE_SOURCES}/Shader.cpp
   ${RUINE_SOURCES}/Shape.cpp
-  ${RUINE_SOURCES}/Program.cpp
   ${RUINE_SOURCES}/Drawable.cpp
+  ${RUINE_SOURCES}/Program.cpp
   ${RUINE_SOURCES}/WavefrontLoader.cpp
+  ${RUINE_SOURCES}/MTLLoader.cpp
+  ${RUINE_SOURCES}/Group.cpp
+  ${RUINE_SOURCES}/OpenGLDataInstance.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE
