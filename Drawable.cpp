@@ -61,6 +61,8 @@ namespace Soleil {
     glUniformMatrix4fv(instance.drawableMVPMatrix, 1, GL_FALSE,
                        glm::value_ptr(ViewProjectionModel));
 
+    /* Book has a mistake, it says using a MVMatrix while only using the Model
+     * Matrix*/
     auto ModelView = frame.View * getTransformation();
     glUniformMatrix4fv(instance.drawableMVMatrix, 1, GL_FALSE,
                        glm::value_ptr(getTransformation())); // ModelView
@@ -73,24 +75,33 @@ namespace Soleil {
     auto NormalMatrix = glm::mat3(ModelView);
 #endif
 
-    auto NormalMatrix = glm::transpose(glm::inverse(glm::mat3(getTransformation())));
+    auto NormalMatrix =
+      glm::transpose(glm::inverse(glm::mat3(getTransformation())));
 
     glUniformMatrix3fv(instance.drawableNormalMatrix, 1, GL_FALSE,
                        glm::value_ptr(NormalMatrix));
     throwOnGlError();
 
-    glUniform3fv(instance.drawableMaterialAmbiant, 1,
+    // Setting Materials -------------------------------------------------------
+    glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
                  glm::value_ptr(material.ambiantColor));
-    glUniform1f(instance.drawableMaterialShininess, material.shininess);
+    glUniform1f(instance.drawableMaterial.shininess, material.shininess);
+    glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
+                 glm::value_ptr(material.emissiveColor));
+    glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
+                 glm::value_ptr(material.diffuseColor));
+    glUniform3fv(instance.drawableMaterial.specularColor, 1,
+                 glm::value_ptr(material.specularColor));
 
     glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(0.f, 0.f, 0.f)));
+                 glm::value_ptr(glm::vec3(0.2f)));
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
     throwOnGlError();
 
-#if 1
+    // Setting Lights ----------------------------------------------------------
+    glUniform1i(instance.drawableNumberOfLights, 2);
     static float angle = 0.1f;
 
     glm::vec4 lpos =
@@ -99,17 +110,22 @@ namespace Soleil {
 
     angle += 0.0050f;
 
-    glUniform3fv(instance.drawablePointLightPosition, 1, glm::value_ptr(lpos));
-#else
-    glUniform3fv(instance.drawablePointLightPosition, 1,
+    glUniform3fv(instance.drawablePointLights[0].position, 1,
+                 glm::value_ptr(lpos));
+
+    glUniform3fv(instance.drawablePointLights[0].color, 1,
+                 glm::value_ptr(glm::vec3(0.8f)));
+    glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.22f);
+    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.20f);
+
+    // Second Light:
+    glUniform3fv(instance.drawablePointLights[1].position, 1,
                  glm::value_ptr(frame.cameraPosition));
 
-#endif
-
-    glUniform3fv(instance.drawablePointLightColor, 1,
+    glUniform3fv(instance.drawablePointLights[1].color, 1,
                  glm::value_ptr(glm::vec3(0.8f)));
-    glUniform1f(instance.drawablePointLightLinearAttenuation, 0.014f);
-    glUniform1f(instance.drawablePointLightQuadraticAttenuation, 0.0007);
+    glUniform1f(instance.drawablePointLights[1].linearAttenuation, 0.22f);
+    glUniform1f(instance.drawablePointLights[1].quadraticAttenuation, 0.20f);
 
     throwOnGlError();
 

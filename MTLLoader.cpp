@@ -73,8 +73,9 @@ namespace Soleil {
         "Kd", std::bind(commandParseVec3, &(materials[0].diffuseColor), _1));
       map.emplace(
         "Ks", std::bind(commandParseVec3, &(materials[0].specularColor), _1));
-
-      map.emplace("Ke", std::bind(commandNOOP, "ke", _1));
+      map.emplace(
+        "Ke", std::bind(commandParseVec3, &(materials[0].emissiveColor), _1));
+      
       map.emplace("Ni", std::bind(commandNOOP, "Ni", _1));
       map.emplace("d", std::bind(commandNOOP, "d", _1));
       map.emplace("illum", std::bind(commandNOOP, "illum", _1));

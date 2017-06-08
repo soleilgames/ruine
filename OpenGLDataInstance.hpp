@@ -31,6 +31,25 @@
 
 namespace Soleil {
 
+  static constexpr int DefinedMaxLights = 10;
+
+  struct DrawablePointLight
+  {
+    GLint position;
+    GLint color;
+    GLint linearAttenuation;
+    GLint quadraticAttenuation;
+  };
+
+  struct DrawableMaterial
+  {
+    GLint ambiantColor;
+    GLint shininess;
+    GLint emissiveColor;
+    GLint diffuseColor;
+    GLint specularColor;
+  };
+
   struct OpenGLDataInstance
   {
     Program drawable;
@@ -38,22 +57,18 @@ namespace Soleil {
     GLint drawableMVPMatrix;
     GLint drawableMVMatrix;
     GLint drawableNormalMatrix;
-    GLint drawableMaterialAmbiant;
-    GLint drawableMaterialShininess;
     GLint drawableAmbiantLight;
     GLint drawableEyeDirection;
     GLint drawableConstantAttenuation;
-    GLint drawablePointLightPosition;
-    GLint drawablePointLightColor;
-    GLint drawablePointLightLinearAttenuation;
-    GLint drawablePointLightQuadraticAttenuation;
+    GLint drawableNumberOfLights;
+
+    DrawableMaterial   drawableMaterial;
+    DrawablePointLight drawablePointLights[DefinedMaxLights];
 
     static OpenGLDataInstance& Instance(void) noexcept
     {
-#ifndef NDEBUG
       assert(instance != nullptr &&
              "OpenGLDataInstance::Intialized not called yet");
-#endif
 
       return *instance;
     }

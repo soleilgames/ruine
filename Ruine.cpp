@@ -102,23 +102,6 @@ namespace Soleil {
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      // std::vector<Vertex> vertices = {
-      //   Vertex(Point(-1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(1.0, 0.0, 0.0, 1.0)),
-      //   Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(0.0, 1.0, 0.0, 1.0)),
-      //   Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(1.0, 1.0, 1.0, 1.0)),
-
-      //   Vertex(Point(1.0, -1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(0.0, 1.0, 0.0, 1.0)),
-      //   Vertex(Point(1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(0.0, 0.0, 1.0, 1.0)),
-      //   Vertex(Point(-1.0, 1.0, 0.5, 1.0), Normal(1.0f),
-      //          Color(1.0, 1.0, 1.0, 1.0)),
-      // };
-      // ShapePtr shape = std::make_shared<Shape>(vertices);
-
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
       ShapePtr          ball    = WavefrontLoader::fromContent(
@@ -151,13 +134,14 @@ namespace Soleil {
       50.0f);
 
     static float cameraRotationAngle = 0.1f;
-    glm::vec3 cameraPosition = glm::vec3(
-      glm::rotate(glm::mat4(), cameraRotationAngle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-        glm::vec4(0.0f, 5.0f, 5.0f, 1.0f));
+    glm::vec3    cameraPosition =
+      glm::vec3(glm::rotate(glm::mat4(), cameraRotationAngle,
+                            glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::vec4(0.0f, 5.0f, 5.0f, 1.0f));
 #if 0
     cameraRotationAngle += 0.0055f;
 #endif
-    
+
     glm::mat4 view =
       glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -167,18 +151,11 @@ namespace Soleil {
     frame.updateViewProjectionMatrices(view, projection);
 
     glEnable(GL_DEPTH_TEST);
-    // triangle->render(frame);
 
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
 
     static float angle = 0.55f;
-
-    /* The triangle is not centered */
-    // static const glm::mat4 translation =
-    //   glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -0.5f));
-    // static const glm::mat4 inverseTranslation =
-    //   glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.5f));
 
     /* The cube is already centered */
     static const glm::mat4 translation;

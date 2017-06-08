@@ -69,6 +69,7 @@ namespace Soleil {
     glm::vec3 ambiantColor;
     glm::vec3 diffuseColor;
     glm::vec3 specularColor;
+    glm::vec3 emissiveColor;
     float     shininess;
   };
 

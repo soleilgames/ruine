@@ -39,24 +39,35 @@ namespace Soleil {
 
     drawable.compile();
 
-    instance.drawableMVPMatrix    = drawable.getUniform("MVPMatrix");
-    instance.drawableMVMatrix     = drawable.getUniform("MVMatrix");
-    instance.drawableNormalMatrix = drawable.getUniform("NormalMatrix");
-    instance.drawableMaterialAmbiant =
+    instance.drawableMVPMatrix      = drawable.getUniform("MVPMatrix");
+    instance.drawableMVMatrix       = drawable.getUniform("MVMatrix");
+    instance.drawableNormalMatrix   = drawable.getUniform("NormalMatrix");
+    instance.drawableNumberOfLights = drawable.getUniform("numberOfLights");
+
+    instance.drawableMaterial.ambiantColor =
       drawable.getUniform("material.ambiantColor");
-    instance.drawableMaterialShininess =
+    instance.drawableMaterial.shininess =
       drawable.getUniform("material.shininess");
+    instance.drawableMaterial.emissiveColor =
+      drawable.getUniform("material.emissiveColor");
+    instance.drawableMaterial.diffuseColor =
+      drawable.getUniform("material.diffuseColor");
+    instance.drawableMaterial.specularColor =
+      drawable.getUniform("material.specularColor");
+
     instance.drawableAmbiantLight = drawable.getUniform("AmbiantLight");
     instance.drawableEyeDirection = drawable.getUniform("EyeDirection");
-    // instance.drawableConstantAttenuation =
-    //   drawable.getUniform("ConstantAttenuation");
-    instance.drawablePointLightPosition =
-      drawable.getUniform("pointLight.position");
-    instance.drawablePointLightColor = drawable.getUniform("pointLight.color");
-    instance.drawablePointLightLinearAttenuation =
-      drawable.getUniform("pointLight.linearAttenuation");
-    instance.drawablePointLightQuadraticAttenuation =
-      drawable.getUniform("pointLight.quadraticAttenuation");
+    for (int i = 0; i < DefinedMaxLights; ++i) {
+      instance.drawablePointLights[i].position =
+        drawable.getUniform(toString("pointLight[", i, "].position").data());
+      instance.drawablePointLights[i].color =
+        drawable.getUniform(toString("pointLight[", i, "].color").data());
+      instance.drawablePointLights[i].linearAttenuation = drawable.getUniform(
+        toString("pointLight[", i, "].linearAttenuation").data());
+      instance.drawablePointLights[i].quadraticAttenuation =
+        drawable.getUniform(
+          toString("pointLight[", i, "].quadraticAttenuation").data());
+    }
   }
 
   void OpenGLDataInstance::Initialize(void)
