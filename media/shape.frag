@@ -1,6 +1,6 @@
 #version 100
 
-precision highp float;
+precision lowp float;
 
 struct Material
 {
@@ -9,6 +9,8 @@ struct Material
   vec3  emissiveColor;
   vec3  diffuseColor;
   vec3  specularColor;
+
+  sampler2D diffuseMap;
 };
 
 struct PointLight
@@ -31,6 +33,7 @@ uniform int        numberOfLights;
 varying vec4 color;
 varying vec3 normal;
 varying vec4 position;
+varying vec2 uv;
 
 void
 main()
@@ -38,7 +41,12 @@ main()
   const float ConstantAttenuation = 1.0; // TODO: If kept, put it in an uniform
   const float Strength            = 1.0; // TODO: If kept, put it in an uniform
 
-  vec3 scatteredLight = AmbiantLight;
+  vec3 computedAmbiantColor = material.ambiantColor;
+  if (uv.x > -1.0) {
+    computedAmbiantColor *= vec3(texture2D(material.diffuseMap, uv).a);
+  }
+
+  vec3 scatteredLight = AmbiantLight * computedAmbiantColor;
   vec3 reflectedLight = vec3(0.0);
 
   for (int i = 0; i < numberOfLights; ++i) {
@@ -60,8 +68,9 @@ main()
       (diffuse == 0.0) ? (0.0) : (pow(specular, material.shininess) * Strength);
 
     scatteredLight +=
-      material.ambiantColor * attenuation +
+      computedAmbiantColor * attenuation +
       pointLight[i].color * material.diffuseColor * diffuse * attenuation;
+
     reflectedLight +=
       pointLight[i].color * material.specularColor * specular * attenuation;
   }

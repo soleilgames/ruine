@@ -1,6 +1,7 @@
 # Blender v2.76 (sub 0) OBJ File: 'colored-ball.blend'
 # www.blender.org
-mtllib colored-ball.mtl
+#mtllib colored-ball.mtl
+mtllib lightBulb.mtl
 o Sphere
 v -0.098017 0.995185 0.000000
 v -0.195090 0.980785 0.000000

@@ -23,6 +23,8 @@
 #include "Logger.hpp"
 #include "TypesToOStream.hpp"
 
+#include "OpenGLDataInstance.hpp" // TODO: Temporary
+
 #include <functional>
 #include <map>
 
@@ -60,6 +62,10 @@ namespace Soleil {
     {
       materials.push_back(Material());
 
+#if 1 // Test with texture
+      materials[0].diffuseMap = *OpenGLDataInstance::Instance().textureTest;
+#endif
+
       using std::placeholders::_1;
 
       // TODO: Multiple Materials:
@@ -75,7 +81,7 @@ namespace Soleil {
         "Ks", std::bind(commandParseVec3, &(materials[0].specularColor), _1));
       map.emplace(
         "Ke", std::bind(commandParseVec3, &(materials[0].emissiveColor), _1));
-      
+
       map.emplace("Ni", std::bind(commandNOOP, "Ni", _1));
       map.emplace("d", std::bind(commandNOOP, "d", _1));
       map.emplace("illum", std::bind(commandNOOP, "illum", _1));

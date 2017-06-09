@@ -53,8 +53,12 @@ namespace Soleil {
                           (const GLvoid*)offsetof(Vertex, normal));
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
                           (const GLvoid*)offsetof(Vertex, color));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
+                          (const GLvoid*)offsetof(Vertex, uv));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
     glUseProgram(rendering.program);
 
     auto ViewProjectionModel = frame.ViewProjection * getTransformation();
@@ -94,38 +98,49 @@ namespace Soleil {
                  glm::value_ptr(material.specularColor));
 
     glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(0.2f)));
+                 glm::value_ptr(glm::vec3(.0f)));
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
     throwOnGlError();
 
+    // Setting Textures --------------------------------------------------------
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, material.diffuseMap);
+    glUniform1i(instance.drawableMaterial.diffuseMap, 0);
+
     // Setting Lights ----------------------------------------------------------
     glUniform1i(instance.drawableNumberOfLights, 2);
-    static float angle = 0.1f;
+
+#if 0    
+    static float angle = 0.0f;
 
     glm::vec4 lpos =
       glm::rotate(glm::mat4(), angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-      glm::vec4(2.0f, 0.55f, 0.0f, 1.0f);
+      glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
     angle += 0.0050f;
 
-    glUniform3fv(instance.drawablePointLights[0].position, 1,
+        glUniform3fv(instance.drawablePointLights[0].position, 1,
                  glm::value_ptr(lpos));
+#else
+    glUniform3fv(instance.drawablePointLights[0].position, 1,
+                 glm::value_ptr(frame.pointLights[0].position));
+#endif
 
     glUniform3fv(instance.drawablePointLights[0].color, 1,
-                 glm::value_ptr(glm::vec3(0.8f)));
-    glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.22f);
-    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.20f);
+                 glm::value_ptr(glm::vec3(1.0f)));
+    glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.35f);
+    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 1.8f);
 
-    // Second Light:
+    // Second Light (on the camera):
     glUniform3fv(instance.drawablePointLights[1].position, 1,
                  glm::value_ptr(frame.cameraPosition));
 
     glUniform3fv(instance.drawablePointLights[1].color, 1,
                  glm::value_ptr(glm::vec3(0.8f)));
-    glUniform1f(instance.drawablePointLights[1].linearAttenuation, 0.22f);
-    glUniform1f(instance.drawablePointLights[1].quadraticAttenuation, 0.20f);
+    glUniform1f(instance.drawablePointLights[1].linearAttenuation, 0.35);
+    glUniform1f(instance.drawablePointLights[1].quadraticAttenuation, 0.44f);
 
     throwOnGlError();
 

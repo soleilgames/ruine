@@ -48,10 +48,12 @@ namespace Soleil {
     GLint emissiveColor;
     GLint diffuseColor;
     GLint specularColor;
+    GLint diffuseMap;
   };
 
   struct OpenGLDataInstance
   {
+    // TODO: Create a struct for the Drawable Shader
     Program drawable;
     /* Uniforms */
     GLint drawableMVPMatrix;
@@ -64,6 +66,10 @@ namespace Soleil {
 
     DrawableMaterial   drawableMaterial;
     DrawablePointLight drawablePointLights[DefinedMaxLights];
+
+
+    // Textures
+    gl::Texture textureTest;
 
     static OpenGLDataInstance& Instance(void) noexcept
     {

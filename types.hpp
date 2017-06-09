@@ -23,6 +23,7 @@
 #define SOLEIL__TYPES_HPP_
 
 #include <chrono>
+#include <vector>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -43,6 +44,12 @@ namespace Soleil {
   typedef glm::vec3 Normal;
   typedef glm::vec2 Coord2D;
 
+
+  struct PointLight
+  {
+    glm::vec3 position;
+  };
+  
   /**
    * Provide information on the current frame
    */
@@ -83,6 +90,8 @@ namespace Soleil {
       this->View           = view;
       this->ViewProjection = projection * view;
     }
+
+    std::vector<PointLight> pointLights;
   };
 
 } // Soleil

@@ -53,11 +53,42 @@ namespace Soleil {
 
   Ruine::~Ruine() {}
 
-  static void renderSceneGraph(const Group& group, const Soleil::Frame& frame)
+  static void renderSceneGraph(const Group& group, Soleil::Frame& frame)
   {
     /* This is not the most efficient way to Render a Scene Graph but it will
      * make the job for two elements. Let's optimize that afterward. */
     for (NodePtr node : group) {
+      if (node->getName() == "lightBulb") {
+        // auto currentTransformation = node->getTransformation();
+
+        static float angle = 0;
+
+        float     sinAngle = glm::sin(angle);
+        glm::mat4 translation =
+          glm::translate(glm::mat4(), glm::vec3(0.0f, 2.0f, 0.0f));
+        glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.1));
+        glm::mat4 rotation =
+          glm::rotate(glm::mat4(), glm::mix(0.0f, 1.5f, sinAngle),
+                      glm::vec3(0.0f, 0.0f, 1.0f));
+
+        node->setTransformation(rotation * translation * scale);
+
+        frame.pointLights[0].position =
+          glm::vec3(rotation * glm::vec4(0.0f, 2.0f, 0.0f, 1.0f));
+
+        angle += 0.01;
+
+        // SOLEIL__LOGGER_DEBUG(toString("sin(", angle, ") = ", sinAngle));
+
+        static float oldValue = 0.98f;
+	
+        if ((oldValue > 0.0f && oldValue < sinAngle) ||
+            (oldValue < 0.0f && oldValue > sinAngle)) {
+          SoundService::FireSound("woot.pcm", SoundProperties(100));
+	  oldValue = -oldValue;
+        }
+      }
+
       auto drawable = std::dynamic_pointer_cast<Drawable>(node);
       if (drawable) {
         drawable->render(frame);
@@ -99,6 +130,7 @@ namespace Soleil {
 
     // static std::shared_ptr<Drawable> triangle;
     static Group group;
+    static Frame frame;
 
     static Pristine FirstLoop;
     if (FirstLoop) {
@@ -116,14 +148,28 @@ namespace Soleil {
       platformGroup->setName("PlatformGroup");
 
       platform->setTransformation(
-        glm::scale(glm::mat4(), glm::vec3(6.0f, 0.1f, 6.0f)));
+        glm::scale(glm::mat4(), glm::vec3(4.0f, 0.1f, 4.0f)));
 
       // platformGroup->addChild(cube);
-      platformGroup->addChild(std::make_shared<Drawable>(ball));
+      auto lightBulb = std::make_shared<Drawable>(ball);
+      lightBulb->setName("lightBulb");
+      lightBulb->setTransformation(
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 1.5f, 0.0f)),
+                   glm::vec3(.30f)));
+
+      auto littleCube = std::make_shared<Drawable>(shape);
+      littleCube->setTransformation(
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
+                   glm::vec3(0.4)));
+
+      platformGroup->addChild(littleCube);
+      platformGroup->addChild(lightBulb);
       group.addChild(platform);
       group.addChild(platformGroup);
 
       SoundService::PlayMusic("fabulous.wav");
+
+      frame.pointLights.push_back(PointLight());
     }
 
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
@@ -133,7 +179,7 @@ namespace Soleil {
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       50.0f);
 
-    static float cameraRotationAngle = 0.1f;
+    static float cameraRotationAngle = 0.8f;
     glm::vec3    cameraPosition =
       glm::vec3(glm::rotate(glm::mat4(), cameraRotationAngle,
                             glm::vec3(0.0f, 1.0f, 0.0f)) *
@@ -145,7 +191,6 @@ namespace Soleil {
     glm::mat4 view =
       glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    static Frame frame;
     frame.time           = time;
     frame.cameraPosition = cameraPosition;
     frame.updateViewProjectionMatrices(view, projection);
@@ -155,25 +200,25 @@ namespace Soleil {
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
 
+// Make it rotate on its own axis
+#if 0
     static float angle = 0.55f;
 
     /* The cube is already centered */
     static const glm::mat4 translation;
     static const glm::mat4 inverseTranslation;
 
-    // Make it rotate on its own axis
     glm::mat4 transformation =
       glm::rotate(inverseTranslation, angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
       translation;
-#if 0
 
     angle += 0.1f;
     if (angle >= glm::two_pi<float>()) {
       SoundService::FireSound("woot.pcm", SoundProperties(100));
       angle = 0.0f;
     }
-#endif
 
     group.setTransformation(transformation);
+#endif
   }
 } // Soleil

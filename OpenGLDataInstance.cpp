@@ -54,6 +54,8 @@ namespace Soleil {
       drawable.getUniform("material.diffuseColor");
     instance.drawableMaterial.specularColor =
       drawable.getUniform("material.specularColor");
+    instance.drawableMaterial.diffuseMap =
+      drawable.getUniform("material.diffuseMap");
 
     instance.drawableAmbiantLight = drawable.getUniform("AmbiantLight");
     instance.drawableEyeDirection = drawable.getUniform("EyeDirection");
@@ -70,10 +72,34 @@ namespace Soleil {
     }
   }
 
+  static inline void initializeTestResources()
+  {
+    OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
+
+    const GLubyte chessBoard[] = {
+      0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00,
+      0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+      0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF,
+      0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF,
+      0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+      0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF};
+
+    {
+      gl::BindTexture bindTexture(GL_TEXTURE_2D, *instance.textureTest);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 8, 8, 0, GL_ALPHA,
+                   GL_UNSIGNED_BYTE, chessBoard);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    throwOnGlError();
+  }
+
   void OpenGLDataInstance::Initialize(void)
   {
     OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
     initializeDrawable();
+    initializeTestResources();
   }
 
 } // Soleil

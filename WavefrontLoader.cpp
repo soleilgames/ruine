@@ -233,8 +233,10 @@ namespace Soleil {
         const std::string command   = line.substr(0, pos);
         const std::string arguments = line.substr(pos + 1);
 
-        // SOLEIL__LOGGER_DEBUG("COMMAND='", command, "' ARGUMENT='", arguments,
-        //                      "'");
+#if 0
+        SOLEIL__LOGGER_DEBUG("COMMAND='", command, "' ARGUMENT='", arguments,
+                             "'");
+#endif
         commands[command](arguments);
       }
     }
