@@ -87,9 +87,12 @@ namespace Soleil {
     throwOnGlError();
 
     // Setting Materials -------------------------------------------------------
+    static float time = 0.0f;
+    time += 0.006f;
     glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
                  glm::value_ptr(material.ambiantColor));
-    glUniform1f(instance.drawableMaterial.shininess, material.shininess);
+    glUniform1f(instance.drawableMaterial.shininess,
+                material.shininess * glm::mix(0.12f, .18f, glm::sin(time)));
     glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
                  glm::value_ptr(material.emissiveColor));
     glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
@@ -110,7 +113,7 @@ namespace Soleil {
     glUniform1i(instance.drawableMaterial.diffuseMap, 0);
 
     // Setting Lights ----------------------------------------------------------
-    glUniform1i(instance.drawableNumberOfLights, 2);
+    glUniform1i(instance.drawableNumberOfLights, 1);
 
 #if 0    
     static float angle = 0.0f;
@@ -124,6 +127,7 @@ namespace Soleil {
         glUniform3fv(instance.drawablePointLights[0].position, 1,
                  glm::value_ptr(lpos));
 #else
+
     glUniform3fv(instance.drawablePointLights[0].position, 1,
                  glm::value_ptr(frame.pointLights[0].position));
 #endif
@@ -131,7 +135,7 @@ namespace Soleil {
     glUniform3fv(instance.drawablePointLights[0].color, 1,
                  glm::value_ptr(glm::vec3(1.0f)));
     glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.35f);
-    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 1.8f);
+    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.44f);
 
     // Second Light (on the camera):
     glUniform3fv(instance.drawablePointLights[1].position, 1,

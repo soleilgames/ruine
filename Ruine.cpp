@@ -64,7 +64,7 @@ namespace Soleil {
         static float angle    = 0;
         const float  sinAngle = glm::sin(angle);
 
-#if 0	
+#if 0
         const glm::mat4 translation =
           glm::translate(glm::mat4(), glm::vec3(0.0f, 2.0f, 0.0f));
         const glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.1));
@@ -89,7 +89,7 @@ namespace Soleil {
         }
 
 #else
-        const glm::vec3 position    = glm::vec3(glm::mix(1.5f, 2.5f, sinAngle), 0.5f, 0.0f);
+        const glm::vec3 position    = glm::vec3(0.0f, 1.2f, glm::mix(1.3f, 2.5f, sinAngle));
         const glm::mat4 translation = glm::translate(glm::mat4(), position);
         const glm::mat4 scale       = glm::scale(glm::mat4(), glm::vec3(0.1f));
 
@@ -98,7 +98,7 @@ namespace Soleil {
 
 #endif
 
-        angle += 0.01;
+        //angle += 0.01;
       }
 
       auto drawable = std::dynamic_pointer_cast<Drawable>(node);
@@ -150,6 +150,8 @@ namespace Soleil {
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
       ShapePtr          ball    = WavefrontLoader::fromContent(
         AssetService::LoadAsString("colored-ball.obj"));
+      ShapePtr          bulb    = WavefrontLoader::fromContent(
+        AssetService::LoadAsString("bulb.obj"));
 
       std::shared_ptr<Drawable> platform = std::make_shared<Drawable>(shape);
       std::shared_ptr<Group>    platformGroup = std::make_shared<Group>();
@@ -163,18 +165,25 @@ namespace Soleil {
         glm::scale(glm::mat4(), glm::vec3(4.0f, 0.1f, 4.0f)));
 
       // platformGroup->addChild(cube);
-      auto lightBulb = std::make_shared<Drawable>(ball);
+      auto lightBulb = std::make_shared<Drawable>(bulb);
       lightBulb->setName("lightBulb");
       // lightBulb->setTransformation(
       //   glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 1.5f, 0.0f)),
       //              glm::vec3(.30f)));
 
+
+      auto littleBall = std::make_shared<Drawable>(ball);
+      littleBall->setTransformation(
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
+                   glm::vec3(0.6)));
+      
       auto littleCube = std::make_shared<Drawable>(shape);
       littleCube->setTransformation(
         glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
                    glm::vec3(0.4)));
 
-      platformGroup->addChild(littleCube);
+      //platformGroup->addChild(littleCube);
+      platformGroup->addChild(littleBall);
       platformGroup->addChild(lightBulb);
       // group.addChild(platform);
       group.addChild(platformGroup);
@@ -191,7 +200,7 @@ namespace Soleil {
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       50.0f);
 
-    static float cameraRotationAngle = 0.8f;
+    static float cameraRotationAngle = 0.3f;
     glm::vec3    cameraPosition =
       glm::vec3(glm::rotate(glm::mat4(), cameraRotationAngle,
                             glm::vec3(0.0f, 1.0f, 0.0f)) *
