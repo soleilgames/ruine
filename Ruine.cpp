@@ -61,13 +61,14 @@ namespace Soleil {
       if (node->getName() == "lightBulb") {
         // auto currentTransformation = node->getTransformation();
 
-        static float angle = 0;
+        static float angle    = 0;
+        const float  sinAngle = glm::sin(angle);
 
-        float     sinAngle = glm::sin(angle);
-        glm::mat4 translation =
+#if 0	
+        const glm::mat4 translation =
           glm::translate(glm::mat4(), glm::vec3(0.0f, 2.0f, 0.0f));
-        glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.1));
-        glm::mat4 rotation =
+        const glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.1));
+        const glm::mat4 rotation =
           glm::rotate(glm::mat4(), glm::mix(0.0f, 1.5f, sinAngle),
                       glm::vec3(0.0f, 0.0f, 1.0f));
 
@@ -76,9 +77,8 @@ namespace Soleil {
         frame.pointLights[0].position =
           glm::vec3(rotation * glm::vec4(0.0f, 2.0f, 0.0f, 1.0f));
 
-        angle += 0.01;
-
         // SOLEIL__LOGGER_DEBUG(toString("sin(", angle, ") = ", sinAngle));
+
 
         static float oldValue = 0.98f;
 	
@@ -87,6 +87,18 @@ namespace Soleil {
           SoundService::FireSound("woot.pcm", SoundProperties(100));
 	  oldValue = -oldValue;
         }
+
+#else
+        const glm::vec3 position    = glm::vec3(glm::mix(1.5f, 2.5f, sinAngle), 0.5f, 0.0f);
+        const glm::mat4 translation = glm::translate(glm::mat4(), position);
+        const glm::mat4 scale       = glm::scale(glm::mat4(), glm::vec3(0.1f));
+
+        node->setTransformation(translation * scale);
+        frame.pointLights[0].position = position;
+
+#endif
+
+        angle += 0.01;
       }
 
       auto drawable = std::dynamic_pointer_cast<Drawable>(node);
@@ -153,9 +165,9 @@ namespace Soleil {
       // platformGroup->addChild(cube);
       auto lightBulb = std::make_shared<Drawable>(ball);
       lightBulb->setName("lightBulb");
-      lightBulb->setTransformation(
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 1.5f, 0.0f)),
-                   glm::vec3(.30f)));
+      // lightBulb->setTransformation(
+      //   glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 1.5f, 0.0f)),
+      //              glm::vec3(.30f)));
 
       auto littleCube = std::make_shared<Drawable>(shape);
       littleCube->setTransformation(
@@ -164,7 +176,7 @@ namespace Soleil {
 
       platformGroup->addChild(littleCube);
       platformGroup->addChild(lightBulb);
-      group.addChild(platform);
+      // group.addChild(platform);
       group.addChild(platformGroup);
 
       SoundService::PlayMusic("fabulous.wav");
