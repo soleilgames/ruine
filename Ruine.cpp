@@ -182,10 +182,10 @@ namespace Soleil {
         glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
                    glm::vec3(0.4)));
 
-      //platformGroup->addChild(littleCube);
-      platformGroup->addChild(littleBall);
+      platformGroup->addChild(littleCube);
+      // platformGroup->addChild(littleBall);
       platformGroup->addChild(lightBulb);
-      // group.addChild(platform);
+      group.addChild(platform);
       group.addChild(platformGroup);
 
       SoundService::PlayMusic("fabulous.wav");

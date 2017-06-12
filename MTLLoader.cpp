@@ -20,13 +20,19 @@
  */
 
 #include "MTLLoader.hpp"
-#include "Logger.hpp"
-#include "TypesToOStream.hpp"
 
+#include "AssetService.hpp"
+#include "Logger.hpp"
 #include "OpenGLDataInstance.hpp" // TODO: Temporary
+#include "TypesToOStream.hpp"
 
 #include <functional>
 #include <map>
+
+// TODO: Export in a separate file
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+#include "stb_image.h"
 
 namespace Soleil {
 
@@ -55,6 +61,47 @@ namespace Soleil {
     s >> *value;
   }
 
+  static void commandLoadTexture(GLint*             textureMaterial,
+                                 const std::string& argument)
+  {
+    // TODO: A solution could be to measure the size of the Textures array and
+    // fix it on Release Compile time.
+
+    int width          = -1;
+    int height         = -1;
+    int channelsInFile = 0;
+
+    const auto     encodedImageData = AssetService::LoadAsDataVector(argument);
+    unsigned char* image =
+      stbi_load_from_memory(encodedImageData.data(), encodedImageData.size(),
+                            &width, &height, &channelsInFile, 4);
+
+    if (image == nullptr) {
+      throw std::runtime_error(toString("Failed to decode image '", argument,
+                                        "': ", stbi_failure_reason()));
+      stbi_image_free(image); // TODO: Use RAII
+    }
+    SOLEIL__LOGGER_DEBUG(toString("Loaded image: ", argument, " -> ", width,
+                                  "x", height, ". Original number of chanels: ",
+                                  channelsInFile));
+
+    OpenGLDataInstance::Instance().textures.emplace_back();
+
+    gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();
+    gl::BindTexture bindTexture(GL_TEXTURE_2D, *texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, image);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+
+    *textureMaterial = *texture;
+
+
+    stbi_image_free(image); // TODO: Use RAII
+  }
+
   class MTLCommands
   {
   public:
@@ -81,12 +128,17 @@ namespace Soleil {
         "Ks", std::bind(commandParseVec3, &(materials[0].specularColor), _1));
       map.emplace(
         "Ke", std::bind(commandParseVec3, &(materials[0].emissiveColor), _1));
+#if 1
+      map.emplace("map_Kd", std::bind(commandLoadTexture,
+                                      &(materials[0].diffuseMap), _1));
+#else
+      map.emplace("map_Kd", std::bind(commandNOOP, "map_Kd", _1));
+#endif
 
       map.emplace("Ni", std::bind(commandNOOP, "Ni", _1));
       map.emplace("d", std::bind(commandNOOP, "d", _1));
       map.emplace("illum", std::bind(commandNOOP, "illum", _1));
       map.emplace("map_Ks", std::bind(commandNOOP, "map_Ks", _1));
-      map.emplace("map_Kd", std::bind(commandNOOP, "map_Kd", _1));
       map.emplace("map_Bump", std::bind(commandNOOP, "map_Bump", _1));
     }
 

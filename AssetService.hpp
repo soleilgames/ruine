@@ -71,6 +71,7 @@ namespace Soleil {
   public:
     static std::shared_ptr<AssetService> Instance;
     static std::string LoadAsString(const std::string& assetName);
+    static std::vector<uint8_t> LoadAsDataVector(const std::string& assetName);
   };
 
 } // Soleil

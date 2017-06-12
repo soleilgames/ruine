@@ -27,7 +27,7 @@ const int MAXLIGHTS = 10;
 uniform Material material;
 uniform vec3 AmbiantLight;
 uniform vec3 EyeDirection;
-uniform PointLight pointLight[MAXLIGHTS]; // TODO: Multiple lights
+uniform PointLight pointLight[MAXLIGHTS];
 uniform int        numberOfLights;
 
 varying vec4 color;
@@ -42,8 +42,12 @@ main()
   const float Strength            = 1.0; // TODO: If kept, put it in an uniform
 
   vec3 computedAmbiantColor = material.ambiantColor;
+  float alpha = 1.0;
   if (uv.x > -1.0) {
-    computedAmbiantColor *= vec3(texture2D(material.diffuseMap, uv).a);
+    vec4 textureColor = texture2D(material.diffuseMap, uv);
+
+    computedAmbiantColor *= textureColor.rgb;
+    alpha = textureColor.a;
   }
 
   vec3 scatteredLight = AmbiantLight * computedAmbiantColor;
@@ -77,7 +81,7 @@ main()
   vec3 rgb =
     min(material.emissiveColor + scatteredLight + reflectedLight, vec3(1.0));
 
-  gl_FragColor = vec4(rgb, 1.0);
+  gl_FragColor = vec4(rgb, alpha);
 
 #if 0 // Do not use the vertex color anymore
   gl_FragColor        = min(color * scatteredLight, vec4(1.0));

@@ -34,4 +34,10 @@ namespace Soleil {
     return Instance->asString(assetName);
   }
 
+  std::vector<uint8_t> AssetService::LoadAsDataVector(
+    const std::string& assetName)
+  {
+    return Instance->asDataVector(assetName);
+  }
+
 } // Soleil

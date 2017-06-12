@@ -42,6 +42,7 @@
 #endif
 
 #include "stringutils.hpp"
+#include "Logger.hpp"
 
 #define throwOnGlError() ::Soleil::_checkGLError(true, __FILE__, __LINE__)
 #define warnOnGlError() ::Soleil::_checkGLError(false, __FILE__, __LINE__)
@@ -115,9 +116,20 @@ namespace Soleil {
         throwOnGlError();
       }
 
-      virtual ~Generator() { DeleteFunction(1, &name); }
+      virtual ~Generator() {
+	SOLEIL__LOGGER_DEBUG(toString("~GL Resource destructed"));
+
+	DeleteFunction(1, &name); }
 
       GLuint operator*(void) { return name; }
+
+      Generator(const Generator&) = delete;
+      Generator& operator=(const Generator&) = delete;
+
+      Generator(const Generator&& other)
+        : name(other.name)
+      {
+      }
 
     private:
       GLuint name;

@@ -121,10 +121,9 @@ namespace Soleil {
     std::string inprogress = arguments;
     std::smatch matched;
 
-    // TODO: An ugly hack to skip the fact there is no lights nor materials
-    // yet
     glm::vec4 color(1.0f);
 #if 0
+    // For Debug: Set each face a different color
     {
       static int coco = 0;
       switch (coco) {

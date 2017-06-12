@@ -53,9 +53,16 @@ namespace Soleil {
       "I'm not using that right now"); // TODO: To implement on the need
   }
 
-  std::vector<uint8_t> DesktopAssetService::asDataVector(const std::string& /*assetName*/)
+  std::vector<uint8_t> DesktopAssetService::asDataVector(
+    const std::string& assetName)
   {
-    throw std::runtime_error(
-      "I'm not using that right now"); // TODO: To implement on the need
+    const std::string fileName = path + assetName;
+    std::ifstream     in(fileName);
+
+    if (in.is_open() == false)
+      throw std::runtime_error(
+        toString("Failed to read file '", fileName, "'"));
+    return std::vector<uint8_t>((std::istreambuf_iterator<char>(in)),
+                                std::istreambuf_iterator<char>());
   }
 } // Soleil
