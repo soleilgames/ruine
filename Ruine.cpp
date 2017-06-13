@@ -58,48 +58,6 @@ namespace Soleil {
     /* This is not the most efficient way to Render a Scene Graph but it will
      * make the job for two elements. Let's optimize that afterward. */
     for (NodePtr node : group) {
-      if (node->getName() == "lightBulb") {
-        // auto currentTransformation = node->getTransformation();
-
-        static float angle    = 0;
-        const float  sinAngle = glm::sin(angle);
-
-#if 0
-        const glm::mat4 translation =
-          glm::translate(glm::mat4(), glm::vec3(0.0f, 2.0f, 0.0f));
-        const glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.1));
-        const glm::mat4 rotation =
-          glm::rotate(glm::mat4(), glm::mix(0.0f, 1.5f, sinAngle),
-                      glm::vec3(0.0f, 0.0f, 1.0f));
-
-        node->setTransformation(rotation * translation * scale);
-
-        frame.pointLights[0].position =
-          glm::vec3(rotation * glm::vec4(0.0f, 2.0f, 0.0f, 1.0f));
-
-        // SOLEIL__LOGGER_DEBUG(toString("sin(", angle, ") = ", sinAngle));
-
-
-        static float oldValue = 0.98f;
-	
-        if ((oldValue > 0.0f && oldValue < sinAngle) ||
-            (oldValue < 0.0f && oldValue > sinAngle)) {
-          SoundService::FireSound("woot.pcm", SoundProperties(100));
-	  oldValue = -oldValue;
-        }
-
-#else
-        const glm::vec3 position    = glm::vec3(0.0f, 1.2f, glm::mix(1.3f, 2.5f, sinAngle));
-        const glm::mat4 translation = glm::translate(glm::mat4(), position);
-        const glm::mat4 scale       = glm::scale(glm::mat4(), glm::vec3(0.1f));
-
-        node->setTransformation(translation * scale);
-        frame.pointLights[0].position = position;
-
-#endif
-
-        //angle += 0.01;
-      }
 
       auto drawable = std::dynamic_pointer_cast<Drawable>(node);
       if (drawable) {
@@ -148,48 +106,26 @@ namespace Soleil {
     if (FirstLoop) {
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
-      ShapePtr          ball    = WavefrontLoader::fromContent(
-        AssetService::LoadAsString("colored-ball.obj"));
-      ShapePtr          bulb    = WavefrontLoader::fromContent(
-        AssetService::LoadAsString("bulb.obj"));
 
-      std::shared_ptr<Drawable> platform = std::make_shared<Drawable>(shape);
-      std::shared_ptr<Group>    platformGroup = std::make_shared<Group>();
-      // std::shared_ptr<Drawable> cube     = std::make_shared<Drawable>(shape);
+      for (int i = 0; i < 10; ++i) {
+        const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.4f));
 
-      platform->setName("Platform");
-      // cube->setName("Cube");
-      platformGroup->setName("PlatformGroup");
+        {
+          auto wall = std::make_shared<Drawable>(shape);
+          wall->setTransformation(
+            glm::translate(scale, glm::vec3(2.0f, 0.0f, -2.0f * i)));
+          group.addChild(wall);
+        }
 
-      platform->setTransformation(
-        glm::scale(glm::mat4(), glm::vec3(4.0f, 0.1f, 4.0f)));
-
-      // platformGroup->addChild(cube);
-      auto lightBulb = std::make_shared<Drawable>(bulb);
-      lightBulb->setName("lightBulb");
-      // lightBulb->setTransformation(
-      //   glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 1.5f, 0.0f)),
-      //              glm::vec3(.30f)));
-
-
-      auto littleBall = std::make_shared<Drawable>(ball);
-      littleBall->setTransformation(
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
-                   glm::vec3(0.6)));
-      
-      auto littleCube = std::make_shared<Drawable>(shape);
-      littleCube->setTransformation(
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.5f, 0.0f)),
-                   glm::vec3(0.4)));
-
-      platformGroup->addChild(littleCube);
-      // platformGroup->addChild(littleBall);
-      platformGroup->addChild(lightBulb);
-      group.addChild(platform);
-      group.addChild(platformGroup);
+        {
+          auto wall = std::make_shared<Drawable>(shape);
+          wall->setTransformation(
+            glm::translate(scale, glm::vec3(-2.0f, 0.0f, -2.0f * i)));
+          group.addChild(wall);
+        }
+      }
 
       SoundService::PlayMusic("fabulous.wav");
-
       frame.pointLights.push_back(PointLight());
     }
 
@@ -200,17 +136,17 @@ namespace Soleil {
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       50.0f);
 
-    static float cameraRotationAngle = 0.3f;
+    static float cameraRotationAngle = 0.0f;
     glm::vec3    cameraPosition =
       glm::vec3(glm::rotate(glm::mat4(), cameraRotationAngle,
                             glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::vec4(0.0f, 5.0f, 5.0f, 1.0f));
+                glm::vec4(0.0f, .10f, 1.0f, 1.0f));
 #if 0
-    cameraRotationAngle += 0.0055f;
+    cameraRotationAngle += 0.0155f;
 #endif
 
-    glm::mat4 view =
-      glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(cameraPosition, glm::vec3(0.0f, 0.1f, 0.0f),
+                                 glm::vec3(0.0f, 1.0f, 0.0f));
 
     frame.time           = time;
     frame.cameraPosition = cameraPosition;
@@ -221,25 +157,5 @@ namespace Soleil {
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
 
-// Make it rotate on its own axis
-#if 0
-    static float angle = 0.55f;
-
-    /* The cube is already centered */
-    static const glm::mat4 translation;
-    static const glm::mat4 inverseTranslation;
-
-    glm::mat4 transformation =
-      glm::rotate(inverseTranslation, angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-      translation;
-
-    angle += 0.1f;
-    if (angle >= glm::two_pi<float>()) {
-      SoundService::FireSound("woot.pcm", SoundProperties(100));
-      angle = 0.0f;
-    }
-
-    group.setTransformation(transformation);
-#endif
   }
 } // Soleil

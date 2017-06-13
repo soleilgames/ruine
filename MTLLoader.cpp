@@ -72,6 +72,7 @@ namespace Soleil {
     int channelsInFile = 0;
 
     const auto     encodedImageData = AssetService::LoadAsDataVector(argument);
+    stbi_set_flip_vertically_on_load(1);
     unsigned char* image =
       stbi_load_from_memory(encodedImageData.data(), encodedImageData.size(),
                             &width, &height, &channelsInFile, 4);

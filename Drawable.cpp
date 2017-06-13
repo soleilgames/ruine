@@ -65,9 +65,11 @@ namespace Soleil {
     glUniformMatrix4fv(instance.drawableMVPMatrix, 1, GL_FALSE,
                        glm::value_ptr(ViewProjectionModel));
 
-    /* Book has a mistake, it says using a MVMatrix while only using the Model
-     * Matrix*/
+/* Book has a mistake, it says using a MVMatrix while only using the Model
+ * Matrix*/
+#if 0
     auto ModelView = frame.View * getTransformation();
+#endif
     glUniformMatrix4fv(instance.drawableMVMatrix, 1, GL_FALSE,
                        glm::value_ptr(getTransformation())); // ModelView
 
@@ -87,12 +89,9 @@ namespace Soleil {
     throwOnGlError();
 
     // Setting Materials -------------------------------------------------------
-    static float time = 0.0f;
-    time += 0.006f;
     glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
                  glm::value_ptr(material.ambiantColor));
-    glUniform1f(instance.drawableMaterial.shininess,
-                material.shininess * glm::mix(0.12f, .18f, glm::sin(time)));
+    glUniform1f(instance.drawableMaterial.shininess, material.shininess);
     glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
                  glm::value_ptr(material.emissiveColor));
     glUniform3fv(instance.drawableMaterial.diffuseColor, 1,

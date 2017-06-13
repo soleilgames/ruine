@@ -131,6 +131,8 @@ namespace Soleil {
       }
     } catch (const std::runtime_error& e) {
       Logger::error(toString("Fatal error while handling command: ", e.what()));
+      androidApp->destroyRequested =
+        1; // TODO: Use message window and exit gracefully
     } catch (...) {
       assert(false && "Someone raised a non runtime_error exception");
       Logger::error("Unknown error while handling command: ");
