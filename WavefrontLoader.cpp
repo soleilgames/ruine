@@ -250,8 +250,8 @@ namespace Soleil {
     }
     return std::make_shared<Shape>(vertices, store.materials[0]);
 #else
-    assert(commands.store.materials.size() == 1 &&
-           "Currently only ONE (not even zero) material are supported");
+    assert(commands.store.materials.size() > 0 &&
+           "Currently only one or more (not zero) material are supported");
     return std::make_shared<Shape>(commands.store.vertexElements,
                                    commands.store.indexElements,
                                    commands.store.materials[0]);

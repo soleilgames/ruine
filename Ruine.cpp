@@ -107,6 +107,9 @@ namespace Soleil {
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
 
+      ShapePtr doorShape = WavefrontLoader::fromContent(
+        AssetService::LoadAsString("closeddoor.obj"));
+
       for (int i = 0; i < 10; ++i) {
         const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.4f));
 
@@ -122,6 +125,13 @@ namespace Soleil {
           wall->setTransformation(
             glm::translate(scale, glm::vec3(-2.0f, 0.0f, -2.0f * i)));
           group.addChild(wall);
+        }
+
+        {
+          auto door = std::make_shared<Drawable>(doorShape);
+          door->setTransformation(
+            glm::translate(scale, glm::vec3(0.0f, -1.0f, -2.0f * i)));
+          group.addChild(door);
         }
       }
 
@@ -156,6 +166,5 @@ namespace Soleil {
 
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
-
   }
 } // Soleil
