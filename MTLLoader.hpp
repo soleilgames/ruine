@@ -24,14 +24,15 @@
 
 #include "Shape.hpp"
 
-#include <vector>
+#include <map>
 
 namespace Soleil {
 
   class MTLLoader
   {
   public:
-    static std::vector<Material> fromContent(const std::string& content);
+    static std::map<std::string, Material> fromContent(
+      const std::string& content);
   };
 
 } // Soleil

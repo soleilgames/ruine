@@ -42,7 +42,7 @@ namespace Soleil {
     glm::vec2 uv;
 
     Vertex(glm::vec4 position, glm::vec3 normal,
-           glm::vec4 color = glm::vec4(1.0f), glm::vec2 uv = glm::vec2(-1.0f))
+           glm::vec4 color = glm::vec4(1.0f), glm::vec2 uv = glm::vec2(-42.0f))
       : position(position)
       , normal(normal)
       , color(color)
@@ -75,6 +75,13 @@ namespace Soleil {
     GLint diffuseMap;
   };
 
+  struct SubShape
+  {
+    std::vector<Vertex>   vertices;
+    std::vector<GLushort> indices;
+    Material              material;
+  };
+
   /**
    * Shape holds informations on a 3D Model object.
    *
@@ -83,21 +90,15 @@ namespace Soleil {
   class Shape : public Object
   {
   public:
-    Shape(const std::vector<Vertex>& vertices, const Material& material);
-    Shape(const std::vector<Vertex>&   vertices,
-          const std::vector<GLushort>& indices, const Material& material);
+    Shape(const std::vector<SubShape>& subShapes);
     virtual ~Shape();
 
   public:
-    const std::vector<Vertex>&   getVertices(void) const noexcept;
-    const std::vector<GLushort>& getIndices(void) const noexcept;
-    const Material&              getMaterial(void) const noexcept;
-    GLuint                       getBuffer() noexcept;
+    const std::vector<SubShape> getSubShapes(void) const noexcept;
+    GLuint                      getBuffer() noexcept;
 
   private:
-    std::vector<Vertex>   vertices;
-    std::vector<GLushort> indices;
-    Material              material;
+    std::vector<SubShape> subShapes;
     gl::Buffer            buffer;
 
   public:

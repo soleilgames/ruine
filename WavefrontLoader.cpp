@@ -22,8 +22,8 @@
 #include <functional>
 #include <istream>
 #include <map>
+#include <map>
 #include <regex>
-#include <set>
 
 #include "AssetService.hpp"
 #include "Logger.hpp"
@@ -32,10 +32,13 @@
 
 namespace Soleil {
 
+  typedef std::function<void(const std::string&)> Command;
+  typedef std::map<std::string, Command> CommandMap;
+
   // TODO: using iostream >> (float) skip parsing errors
 
-  GLushort findOrEmplace(std::vector<Vertex>& vertexElements,
-                         const Vertex&        vertex)
+  static GLushort findOrEmplace(std::vector<Vertex>& vertexElements,
+                                const Vertex&        vertex)
   {
     // TODO: Yep, might worth to find a better algorithm.
     GLushort index = 0;
@@ -54,10 +57,12 @@ namespace Soleil {
     std::vector<glm::vec4> vertices;
     std::vector<glm::vec2> textureCoords;
     std::vector<glm::vec3> normals;
+  };
 
+  struct ComponentStore
+  {
     std::vector<Vertex>   vertexElements;
     std::vector<GLushort> indexElements;
-
     std::vector<Material> materials;
   };
 
@@ -107,7 +112,8 @@ namespace Soleil {
     normals->push_back(v);
   }
 
-  static void commandMatchFace(ObjectStore* store, const std::string& arguments)
+  static void commandMatchFace(ObjectStore* store, SubShape* component,
+                               const std::string& arguments)
   {
     static const std::regex faceVertex("([0-9]+)(/([0-9]*)(/([0-9]+))?)?");
     enum GROUPS
@@ -163,20 +169,31 @@ namespace Soleil {
       }
 
       Vertex v(position, normal, color, uv);
-      store->indexElements.push_back(findOrEmplace(store->vertexElements, v));
+      component->indices.push_back(findOrEmplace(component->vertices, v));
 
       inprogress = matched.suffix().str();
       i++;
     }
   }
 
-  static void commandLoadMTL(std::vector<Material>* materials,
-                             const std::string      fileName)
+  static void commandLoadMTL(std::map<std::string, Material>* materials,
+                             const std::string fileName)
   {
     *materials = MTLLoader::fromContent(AssetService::LoadAsString(fileName));
   }
 
-  typedef std::function<void(const std::string&)> Command;
+  static void commandUseMTL(std::vector<SubShape>* componentsStore,
+                            ObjectStore* store, CommandMap*  map,
+                            std::map<std::string, Material>* materials,
+                            const std::string& materialName)
+  {
+    componentsStore->emplace_back();
+    componentsStore->back().material = materials->at(materialName);
+
+    using std::placeholders::_1;
+    (*map)["f"] =
+      std::bind(commandMatchFace, store, &(componentsStore->back()), _1);
+  }
 
   class Commands
   {
@@ -185,18 +202,16 @@ namespace Soleil {
     {
       using std::placeholders::_1;
 
-      this->map.emplace("usemtl", std::bind(commandNOOP, "usemtl", _1));
       this->map.emplace("o", std::bind(commandNOOP, "o", _1));
       this->map.emplace("s", std::bind(commandNOOP, "s", _1));
 
-      this->map.emplace("mtllib",
-                        std::bind(commandLoadMTL, &(store.materials), _1));
+      this->map.emplace("usemtl", std::bind(commandUseMTL, &componentsStore,
+                                            &store, &map, &materials, _1));
+      this->map.emplace("mtllib", std::bind(commandLoadMTL, &(materials), _1));
       this->map.emplace("v", std::bind(commandVector, &(store.vertices), _1));
       this->map.emplace(
         "vt", std::bind(commandTextureCoords, &(store.textureCoords), _1));
       this->map.emplace("vn", std::bind(commandNormals, &(store.normals), _1));
-
-      this->map.emplace("f", std::bind(commandMatchFace, &store, _1));
     }
 
   public:
@@ -210,9 +225,11 @@ namespace Soleil {
 
   public:
     ObjectStore store;
+    std::map<std::string, Material> materials;
+    std::vector<SubShape> componentsStore;
 
   private:
-    std::map<std::string, std::function<void(const std::string&)>> map;
+    CommandMap map;
   };
 
   std::shared_ptr<Shape> WavefrontLoader::fromContent(
@@ -240,22 +257,9 @@ namespace Soleil {
       }
     }
 
-#ifdef SOLEIL__DRAWARRAYS
-    /* If we are using glDrawArrays, we need to duplicate all the vertices
-     * before creating the shape */
-    std::vector<Vertex> vertices;
-
-    for (GLushort index : commands.store.indexElements) {
-      vertices.push_back(commands.store.vertexElements[index]);
-    }
-    return std::make_shared<Shape>(vertices, store.materials[0]);
-#else
-    assert(commands.store.materials.size() > 0 &&
-           "Currently only one or more (not zero) material are supported");
-    return std::make_shared<Shape>(commands.store.vertexElements,
-                                   commands.store.indexElements,
-                                   commands.store.materials[0]);
-#endif
+    // // TODO:  assert(commands.componentsStore[0].materials.size() > 0 &&
+    //        "Currently only one or more (not zero) material are supported");
+    return std::make_shared<Shape>(commands.componentsStore);
   }
 
 } // Soleil

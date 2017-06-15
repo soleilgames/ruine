@@ -23,59 +23,40 @@
 
 namespace Soleil {
 
-  Shape::Shape(const std::vector<Vertex>& vertices, const Material& material)
+  Shape::Shape(const std::vector<SubShape>& subShapes)
     : Object(GetType(), GetClassName())
-    , vertices(vertices)
-    , material(material)
+    , subShapes(subShapes)
     , buffer()
   {
     // TODO: In case of GL Context reseted we need to renew the buffer
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
     glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                 vertices.data(), GL_STATIC_DRAW);
+    GLsizeiptr size = 0;
+    for (const auto& sub : subShapes) {
+      size += sizeof(sub.vertices[0]) * sub.vertices.size();
+    }
 
-    throwOnGlError();
-  }
+    glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_STREAM_DRAW);
 
-  Shape::Shape(const std::vector<Vertex>&   vertices,
-               const std::vector<GLushort>& indices, const Material& material)
-    : Object(GetType(), GetClassName())
-    , vertices(vertices)
-    , indices(indices)
-    , material(material)
-    , buffer()
-  {
-    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, *buffer);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                 vertices.data(), GL_STATIC_DRAW);
-
+    GLintptr offset = 0;
+    for (const auto& sub : subShapes) {
+      GLsizeiptr componentSize = sizeof(sub.vertices[0]) * sub.vertices.size();
+      
+      glBufferSubData(GL_ARRAY_BUFFER, offset, componentSize, sub.vertices.data());
+      offset += componentSize;
+    }
+    
     throwOnGlError();
   }
 
   Shape::~Shape() {}
 
-  const std::vector<Vertex>& Shape::getVertices(void) const noexcept
-  {
-    return vertices;
-  }
-
-  const Material& Shape::getMaterial(void) const noexcept
-  {
-    return material;
-  }
-  
   GLuint Shape::getBuffer() noexcept { return *buffer; }
 
-  const std::vector<GLushort>& Shape::getIndices(void) const noexcept
+  const std::vector<SubShape> Shape::getSubShapes(void) const noexcept
   {
-#ifdef SOLEIL__DRAWARRAYS
-    throw std::runtime_error("No indices when built with SOLEIL__DRAWARRAYS");
-#endif
-    return indices;
+    return this->subShapes;
   }
 
 } // Soleil

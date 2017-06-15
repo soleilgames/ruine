@@ -106,33 +106,69 @@ namespace Soleil {
     if (FirstLoop) {
       const std::string content = AssetService::LoadAsString("wallcube.obj");
       ShapePtr          shape   = WavefrontLoader::fromContent(content);
+      ShapePtr          floorShape =
+        WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
 
-      ShapePtr doorShape = WavefrontLoader::fromContent(
-        AssetService::LoadAsString("closeddoor.obj"));
+      // for (int i = 0; i < 10; ++i) {
+      //   const static glm::mat4 scale = glm::scale(glm::mat4(),
+      //   glm::vec3(0.4f));
 
-      for (int i = 0; i < 10; ++i) {
-        const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.4f));
+      //   {
+      //     auto wall = std::make_shared<Drawable>(shape);
+      //     wall->setTransformation(
+      //       glm::translate(scale, glm::vec3(2.0f, 0.0f, -2.0f * i)));
+      //     group.addChild(wall);
+      //   }
 
-        {
-          auto wall = std::make_shared<Drawable>(shape);
-          wall->setTransformation(
-            glm::translate(scale, glm::vec3(2.0f, 0.0f, -2.0f * i)));
-          group.addChild(wall);
+      //   {
+      //     auto wall = std::make_shared<Drawable>(shape);
+      //     wall->setTransformation(
+      //       glm::translate(scale, glm::vec3(-2.0f, 0.0f, -2.0f * i)));
+      //     group.addChild(wall);
+      //   }
+      // }
+
+      std::string level;
+      level += "xxxxxx\n";
+      level += "x....x\n";
+      level += "x....x\n";
+      level += "x....x\n";
+      level += "x....x\n";
+      level += "x..xxx\n";
+      level += "x..xxx\n";
+      level += "xxxxxx\n";
+      level += "xxxxxx\n";
+      level += "xxxxxx\n";
+
+      std::istringstream     s(level);
+      std::string            line;
+      float                  x     = 0.0f;
+      float                  z     = 0.0f;
+      const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.4f));
+      while (std::getline(s, line)) {
+        for (auto const& c : line) {
+          if (c == 'x') {
+            auto wall = std::make_shared<Drawable>(shape);
+            wall->setTransformation(
+              glm::translate(scale, glm::vec3(x, 0.0f, 2.0f * z)));
+            group.addChild(wall);
+          } else {
+            auto ground = std::make_shared<Drawable>(floorShape);
+            ground->setTransformation(
+              glm::translate(scale, glm::vec3(x, -1.0f, 2.0f * z)));
+            group.addChild(ground);
+
+            auto ceil = std::make_shared<Drawable>(floorShape);
+            ceil->setTransformation(
+              glm::translate(scale, glm::vec3(x, 1.0f, 2.0f * z)) *
+              glm::rotate(glm::mat4(), glm::pi<float>(),
+                          glm::vec3(0.0f, 0.0f, 1.0f)));
+            group.addChild(ceil);
+          }
+          x += 1.0f;
         }
-
-        {
-          auto wall = std::make_shared<Drawable>(shape);
-          wall->setTransformation(
-            glm::translate(scale, glm::vec3(-2.0f, 0.0f, -2.0f * i)));
-          group.addChild(wall);
-        }
-
-        {
-          auto door = std::make_shared<Drawable>(doorShape);
-          door->setTransformation(
-            glm::translate(scale, glm::vec3(0.0f, -1.0f, -2.0f * i)));
-          group.addChild(door);
-        }
+        z += 1.0f;
+        x = 0.0f;
       }
 
       SoundService::PlayMusic("fabulous.wav");
@@ -150,12 +186,12 @@ namespace Soleil {
     glm::vec3    cameraPosition =
       glm::vec3(glm::rotate(glm::mat4(), cameraRotationAngle,
                             glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::vec4(0.0f, .10f, 1.0f, 1.0f));
+                glm::vec4(2.0f *0.4f, .10f, 2.0f * 0.4f, 1.0f));
 #if 0
     cameraRotationAngle += 0.0155f;
 #endif
 
-    glm::mat4 view = glm::lookAt(cameraPosition, glm::vec3(0.0f, 0.1f, 0.0f),
+    glm::mat4 view = glm::lookAt(cameraPosition, glm::vec3(2.0f *0.4f, .10f, 3.0f * 0.4f),
                                  glm::vec3(0.0f, 1.0f, 0.0f));
 
     frame.time           = time;

@@ -44,7 +44,6 @@ namespace Soleil {
     constexpr GLsizei         stride    = sizeof(Vertex);
     const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
     const Program&            rendering = instance.drawable;
-    const Material&           material  = shape->getMaterial();
 
     gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
     glBindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
@@ -65,7 +64,7 @@ namespace Soleil {
     glUniformMatrix4fv(instance.drawableMVPMatrix, 1, GL_FALSE,
                        glm::value_ptr(ViewProjectionModel));
 
-/* Book has a mistake, it says using a MVMatrix while only using the Model
+/* The book has a mistake, it says using a MVMatrix while only using the Model
  * Matrix*/
 #if 0
     auto ModelView = frame.View * getTransformation();
@@ -88,31 +87,13 @@ namespace Soleil {
                        glm::value_ptr(NormalMatrix));
     throwOnGlError();
 
-    // Setting Materials -------------------------------------------------------
-    glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
-                 glm::value_ptr(material.ambiantColor));
-    glUniform1f(instance.drawableMaterial.shininess, material.shininess);
-    glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
-                 glm::value_ptr(material.emissiveColor));
-    glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
-                 glm::value_ptr(material.diffuseColor));
-    glUniform3fv(instance.drawableMaterial.specularColor, 1,
-                 glm::value_ptr(material.specularColor));
-
+    // Setting Lights ----------------------------------------------------------
     glUniform3fv(instance.drawableAmbiantLight, 1,
                  glm::value_ptr(glm::vec3(.0f)));
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
-    throwOnGlError();
-
-    // Setting Textures --------------------------------------------------------
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material.diffuseMap);
-    glUniform1i(instance.drawableMaterial.diffuseMap, 0);
-
-    // Setting Lights ----------------------------------------------------------
-    glUniform1i(instance.drawableNumberOfLights, 1);
+    glUniform1i(instance.drawableNumberOfLights, 2);
 
 #if 0    
     static float angle = 0.0f;
@@ -132,29 +113,49 @@ namespace Soleil {
 #endif
 
     glUniform3fv(instance.drawablePointLights[0].color, 1,
-                 glm::value_ptr(glm::vec3(1.0f)));
-    glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.35f);
-    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.44f);
+                 glm::value_ptr(glm::vec3(0.00f)));
+    glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.22);
+    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.20);
 
     // Second Light (on the camera):
     glUniform3fv(instance.drawablePointLights[1].position, 1,
                  glm::value_ptr(frame.cameraPosition));
 
     glUniform3fv(instance.drawablePointLights[1].color, 1,
-                 glm::value_ptr(glm::vec3(0.8f)));
-    glUniform1f(instance.drawablePointLights[1].linearAttenuation, 0.35);
-    glUniform1f(instance.drawablePointLights[1].quadraticAttenuation, 0.44f);
+                 glm::value_ptr(glm::vec3(0.2f)));
+    glUniform1f(instance.drawablePointLights[1].linearAttenuation, 0.22);
+    glUniform1f(instance.drawablePointLights[1].quadraticAttenuation, 0.20);
 
     throwOnGlError();
 
-#ifdef SOLEIL__DRAWARRAYS
-    const std::vector<Vertex>& vertices = shape->getVertices();
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-#else
-    const std::vector<GLushort>& indices = shape->getIndices();
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
-                   indices.data());
-#endif
+    // glEnable(GL_POLYGON_SMOOTH);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for (const auto& sub : shape->getSubShapes()) {
+      // Setting Materials
+      // -------------------------------------------------------
+      glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
+                   glm::value_ptr(sub.material.ambiantColor));
+      glUniform1f(instance.drawableMaterial.shininess, sub.material.shininess);
+      glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
+                   glm::value_ptr(sub.material.emissiveColor));
+      glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
+                   glm::value_ptr(sub.material.diffuseColor));
+      glUniform3fv(instance.drawableMaterial.specularColor, 1,
+                   glm::value_ptr(sub.material.specularColor));
+
+      throwOnGlError();
+
+      // Setting Textures
+      // --------------------------------------------------------
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
+      glUniform1i(instance.drawableMaterial.diffuseMap, 0);
+
+      const std::vector<GLushort>& indices = sub.indices;
+      glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
+                     indices.data());
+    }
 
     throwOnGlError();
   }

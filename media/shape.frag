@@ -43,7 +43,7 @@ main()
 
   vec3 computedAmbiantColor = material.ambiantColor;
   float alpha = 1.0;
-  if (uv.x > -1.0) {
+  if (uv.x > -42.0) {
     vec4 textureColor = texture2D(material.diffuseMap, uv);
 
     computedAmbiantColor *= textureColor.rgb;

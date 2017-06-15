@@ -91,7 +91,6 @@ namespace Soleil {
     OpenGLDataInstance::Instance().textures.emplace_back();
     SOLEIL__LOGGER_DEBUG(toString("After emplace"));
 
-    
     gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();
     gl::BindTexture bindTexture(GL_TEXTURE_2D, *texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
@@ -105,13 +104,13 @@ namespace Soleil {
     stbi_image_free(image); // TODO: Use RAII
   }
 
-  static void commandPushMaterial(std::vector<Material>* materials,
-                                  CommandMap*            commandMap,
-                                  const std::string&     argument)
+  static void commandPushMaterial(std::map<std::string, Material>* materials,
+                                  CommandMap*        commandMap,
+                                  const std::string& argument)
   {
     using std::placeholders::_1;
 
-    materials->push_back(Material()); // TODO: Set Name
+    materials->emplace(argument, Material());
 
     commandMap->clear();
 
@@ -119,20 +118,23 @@ namespace Soleil {
       "newmtl", std::bind(commandPushMaterial, materials, commandMap, _1));
 
     commandMap->emplace(
-      "Ns", std::bind(commandParseFloat, &(materials->back().shininess), _1));
+      "Ns",
+      std::bind(commandParseFloat, &(materials->at(argument).shininess), _1));
     commandMap->emplace(
-      "Ka", std::bind(commandParseVec3, &(materials->back().ambiantColor), _1));
+      "Ka",
+      std::bind(commandParseVec3, &(materials->at(argument).ambiantColor), _1));
     commandMap->emplace(
-      "Kd", std::bind(commandParseVec3, &(materials->back().diffuseColor), _1));
+      "Kd",
+      std::bind(commandParseVec3, &(materials->at(argument).diffuseColor), _1));
     commandMap->emplace(
-      "Ks",
-      std::bind(commandParseVec3, &(materials->back().specularColor), _1));
+      "Ks", std::bind(commandParseVec3,
+                      &(materials->at(argument).specularColor), _1));
     commandMap->emplace(
-      "Ke",
-      std::bind(commandParseVec3, &(materials->back().emissiveColor), _1));
+      "Ke", std::bind(commandParseVec3,
+                      &(materials->at(argument).emissiveColor), _1));
     commandMap->emplace(
       "map_Kd",
-      std::bind(commandLoadTexture, &(materials->back().diffuseMap), _1));
+      std::bind(commandLoadTexture, &(materials->at(argument).diffuseMap), _1));
     commandMap->emplace("Ni", std::bind(commandNOOP, "Ni", _1));
     commandMap->emplace("d", std::bind(commandNOOP, "d", _1));
     commandMap->emplace("illum", std::bind(commandNOOP, "illum", _1));
@@ -163,13 +165,14 @@ namespace Soleil {
     }
 
   public:
-    std::vector<Material> materials;
+    std::map<std::string, Material> materials;
 
   private:
     CommandMap map;
   };
 
-  std::vector<Material> MTLLoader::fromContent(const std::string& content)
+  std::map<std::string, Material> MTLLoader::fromContent(
+    const std::string& content)
   {
     std::istringstream in(content);
     MTLCommands        commands;
