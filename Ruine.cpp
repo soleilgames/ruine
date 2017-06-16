@@ -98,7 +98,7 @@ namespace Soleil {
       x = 0.0f;
     }
 
-    SoundService::PlayMusic("fabulous.wav");
+    SoundService::PlayMusic("farlands.ogg");
     frame.pointLights.push_back(PointLight());
   }
 

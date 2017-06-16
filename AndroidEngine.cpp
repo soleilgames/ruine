@@ -31,6 +31,9 @@
 
 #include <stdexcept>
 
+#include <glm/common.hpp>
+#include <glm/glm.hpp>
+
 namespace Soleil {
 
   class AndroidControllerService
@@ -166,6 +169,19 @@ namespace Soleil {
     }
   }
 
+  static float bezier(const float A, const float B, const float C,
+                      const float D, const float t)
+  {
+    float OneMinusT = 1.0f - t;
+    float ThreeT    = 3 * t;
+
+    return (OneMinusT * OneMinusT * OneMinusT) * A + (t * t * t) * D +
+           3 * (ThreeT * ThreeT) * OneMinusT * C +
+           3 * (OneMinusT * OneMinusT) * t * B;
+  }
+
+  template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }
+
   int32_t AndroidEngine::HandleInput(struct android_app* androidApp,
                                      AInputEvent*        event)
   {
@@ -185,27 +201,53 @@ namespace Soleil {
           const float x = AMotionEvent_getX(event, 0);
           const float y = AMotionEvent_getY(event, 0);
 
-          SOLEIL__LOGGER_DEBUG(toString("X:", x));
-
           const glm::vec2& point = controllerService.padPosition;
           const glm::vec2  touch(x / (float)This->glContext->getScreenWidth(),
                                 y / (float)This->glContext->getScreenHeight());
 
-          glm::vec2 direction = point - touch;
-          direction.x         = ((direction.x > 0.05f && direction.x < 0.25f) ||
-                         (direction.x < -0.05f && direction.x > -0.25f))
-                          ? direction.x
-                          : 0.0f;
-          direction.y = ((direction.y > 0.05f && direction.y < 0.25f) ||
-                         (direction.y < -0.05f && direction.y > -0.25f))
-                          ? direction.y
-                          : 0.0f;
+#if 0
+          glm::vec2 distance = point - touch;
+#else
+          const float radius = 0.30f;
+          glm::vec2   distance((point.x - touch.x) / radius,
+                             (point.y - touch.y) / radius);
+#endif
+// SOLEIL__LOGGER_DEBUG(toString("Distance:", distance));
+
+#if 0
+          distance.x = ((distance.x > 0.05f && distance.x < 0.15f) ||
+                        (distance.x < -0.05f && distance.x > -0.15f))
+                         ? distance.x
+                         : 0.0f;
+          distance.y = ((distance.y > 0.05f && distance.y < 0.15f) ||
+                        (distance.y < -0.05f && distance.y > -0.15f))
+                         ? distance.y
+                         : 0.0f;
 
           // TODO: Better than exp (Bézier?)
           controllerService.player.dpad.x =
-            5.0f * direction.x * glm::exp2(direction.x);
+            5.0f * distance.x * glm::pow(5.0f, distance.x);
           controllerService.player.dpad.z =
-            5.0f * direction.y * glm::exp2(direction.y);
+            7.0f * distance.y * glm::pow(5.0f, distance.y);
+#else
+          float A = 0.0f;
+          float B = 0.005f;
+          float C = 0.5f;
+          float D = 1.0f;
+
+          float signx = sgn(distance.x);
+          float signy = sgn(distance.y);
+          distance.x  = glm::min(signx * distance.x * 3.334f, 1.0f);
+          distance.y  = glm::min(signy * distance.y * 3.334f, 1.0f);
+          // SOLEIL__LOGGER_DEBUG(toString("Distance AFTER=", distance));
+
+          controllerService.player.dpad.x =
+            signx * bezier(A, B, C, D, distance.x);
+          controllerService.player.dpad.z =
+            signy * bezier(A, B, C, D, distance.y);
+// SOLEIL__LOGGER_DEBUG(
+//   toString("Dpad:", controllerService.player.dpad));
+#endif
           break;
       }
     }
