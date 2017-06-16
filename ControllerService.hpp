@@ -19,45 +19,27 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__RUINE_HPP_
-#define SOLEIL__RUINE_HPP_
+#ifndef SOLEIL__CONTROLLERSERVICE_HPP_
+#define SOLEIL__CONTROLLERSERVICE_HPP_
 
-#include "AssetService.hpp"
-#include "OpenGLInclude.hpp"
-#include "SoundService.hpp"
-#include "types.hpp"
+#include <memory>
 
 #include <glm/vec3.hpp>
 
 namespace Soleil {
-  struct Camera
+
+  struct Controller
   {
-    glm::vec3 position;
-    float     yaw;
+    glm::vec3 dpad;
   };
 
-  glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
-                         const float yaw);
-
-  class Ruine
+  class ControllerService
   {
   public:
-    Ruine(AssetService* assetService, SoundService* soundService,
-          int viewportWidth, int viewportHeight);
-    virtual ~Ruine();
-
-  public:
-    void render(Timer time);
-
-  private:
-    AssetService* assetService;
-    SoundService* soundService;
-    int           viewportWidth;
-    int           viewportHeight;
-    Camera        camera;
-    glm::mat4     view;
+    static Controller& GetPlayerController(void) noexcept;
+    static glm::vec2& GetPadPosition(void) noexcept;
   };
 
 } // Soleil
 
-#endif /* SOLEIL__RUINE_HPP_ */
+#endif /* SOLEIL__CONTROLLERSERVICE_HPP_ */

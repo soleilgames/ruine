@@ -67,8 +67,15 @@ namespace Soleil {
     DrawableMaterial   drawableMaterial;
     DrawablePointLight drawablePointLights[DefinedMaxLights];
 
+    // 2D Image
+    gl::Buffer imageBuffer;
+    Program    imageProgram;
+    GLint      imageModelMatrix;
+    GLint      imageImage;
+
     // Textures
     gl::Texture              textureTest;
+    gl::Texture              texturePad;
     std::vector<gl::Texture> textures; // TODO: Do not let the container extend.
 
     static OpenGLDataInstance& Instance(void) noexcept
@@ -82,8 +89,9 @@ namespace Soleil {
     static void Initialize(void);
 
     OpenGLDataInstance()
-      : textures(0){
-      textures.reserve(12); // TODO: Fix this number
+      : textures(0)
+    {
+      textures.reserve(32); // TODO: Fix this number
     };
     OpenGLDataInstance(const OpenGLDataInstance&) = delete;
 

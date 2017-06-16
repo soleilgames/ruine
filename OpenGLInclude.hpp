@@ -123,7 +123,7 @@ namespace Soleil {
         DeleteFunction(1, &name);
       }
 
-      GLuint operator*(void) { return name; }
+      GLuint operator*(void) const { return name; }
 
       Generator(const Generator&) = delete;
       Generator& operator=(const Generator&) = delete;

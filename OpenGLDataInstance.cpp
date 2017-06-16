@@ -21,6 +21,8 @@
 
 #include "OpenGLDataInstance.hpp"
 
+#include "AssetService.hpp"
+
 namespace Soleil {
 
   std::unique_ptr<OpenGLDataInstance> OpenGLDataInstance::instance;
@@ -100,11 +102,59 @@ namespace Soleil {
     throwOnGlError();
   }
 
+  static inline void initializePad(void)
+  {
+    OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
+
+    {
+      const ImageAsset pad("pad.png");
+      gl::BindTexture  bindTexture(GL_TEXTURE_2D, *instance.texturePad);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pad.width(), pad.height(), 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, pad.data());
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
+
+    {
+      gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, *instance.imageBuffer);
+
+      // clang-format off
+      const GLfloat vertices[] {
+	0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // Face1
+	1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f  // Face2
+      };
+      // clang-format on
+
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    }
+
+    // Also initialize the Image Program
+    {
+      Shader imageVert(GL_VERTEX_SHADER, "image.vert");
+      Shader imageFrag(GL_FRAGMENT_SHADER, "image.frag");
+      instance.imageProgram.attachShader(imageVert);
+      instance.imageProgram.attachShader(imageFrag);
+      instance.imageProgram.compile();
+      instance.imageModelMatrix =
+        instance.imageProgram.getUniform("ModelMatrix");
+      instance.imageImage =
+	instance.imageProgram.getUniform("image");
+
+    }
+    throwOnGlError();
+  }
+
   void OpenGLDataInstance::Initialize(void)
   {
+    {
+      // // TODO: An initialize Image that init a buffer and a DrawImage that
+      // can draw any image on the screen
+    }
     OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
     initializeDrawable();
     initializeTestResources();
+    initializePad();
   }
 
 } // Soleil

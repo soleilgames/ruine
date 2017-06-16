@@ -24,6 +24,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "ControllerService.hpp"
 #include "DesktopAssetService.hpp"
 #include "DesktopSoundService.hpp"
 #include "OpenGLInclude.hpp"
@@ -31,6 +32,31 @@
 #include "stringutils.hpp"
 
 using namespace Soleil;
+
+class SDLControllerService
+{
+public:
+  SDLControllerService() {}
+  virtual ~SDLControllerService() {}
+
+public:
+  Controller player;
+  glm::vec2  padPosition;
+};
+
+SDLControllerService controllerService;
+
+Controller&
+ControllerService::GetPlayerController() noexcept
+{
+  return controllerService.player;
+}
+
+glm::vec2&
+GetPadPosition(void) noexcept
+{
+  return controllerService.padPosition;
+}
 
 static void
 render(SDL_Window* window, Ruine& r)
@@ -40,10 +66,24 @@ render(SDL_Window* window, Ruine& r)
     while (SDL_PollEvent(&e) != 0) {
       switch (e.type) {
         case SDL_QUIT: return;
+        case SDL_KEYDOWN:
+          switch (e.key.keysym.sym) {
+            case SDLK_ESCAPE: return;
+            case SDLK_w: controllerService.player.dpad.z = 1.0f; break;
+            case SDLK_s: controllerService.player.dpad.z = -1.0f; break;
+            case SDLK_a: controllerService.player.dpad.x = 1.0f; break;
+            case SDLK_d: controllerService.player.dpad.x = -1.0f; break;
+          }
+          break;
         case SDL_KEYUP:
           switch (e.key.keysym.sym) {
             case SDLK_ESCAPE: return;
+            case SDLK_w: controllerService.player.dpad.z = 0.0f; break;
+            case SDLK_s: controllerService.player.dpad.z = 0.0f; break;
+            case SDLK_a: controllerService.player.dpad.x = 0.0f; break;
+            case SDLK_d: controllerService.player.dpad.x = 0.0f; break;
           }
+          break;
       }
     }
 

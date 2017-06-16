@@ -20,9 +20,12 @@
  */
 
 #include "AndroidEngine.hpp"
+
 #include "AndroidAssetService.hpp"
 #include "AndroidSoundService.hpp"
+#include "ControllerService.hpp"
 #include "Ruine.hpp"
+#include "TypesToOStream.hpp"
 #include "stringutils.hpp"
 #include "types.hpp"
 
@@ -30,12 +33,36 @@
 
 namespace Soleil {
 
+  class AndroidControllerService
+  {
+  public:
+    AndroidControllerService() {}
+    virtual ~AndroidControllerService() {}
+
+  public:
+    Controller player;
+    glm::vec2  padPosition;
+  };
+
+  AndroidControllerService controllerService;
+
+  Controller& ControllerService::GetPlayerController() noexcept
+  {
+    return controllerService.player;
+  }
+
+  glm::vec2& GetPadPosition(void) noexcept
+  {
+    return controllerService.padPosition;
+  }
+
   AndroidEngine::AndroidEngine()
     : inProgress(true)
     , focus(false)
     , glContext(AndroidGLESContext::getInstance())
     , initialized(false)
   {
+    controllerService.padPosition = glm::vec2(0.14f, 0.75f);
     SOLEIL__LOGGER_DEBUG("Creating Android Engine");
   }
 
@@ -139,9 +166,49 @@ namespace Soleil {
     }
   }
 
-  int32_t AndroidEngine::HandleInput(struct android_app* /*app*/,
-                                     AInputEvent* /*event*/)
+  int32_t AndroidEngine::HandleInput(struct android_app* androidApp,
+                                     AInputEvent*        event)
   {
+    AndroidEngine* This = (AndroidEngine*)androidApp->userData;
+
+    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
+
+      int32_t  action = AMotionEvent_getAction(event);
+      uint32_t flags  = action & AMOTION_EVENT_ACTION_MASK;
+
+      switch (flags) {
+        case AMOTION_EVENT_ACTION_UP:
+          controllerService.player.dpad = glm::vec3(0.0f);
+          break;
+        case AMOTION_EVENT_ACTION_MOVE:
+
+          const float x = AMotionEvent_getX(event, 0);
+          const float y = AMotionEvent_getY(event, 0);
+
+          SOLEIL__LOGGER_DEBUG(toString("X:", x));
+
+          const glm::vec2& point = controllerService.padPosition;
+          const glm::vec2  touch(x / (float)This->glContext->getScreenWidth(),
+                                y / (float)This->glContext->getScreenHeight());
+
+          glm::vec2 direction = point - touch;
+          direction.x         = ((direction.x > 0.05f && direction.x < 0.25f) ||
+                         (direction.x < -0.05f && direction.x > -0.25f))
+                          ? direction.x
+                          : 0.0f;
+          direction.y = ((direction.y > 0.05f && direction.y < 0.25f) ||
+                         (direction.y < -0.05f && direction.y > -0.25f))
+                          ? direction.y
+                          : 0.0f;
+
+          // TODO: Better than exp (Bézier?)
+          controllerService.player.dpad.x =
+            5.0f * direction.x * glm::exp2(direction.x);
+          controllerService.player.dpad.z =
+            5.0f * direction.y * glm::exp2(direction.y);
+          break;
+      }
+    }
     return 0;
   }
 
@@ -182,7 +249,8 @@ namespace Soleil {
     // "");
     // TODO: sle =
     // std::make_unique<Android::AndroidAudioService>(assetService.get());
-    // TODO: viewer = generateViewerHookFunction(assetService.get(), sle.get());
+    // TODO: viewer = generateViewerHookFunction(assetService.get(),
+    // sle.get());
 
     glViewport(0, 0, glContext->getScreenWidth(), glContext->getScreenHeight());
 

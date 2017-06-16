@@ -53,6 +53,25 @@ namespace Soleil {
 
   typedef std::shared_ptr<AssetDescriptor> AssetDescriptorPtr;
 
+  class ImageAsset
+  {
+  public:
+    ImageAsset(const std::string& assetName);
+    ImageAsset(const ImageAsset&) = delete;
+    virtual ~ImageAsset();
+
+  public:
+    int            width(void) const noexcept;
+    int            height(void) const noexcept;
+    const uint8_t* data(void) const noexcept;
+
+  private:
+    uint8_t* image;
+    int      imageWidth;
+    int      imageHeight;
+    int      channelsInFile;
+  };
+
   class AssetService
   {
   public:

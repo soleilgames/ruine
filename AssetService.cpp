@@ -20,9 +20,43 @@
  */
 
 #include "AssetService.hpp"
+
+#include "Logger.hpp"
+#include "stringutils.hpp"
+
 #include <cassert>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+#include "stb_image.h"
+
 namespace Soleil {
+
+  ImageAsset::ImageAsset(const std::string& assetName)
+  {
+    stbi_set_flip_vertically_on_load(1);
+    const auto encodedImageData = AssetService::LoadAsDataVector(assetName);
+    image =
+      stbi_load_from_memory(encodedImageData.data(), encodedImageData.size(),
+                            &imageWidth, &imageHeight, &channelsInFile, 4);
+
+    if (image == nullptr) {
+      throw std::runtime_error(toString("Failed to decode image '", assetName,
+                                        "': ", stbi_failure_reason()));
+      stbi_image_free(image); // TODO: Use RAII
+    }
+    SOLEIL__LOGGER_DEBUG(
+      toString("Loaded image: ", assetName, " -> ", imageWidth, "x",
+               imageHeight, ". Original number of chanels: ", channelsInFile));
+  }
+
+  ImageAsset::~ImageAsset() { stbi_image_free(image); }
+
+  int ImageAsset::width() const noexcept { return imageWidth; }
+
+  int ImageAsset::height() const noexcept { return imageHeight; }
+
+  const uint8_t* ImageAsset::data(void) const noexcept { return image; }
 
   std::shared_ptr<AssetService> AssetService::Instance;
 
