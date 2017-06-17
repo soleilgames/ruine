@@ -34,6 +34,7 @@ C'est un mélange entre un jeu d'aventure et un Pac Man 3D.
 Android is the target for this game. To build it, you need a recent version of the NDK and SDK installed.
 
 ```
+cd ruine/android
 ./gradlew build					   # Build the application
 adb install -r app/build/outputs/apk/app-debug.apk # Install the app
 adb logcat | tee tmp.txt | grep soleil		   # Just to follow logs
