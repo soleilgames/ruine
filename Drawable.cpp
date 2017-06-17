@@ -93,7 +93,7 @@ namespace Soleil {
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
-    glUniform1i(instance.drawableNumberOfLights, 2);
+    glUniform1i(instance.drawableNumberOfLights, 1);
 
 #if 0    
     static float angle = 0.0f;
@@ -113,9 +113,9 @@ namespace Soleil {
 #endif
 
     glUniform3fv(instance.drawablePointLights[0].color, 1,
-                 glm::value_ptr(glm::vec3(0.00f)));
+                 glm::value_ptr(glm::vec3(0.2f)));
     glUniform1f(instance.drawablePointLights[0].linearAttenuation, 0.22);
-    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.20);
+    glUniform1f(instance.drawablePointLights[0].quadraticAttenuation, 0.07);
 
     // Second Light (on the camera):
     glUniform3fv(instance.drawablePointLights[1].position, 1,

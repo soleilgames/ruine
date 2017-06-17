@@ -44,8 +44,7 @@
 
 namespace Soleil {
 
-  static void InitializeWorld(Group& group, Frame& frame, Camera& camera,
-                              glm::mat4& view)
+  static void InitializeWorld(Group& group, Frame& frame, Camera& camera)
   {
     const std::string content = AssetService::LoadAsString("wallcube.obj");
     ShapePtr          shape   = WavefrontLoader::fromContent(content);
@@ -53,16 +52,22 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
 
     std::string level;
-    level += "xxxxxx\n";
-    level += "x....x\n";
-    level += "x....x\n";
-    level += "x.D..x\n";
-    level += "x....x\n";
-    level += "xx.xxx\n";
-    level += "x..xxx\n";
-    level += "xxxxxx\n";
-    level += "xxxxxx\n";
-    level += "xxxxxx\n";
+    level += "xxxxxxxxxxxxxx\n";
+    level += "xD.xx......xxx\n";
+    level += "x..xxxxxx..xxx\n";
+    level += "x..xx......xxx\n";
+    level += "x..xx.......xx\n";
+    level += "x..xx.......xx\n";
+    level += "x..xxxxxxx..xx\n";
+    level += "x..xxxxxxx..xx\n";
+    level += "x.......xx..xx\n";
+    level += "x.......xx..xx\n";
+    level += "x.......xx..xx\n";
+    level += "x......xxx..xx\n";
+    level += "x..xxxxxxx..xx\n";
+    level += "x............x\n";
+    level += "x............x\n";
+    level += "xxxxxxxxxxxxxx\n";
 
     std::istringstream     s(level);
     std::string            line;
@@ -205,10 +210,15 @@ namespace Soleil {
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      InitializeWorld(group, frame, camera, view);
+      InitializeWorld(group, frame, camera);
     }
 
+#if 0
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
+#else
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+#endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     static const glm::mat4 projection = glm::perspective(
@@ -223,9 +233,10 @@ namespace Soleil {
     frame.time           = time;
     frame.cameraPosition = camera.position;
     frame.updateViewProjectionMatrices(view, projection);
+    frame.pointLights[0].position = camera.position;
 
     glEnable(GL_DEPTH_TEST);
-
+    glDepthFunc(GL_LESS);
     /* Way to render the scene-graph. Optimization may follow */
     renderSceneGraph(group, frame);
   }
