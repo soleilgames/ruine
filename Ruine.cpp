@@ -22,6 +22,7 @@
 #include "Ruine.hpp"
 
 #include "AssetService.hpp"
+#include "BoundingBox.hpp"
 #include "ControllerService.hpp"
 #include "Drawable.hpp"
 #include "Group.hpp"
@@ -177,6 +178,7 @@ namespace Soleil {
   ShapePtr floorShape;
 
   static void InitializeWorld(ObjectInstances& ground, ObjectInstances& wall,
+                              std::vector<BoundingBox>& wallBoundingBox,
                               Frame& frame, Camera& camera)
   {
     wallShape =
@@ -184,6 +186,14 @@ namespace Soleil {
     floorShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
     std::vector<glm::mat4> scene;
+
+    // Prepare vertices for the bounding box:
+    std::vector<glm::vec4> wallVertices;
+    for (const auto& sub : wallShape->getSubShapes()) {
+      for (const auto& vertex : sub.vertices) {
+        wallVertices.push_back(vertex.position);
+      }
+    }
 
     std::string level;
     level += "xxxxxxxxxxxxxx\n";
@@ -213,7 +223,16 @@ namespace Soleil {
         const glm::vec3 position(2.0f * x, 0.0f, 2.0f * z);
 
         if (c == 'x') {
-          wall.push_back(glm::translate(scale, position));
+          const glm::mat4 transformation = glm::translate(scale, position);
+
+          wall.push_back(transformation);
+
+          BoundingBox bbox;
+          for (const auto& v : wallVertices) {
+            bbox.expandBy(glm::vec3(transformation * v));
+          }
+          wallBoundingBox.push_back(bbox);
+
         } else if (c == 'D') {
           camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
         } else {
@@ -370,6 +389,44 @@ namespace Soleil {
 
 #endif
 
+  glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
+                         const float                     yaw,
+                         const std::vector<BoundingBox>& wallBoundingBox)
+  {
+    camera->yaw += yaw;
+
+    // There is no pitch nor Roll, to the equation is simplified:
+    glm::vec3 direction = glm::normalize(glm::vec3(
+      sin(glm::radians(camera->yaw)), 0.0f, cos(glm::radians(camera->yaw))));
+    glm::vec3 newPosition = camera->position + (translation.z * direction);
+    const glm::vec3 positionForward(camera->position.x, newPosition.y,
+                                    newPosition.z);
+    const glm::vec3 positionSideward(newPosition.x, newPosition.y,
+                                     camera->position.z);
+
+    BoundingBox bboxForward;
+    bboxForward.expandBy(positionForward);
+    bboxForward.expandBy(positionForward + 0.15f);
+    bboxForward.expandBy(positionForward - 0.15f);
+    bboxForward.expandBy(positionForward);
+    BoundingBox bboxSideward;
+    bboxSideward.expandBy(positionSideward);
+    bboxSideward.expandBy(positionSideward + 0.15f);
+    bboxSideward.expandBy(positionSideward - 0.15f);
+    bboxSideward.expandBy(positionSideward);
+
+    for (const auto& boundingBox : wallBoundingBox) {
+      if (boundingBox.intersect(bboxForward))
+        newPosition.z = camera->position.z;
+      if (boundingBox.intersect(bboxSideward))
+        newPosition.x = camera->position.x;
+    }
+
+    camera->position = newPosition;
+    return glm::lookAt(camera->position, camera->position + direction,
+                       glm::vec3(0, 1, 0));
+  }
+
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
                int viewportWidth, int viewportHeight)
     : assetService(assetService)
@@ -422,12 +479,13 @@ namespace Soleil {
       InitializeWorld(group, frame, camera);
     }
 #else
-    static ObjectInstances ground;
-    static ObjectInstances wall;
+    static ObjectInstances          ground;
+    static ObjectInstances          wall;
+    static std::vector<BoundingBox> wallBoundingBox;
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      InitializeWorld(ground, wall, frame, camera);
+      InitializeWorld(ground, wall, wallBoundingBox, frame, camera);
     }
 #endif
 
@@ -446,7 +504,7 @@ namespace Soleil {
     const Controller& playerPad = ControllerService::GetPlayerController();
     const glm::vec3   translation(0.0f, 0.0f, playerPad.dpad.z / 100.0f);
     const float       yaw = playerPad.dpad.x;
-    this->view            = updateCamera(&camera, translation, yaw);
+    this->view = updateCamera(&camera, translation, yaw, wallBoundingBox);
 
     frame.time           = time;
     frame.cameraPosition = camera.position;
@@ -462,19 +520,6 @@ namespace Soleil {
 #else
     RenderScene(ground, wall, frame);
 #endif
-  }
-
-  glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
-                         const float yaw)
-  {
-    camera->yaw += yaw;
-
-    // There is no pitch nor Roll, to the equation is simplified:
-    glm::vec3 direction = glm::normalize(glm::vec3(
-      sin(glm::radians(camera->yaw)), 0.0f, cos(glm::radians(camera->yaw))));
-    camera->position += (translation.z * direction);
-    return glm::lookAt(camera->position, camera->position + direction,
-                       glm::vec3(0, 1, 0));
   }
 
 } // Soleil

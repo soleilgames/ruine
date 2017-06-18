@@ -36,9 +36,6 @@ namespace Soleil {
     float     yaw;
   };
 
-  glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
-                         const float yaw);
-
   class Ruine
   {
   public:
