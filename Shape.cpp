@@ -52,7 +52,7 @@ namespace Soleil {
 
   Shape::~Shape() {}
 
-  GLuint Shape::getBuffer() noexcept { return *buffer; }
+  GLuint Shape::getBuffer() const noexcept { return *buffer; }
 
   const std::vector<SubShape> Shape::getSubShapes(void) const noexcept
   {
