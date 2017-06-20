@@ -66,7 +66,6 @@ namespace Soleil {
     const ImageAsset image(argument);
 
     OpenGLDataInstance::Instance().textures.emplace_back();
-    SOLEIL__LOGGER_DEBUG(toString("After emplace"));
 
     gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();
     gl::BindTexture bindTexture(GL_TEXTURE_2D, *texture);

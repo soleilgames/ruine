@@ -94,8 +94,8 @@ namespace Soleil {
     virtual ~Shape();
 
   public:
-    const std::vector<SubShape> getSubShapes(void) const noexcept;
-    GLuint                      getBuffer() const noexcept;
+    const std::vector<SubShape>& getSubShapes(void) const noexcept;
+    GLuint                       getBuffer() const noexcept;
 
   private:
     std::vector<SubShape> subShapes;

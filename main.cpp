@@ -92,7 +92,7 @@ render(SDL_Window* window, Ruine& r)
     r.render(std::chrono::milliseconds(time));
     SDL_GL_SwapWindow(window);
 
-#if 0    
+#if 1
     if (16 > (SDL_GetTicks() - time)) {
       SDL_Delay(16 - (SDL_GetTicks() - time));
     }

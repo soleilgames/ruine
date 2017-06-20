@@ -43,7 +43,7 @@ namespace Soleil {
     if (image == nullptr) {
       throw std::runtime_error(toString("Failed to decode image '", assetName,
                                         "': ", stbi_failure_reason()));
-      stbi_image_free(image); // TODO: Use RAII
+      stbi_image_free(image);
     }
     SOLEIL__LOGGER_DEBUG(
       toString("Loaded image: ", assetName, " -> ", imageWidth, "x",

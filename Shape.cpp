@@ -42,11 +42,12 @@ namespace Soleil {
     GLintptr offset = 0;
     for (const auto& sub : subShapes) {
       GLsizeiptr componentSize = sizeof(sub.vertices[0]) * sub.vertices.size();
-      
-      glBufferSubData(GL_ARRAY_BUFFER, offset, componentSize, sub.vertices.data());
+
+      glBufferSubData(GL_ARRAY_BUFFER, offset, componentSize,
+                      sub.vertices.data());
       offset += componentSize;
     }
-    
+
     throwOnGlError();
   }
 
@@ -54,7 +55,7 @@ namespace Soleil {
 
   GLuint Shape::getBuffer() const noexcept { return *buffer; }
 
-  const std::vector<SubShape> Shape::getSubShapes(void) const noexcept
+  const std::vector<SubShape>& Shape::getSubShapes(void) const noexcept
   {
     return this->subShapes;
   }

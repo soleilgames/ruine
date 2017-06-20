@@ -46,7 +46,7 @@ main()
   if (uv.x > -42.0) {
     vec4 textureColor = texture2D(material.diffuseMap, uv);
 
-    computedAmbiantColor *= textureColor.rgb;
+    computedAmbiantColor = textureColor.rgb;
     alpha = textureColor.a;
   }
 
@@ -72,7 +72,7 @@ main()
       (diffuse == 0.0) ? (0.0) : (pow(specular, material.shininess) * Strength);
 
     scatteredLight +=
-      computedAmbiantColor * attenuation +
+      pointLight[i].color * computedAmbiantColor * attenuation +
       pointLight[i].color * material.diffuseColor * diffuse * attenuation;
 
     reflectedLight +=

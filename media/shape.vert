@@ -1,6 +1,6 @@
 #version 100
 
-precision mediump float;
+precision lowp float;
 
 attribute vec4 positionAttribute;
 attribute vec3 normalAttribute;
