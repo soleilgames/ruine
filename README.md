@@ -44,7 +44,7 @@ adb logcat | tee tmp.txt | grep soleil		   # Just to follow logs
 ## Compile for GNU/Linux
 
 The game is not intended to run on desktop however it can help for development (there is currently no sound support).
-You will need the SDL 2.0 and Cmake:
+You will need the GLFW 3 and Cmake:
 
 ```
 cd ruine

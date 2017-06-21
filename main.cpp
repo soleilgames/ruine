@@ -19,7 +19,6 @@
  * THE SOFTWARE.
  */
 
-#include <SDL.h>
 #include <chrono>
 #include <memory>
 #include <stdexcept>
@@ -33,18 +32,18 @@
 
 using namespace Soleil;
 
-class SDLControllerService
+class DesktopControllerService
 {
 public:
-  SDLControllerService() {}
-  virtual ~SDLControllerService() {}
+  DesktopControllerService() {}
+  virtual ~DesktopControllerService() {}
 
 public:
   Controller player;
   glm::vec2  padPosition;
 };
 
-SDLControllerService controllerService;
+DesktopControllerService controllerService;
 
 Controller&
 ControllerService::GetPlayerController() noexcept
@@ -59,48 +58,53 @@ GetPadPosition(void) noexcept
 }
 
 static void
-render(SDL_Window* window, Ruine& r)
+render(GLFWwindow* window, Ruine& r)
 {
-  while (true) {
-    SDL_Event e;
-    while (SDL_PollEvent(&e) != 0) {
-      switch (e.type) {
-        case SDL_QUIT: return;
-        case SDL_KEYDOWN:
-          switch (e.key.keysym.sym) {
-            case SDLK_ESCAPE: return;
-            case SDLK_w: controllerService.player.dpad.z = 1.0f; break;
-            case SDLK_s: controllerService.player.dpad.z = -1.0f; break;
-            case SDLK_a: controllerService.player.dpad.x = 1.0f; break;
-            case SDLK_d: controllerService.player.dpad.x = -1.0f; break;
-          }
-          break;
-        case SDL_KEYUP:
-          switch (e.key.keysym.sym) {
-            case SDLK_ESCAPE: return;
-            case SDLK_w: controllerService.player.dpad.z = 0.0f; break;
-            case SDLK_s: controllerService.player.dpad.z = 0.0f; break;
-            case SDLK_a: controllerService.player.dpad.x = 0.0f; break;
-            case SDLK_d: controllerService.player.dpad.x = 0.0f; break;
-            case SDLK_g:
-              controllerService.player.option1 =
-                !controllerService.player.option1;
-              break;
-          }
+  while (!glfwWindowShouldClose(window)) {
+    double time = glfwGetTime();
+
+    r.render(std::chrono::milliseconds((int)(time * 1000)));
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+}
+
+static void
+errorCallback(int error, const char* description)
+{
+  std::cerr << "GLFW failed with error N." << error << ": " << description;
+}
+
+static void
+keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action,
+            int /*mods*/)
+{
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, 1);
+    return;
+  }
+
+  switch (action) {
+    case GLFW_PRESS:
+      switch (key) {
+        case GLFW_KEY_W: controllerService.player.dpad.z = 1.0f; break;
+        case GLFW_KEY_S: controllerService.player.dpad.z = -1.0f; break;
+        case GLFW_KEY_A: controllerService.player.dpad.x = 1.0f; break;
+        case GLFW_KEY_D: controllerService.player.dpad.x = -1.0f; break;
+      }
+      break;
+    case GLFW_RELEASE:
+      switch (key) {
+        case GLFW_KEY_W: controllerService.player.dpad.z = 0.0f; break;
+        case GLFW_KEY_S: controllerService.player.dpad.z = 0.0f; break;
+        case GLFW_KEY_A: controllerService.player.dpad.x = 0.0f; break;
+        case GLFW_KEY_D: controllerService.player.dpad.x = 0.0f; break;
+        case GLFW_KEY_G:
+          controllerService.player.option1 = !controllerService.player.option1;
           break;
       }
-    }
-
-    auto time = SDL_GetTicks();
-
-    r.render(std::chrono::milliseconds(time));
-    SDL_GL_SwapWindow(window);
-
-#if 1
-    if (16 > (SDL_GetTicks() - time)) {
-      SDL_Delay(16 - (SDL_GetTicks() - time));
-    }
-#endif
+      break;
   }
 }
 
@@ -110,27 +114,26 @@ main(int /*argc*/
      char* /*argv*/
      [])
 {
-  SDL_Init(SDL_INIT_VIDEO);
-  SDL_Window*   window;
-  SDL_GLContext glContext;
-  int           width  = 1920;
-  int           height = 1080;
+  GLFWwindow* window;
+  int         width  = 1920;
+  int         height = 1080;
 
-  window = SDL_CreateWindow(
-    "Ruine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height,
-    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP);
-  if (window == nullptr) {
-    throw std::runtime_error(
-      toString("SDL Window initialization failed: ", SDL_GetError()));
+  glfwSetErrorCallback(errorCallback);
+  if (!glfwInit()) return -1;
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  window =
+    glfwCreateWindow(width, height, "Ruine", glfwGetPrimaryMonitor(), nullptr);
+  if (!window) {
+    glfwTerminate();
+    return -1;
   }
 
-  glContext = SDL_GL_CreateContext(window);
-  if (glContext == nullptr) {
-    throw std::runtime_error(
-      toString("SDL GLContext initialization failed: ", SDL_GetError()));
-  }
+  glfwSetKeyCallback(window, keyCallback);
+  glfwMakeContextCurrent(window);
+  glfwSwapInterval(1);
 
-  SDL_GL_SetSwapInterval(1);
   glewExperimental = GL_TRUE;
   GLenum err       = glewInit();
   if (err != GLEW_OK) {
@@ -145,6 +148,7 @@ main(int /*argc*/
                   width, height);
   render(window, r);
 
-  SDL_DestroyWindow(window);
+  glfwTerminate();
+
   return 0;
 }

@@ -30,14 +30,17 @@
 #include <GLES2/gl2ext.h>
 #include <GLES2/gl2platform.h>
 
+#elif 1
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #else
 
 #include <GL/glew.h>
 
 #include <GL/gl.h>
 #include <GL/glext.h>
-
-#include <glm/glm.hpp>
 
 #endif
 
@@ -123,7 +126,7 @@ namespace Soleil {
         DeleteFunction(1, &name);
       }
 
-      GLuint operator*(void) const { return name; }
+      GLuint operator*(void)const { return name; }
 
       Generator(const Generator&) = delete;
       Generator& operator=(const Generator&) = delete;
