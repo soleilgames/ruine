@@ -39,7 +39,6 @@ add_library(ruinelib
   Node.cpp
   Shader.cpp
   Shape.cpp
-  Drawable.cpp
   Program.cpp
   WavefrontLoader.cpp
   MTLLoader.cpp

@@ -24,7 +24,6 @@
 #include "AssetService.hpp"
 #include "BoundingBox.hpp"
 #include "ControllerService.hpp"
-#include "Drawable.hpp"
 #include "Group.hpp"
 #include "Logger.hpp"
 #include "OpenGLDataInstance.hpp"
@@ -95,7 +94,6 @@ namespace Soleil {
     }
   };
 
-  typedef std::vector<glm::mat4>   ObjectInstances;
   typedef std::vector<DrawCommand> RenderInstances;
 
   ShapePtr        wallShape;
@@ -104,8 +102,7 @@ namespace Soleil {
   ShapePtr        ghostShape;
   RenderInstances statics;
 
-  static void InitializeWorld(ObjectInstances& ground, ObjectInstances& wall,
-                              std::vector<BoundingBox>& wallBoundingBox,
+  static void InitializeWorld(std::vector<BoundingBox>& wallBoundingBox,
                               Frame& frame, Camera& camera)
   {
     wallShape =
@@ -179,7 +176,6 @@ namespace Soleil {
         if (c == 'x') {
           const glm::mat4 transformation = glm::translate(scale, position);
 
-          wall.push_back(transformation);
           statics.push_back(DrawCommand(wallShape->getBuffer(), transformation,
                                         wallShape->getSubShapes()));
 
@@ -224,13 +220,11 @@ namespace Soleil {
 
           glm::mat4 groundTransformation =
             glm::translate(scale, glm::vec3(2.0f * x, -1.0f, 2.0f * z));
-          ground.push_back(groundTransformation);
 
           glm::mat4 ceilTransformation =
             glm::translate(scale, glm::vec3(2.0f * x, 1.0f, 2.0f * z)) *
             glm::rotate(glm::mat4(), glm::pi<float>(),
                         glm::vec3(0.0f, 0.0f, 1.0f));
-          ground.push_back(ceilTransformation);
 
           statics.push_back(DrawCommand(floorShape->getBuffer(),
                                         groundTransformation,
@@ -366,118 +360,6 @@ namespace Soleil {
     }
   }
 
-  static inline void RenderDrawable(const ObjectInstances instances,
-                                    const Frame& frame, const Shape* shape)
-  {
-    constexpr GLsizei         stride    = sizeof(Vertex);
-    const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
-    const Program&            rendering = instance.drawable;
-
-    gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
-    // glBindBuffer(GL_ARRAY_BUFFER, shape->getBuffer());
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
-                          (const GLvoid*)offsetof(Vertex, normal));
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
-                          (const GLvoid*)offsetof(Vertex, color));
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
-                          (const GLvoid*)offsetof(Vertex, uv));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    glEnableVertexAttribArray(3);
-    glUseProgram(rendering.program);
-
-    // Setting Lights ----------------------------------------------------------
-    glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(.20f)));
-
-    glUniform3fv(instance.drawableEyeDirection, 1,
-                 glm::value_ptr(frame.cameraPosition));
-    glUniform1i(instance.drawableNumberOfLights, frame.pointLights.size());
-
-    int i = 0;
-    for (const auto& pointLight : frame.pointLights) {
-      // TODO: Protect to avoid array verflow
-
-      glUniform3fv(instance.drawablePointLights[i].position, 1,
-                   glm::value_ptr(pointLight.position));
-      glUniform3fv(instance.drawablePointLights[i].color, 1,
-                   glm::value_ptr(pointLight.color));
-#if 0
-      glUniform3fv(instance.drawablePointLights[i].color, 1,
-                   glm::value_ptr(glm::vec3(0.196f, 0.092f, 0.0f)));
-#endif
-      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.22);
-      glUniform1f(instance.drawablePointLights[i].quadraticAttenuation, 0.07);
-
-      ++i;
-    }
-
-    throwOnGlError();
-
-    // glEnable(GL_POLYGON_SMOOTH);
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    for (const auto& sub : shape->getSubShapes()) {
-      // Setting Materials
-      // -------------------------------------------------------
-      glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
-                   glm::value_ptr(sub.material.ambiantColor));
-      glUniform1f(instance.drawableMaterial.shininess, sub.material.shininess);
-      glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
-                   glm::value_ptr(sub.material.emissiveColor));
-      glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
-                   glm::value_ptr(sub.material.diffuseColor));
-      glUniform3fv(instance.drawableMaterial.specularColor, 1,
-                   glm::value_ptr(sub.material.specularColor));
-
-      throwOnGlError();
-
-      // Setting Textures
-      // --------------------------------------------------------
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
-      glUniform1i(instance.drawableMaterial.diffuseMap, 0);
-
-      for (const auto& transformation : instances) {
-
-        auto ViewProjectionModel = frame.ViewProjection * transformation;
-        glUniformMatrix4fv(instance.drawableMVPMatrix, 1, GL_FALSE,
-                           glm::value_ptr(ViewProjectionModel));
-
-/* The book has a mistake, it says using a MVMatrix while only using the Model
- * Matrix*/
-#if 0
-    auto ModelView = frame.View * getTransformation();
-#endif
-        glUniformMatrix4fv(instance.drawableMVMatrix, 1, GL_FALSE,
-                           glm::value_ptr(transformation)); // ModelView
-
-        throwOnGlError();
-
-/* TODO: If only rotation and isometric (nonshape changing) scaling was
- * performed, the Mat3 is should be fine: */
-#if 0
-    auto NormalMatrix = glm::mat3(ModelView);
-#endif
-
-        auto NormalMatrix =
-          glm::transpose(glm::inverse(glm::mat3(transformation)));
-
-        glUniformMatrix3fv(instance.drawableNormalMatrix, 1, GL_FALSE,
-                           glm::value_ptr(NormalMatrix));
-        throwOnGlError();
-
-        const std::vector<GLushort>& indices = sub.indices;
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
-                       indices.data());
-      }
-    }
-
-    throwOnGlError();
-  }
-
   static void UpdateTorchColor(std::vector<PointLight>& lights)
   {
     for (unsigned int i = 1; i < lights.size(); ++i) {
@@ -487,8 +369,7 @@ namespace Soleil {
     }
   }
 
-  static void RenderScene(ObjectInstances& ground, ObjectInstances& wall,
-                          Frame& frame)
+  static void RenderScene(Frame& frame)
   {
     UpdateTorchColor(frame.pointLights);
 #if 0
@@ -583,23 +464,12 @@ namespace Soleil {
 
     static Frame frame;
 
-#ifdef SOLEIL__OOP_SG
-    static Group group;
-
-    static Pristine FirstLoop;
-    if (FirstLoop) {
-      InitializeWorld(group, frame, camera);
-    }
-#else
-    static ObjectInstances          ground;
-    static ObjectInstances          wall;
     static std::vector<BoundingBox> wallBoundingBox;
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      InitializeWorld(ground, wall, wallBoundingBox, frame, camera);
+      InitializeWorld(wallBoundingBox, frame, camera);
     }
-#endif
 
 #if 0
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
@@ -626,12 +496,7 @@ namespace Soleil {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-#ifdef SOLEIL__OOP_SG
-    /* Way to render the scene-graph. Optimization may follow */
-    RenderScene(group, frame);
-#else
-    RenderScene(ground, wall, frame);
-#endif
+    RenderScene(frame);
   }
 
 } // Soleil
