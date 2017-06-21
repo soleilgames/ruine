@@ -96,11 +96,24 @@ namespace Soleil {
 
   typedef std::vector<DrawCommand> RenderInstances;
 
-  ShapePtr        wallShape;
-  ShapePtr        floorShape;
-  ShapePtr        torchShape;
-  ShapePtr        ghostShape;
-  RenderInstances statics;
+  struct GhostData
+  {
+    glm::mat4* transformation;
+    glm::vec3* lightPosition;
+
+    GhostData(glm::mat4* transformation, glm::vec3* lightPosition)
+      : transformation(transformation)
+      , lightPosition(lightPosition)
+    {
+    }
+  };
+
+  ShapePtr               wallShape;
+  ShapePtr               floorShape;
+  ShapePtr               torchShape;
+  ShapePtr               ghostShape;
+  RenderInstances        statics;
+  std::vector<GhostData> moving;
 
   static void InitializeWorld(std::vector<BoundingBox>& wallBoundingBox,
                               Frame& frame, Camera& camera)
@@ -130,20 +143,20 @@ namespace Soleil {
     std::string level;
 #if 1
     level += "xxxxxxxxxxxxxx\n";
-    level += "xD.xx.....lxxx\n";
+    level += "xD.xx......xxx\n";
     level += "x..xxxxxx..xxx\n";
     level += "x..xx......xxx\n";
-    level += "x..xx.......xx\n";
+    level += "x..xxg.....xx\n";
     level += "x..xx.......xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x.......xx..xx\n";
+    level += "x......xx..xx\n";
+    level += "xg......xx..xx\n";
     level += "x......xxx..xx\n";
     level += "x..xxxxxxx..xx\n";
+    level += "x.......g....x\n";
     level += "x............x\n";
-    level += "xg...........x\n";
     level += "xxxxxxxxxxxxxx\n";
 #else
     level += "xxxx\n";
@@ -239,8 +252,14 @@ namespace Soleil {
       x = 0.0f;
     }
 
-    for (const auto& o : lateComer) {
+    for (size_t i = 0; i < lateComer.size(); ++i) {
+      const auto& o = lateComer[i];
+
       statics.push_back(o);
+
+      // TODO: Warning - There may be more ligth than ghost
+      moving.push_back(GhostData(&(statics.back().transformation),
+                                 &(frame.pointLights[i + 1].position)));
     }
 
     SoundService::PlayMusic("farlands.ogg");
@@ -249,6 +268,7 @@ namespace Soleil {
   static inline void RenderDrawCommands(const RenderInstances instances,
                                         const Frame&          frame)
   {
+    throwOnGlError();
     constexpr GLsizei         stride    = sizeof(Vertex);
     const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
     const Program&            rendering = instance.drawable;
@@ -257,11 +277,12 @@ namespace Soleil {
     // Setting Lights
     // ----------------------------------------------------------
     glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(.20f)));
+                 glm::value_ptr(glm::vec3(.25f)));
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
     glUniform1i(instance.drawableNumberOfLights, frame.pointLights.size());
+    throwOnGlError();
 
     int i = 0;
     for (const auto& pointLight : frame.pointLights) {
@@ -369,10 +390,32 @@ namespace Soleil {
     }
   }
 
+  static void UpdateGhost(std::vector<GhostData>& ghosts)
+  {
+    static int   frame = 0;
+    static float dir   = -1;
+    frame++;
+
+    // TODO: Just a quick way to move ghost. Should not be frame fixed ;)
+    if (frame > 60 * 10) {
+      frame = 0;
+      dir   = -dir;
+    }
+
+    for (GhostData& ghost : ghosts) {
+      const glm::mat4 transformation = glm::translate(
+        *(ghost.transformation), glm::vec3(0.0f, 0.0f, dir * 0.1f));
+      *(ghost.transformation) = transformation;
+
+      *(ghost.lightPosition) = glm::vec3(transformation[3]);
+    }
+  }
+
   static void RenderScene(Frame& frame)
   {
-    UpdateTorchColor(frame.pointLights);
+    UpdateGhost(moving);
 #if 0
+    UpdateTorchColor(frame.pointLights);
     RenderDrawable(ground, frame, floorShape.get());
     RenderDrawable(wall, frame, wallShape.get());
 #endif
@@ -427,6 +470,7 @@ namespace Soleil {
     , viewportWidth(viewportWidth)
     , viewportHeight(viewportHeight)
   {
+    warnOnGlError();
     OpenGLDataInstance::Initialize();
 
     camera.yaw      = 0.0f;

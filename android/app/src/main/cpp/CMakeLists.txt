@@ -29,7 +29,6 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/Node.cpp
   ${RUINE_SOURCES}/Shader.cpp
   ${RUINE_SOURCES}/Shape.cpp
-  ${RUINE_SOURCES}/Drawable.cpp
   ${RUINE_SOURCES}/Program.cpp
   ${RUINE_SOURCES}/WavefrontLoader.cpp
   ${RUINE_SOURCES}/MTLLoader.cpp

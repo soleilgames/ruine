@@ -89,9 +89,9 @@ namespace Soleil {
     static void Initialize(void);
 
     OpenGLDataInstance()
-      : textures(0)
+      : textures(32)
     {
-      textures.reserve(32); // TODO: Fix this number
+      //textures.reserve(32); // TODO: Fix this number
     };
     OpenGLDataInstance(const OpenGLDataInstance&) = delete;
 
