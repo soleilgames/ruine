@@ -80,97 +80,11 @@ namespace Soleil {
     throwOnGlError();
   }
 
-#ifdef SOLEIL__OOP_SG
-  static void InitializeWorld(Group& group, Frame& frame, Camera& camera)
-  {
-    const std::string content = AssetService::LoadAsString("wallcube.obj");
-    ShapePtr          shape   = WavefrontLoader::fromContent(content);
-    ShapePtr          floorShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
-
-    std::string level;
-    level += "xxxxxxxxxxxxxx\n";
-    level += "xD.xx......xxx\n";
-    level += "x..xxxxxx..xxx\n";
-    level += "x..xx......xxx\n";
-    level += "x..xx.......xx\n";
-    level += "x..xx.......xx\n";
-    level += "x..xxxxxxx..xx\n";
-    level += "x..xxxxxxx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x......xxx..xx\n";
-    level += "x..xxxxxxx..xx\n";
-    level += "x............x\n";
-    level += "x............x\n";
-    level += "xxxxxxxxxxxxxx\n";
-
-    std::istringstream     s(level);
-    std::string            line;
-    float                  x     = 0.0f;
-    float                  z     = 0.0f;
-    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(0.4f));
-    while (std::getline(s, line)) {
-      for (auto const& c : line) {
-        const glm::vec3 position(2.0f * x, 0.0f, 2.0f * z);
-
-        if (c == 'x') {
-          auto wall = std::make_shared<Drawable>(shape);
-          wall->setTransformation(glm::translate(scale, position));
-          group.addChild(wall);
-        } else if (c == 'D') {
-          camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-        } else {
-          auto ground = std::make_shared<Drawable>(floorShape);
-          ground->setTransformation(
-            glm::translate(scale, glm::vec3(2.0f * x, -1.0f, 2.0f * z)));
-          group.addChild(ground);
-
-          auto ceil = std::make_shared<Drawable>(floorShape);
-          ceil->setTransformation(
-            glm::translate(scale, glm::vec3(2.0f * x, 1.0f, 2.0f * z)) *
-            glm::rotate(glm::mat4(), glm::pi<float>(),
-                        glm::vec3(0.0f, 0.0f, 1.0f)));
-          group.addChild(ceil);
-        }
-        x += 1.0f;
-      }
-      z += 1.0f;
-      x = 0.0f;
-    }
-
-    SoundService::PlayMusic("farlands.ogg");
-    frame.pointLights.push_back(PointLight());
-  }
-
-  static void RenderScene(const Group& group, Soleil::Frame& frame)
-  {
-    /* This is not the most efficient way to Render a Scene Graph but it will
-     * make the job for two elements. Let's optimize that afterward. */
-    for (NodePtr node : group) {
-
-      auto drawable = std::dynamic_pointer_cast<Drawable>(node);
-      if (drawable) {
-        drawable->render(frame);
-      }
-
-      auto childGroup = std::dynamic_pointer_cast<Group>(node);
-      if (childGroup) {
-        renderSceneGraph(*childGroup, frame);
-      }
-    }
-
-    DrawPad();
-  }
-
-#else
-
   struct DrawCommand
   {
-    GLuint                      buffer;
-    glm::mat4                   transformation;
-    const std::vector<SubShape> sub; // TODO: &
+    GLuint                       buffer;
+    glm::mat4                    transformation;
+    const std::vector<SubShape>& sub;
 
     DrawCommand(GLuint buffer, const glm::mat4& transformation,
                 const std::vector<SubShape>& sub)
@@ -184,15 +98,10 @@ namespace Soleil {
   typedef std::vector<glm::mat4>   ObjectInstances;
   typedef std::vector<DrawCommand> RenderInstances;
 
-  // TODO: Set in struct such as:
-  // struct
-  // {
-  //   Shape shape;
-  //   ObjectInstances
-  // };
   ShapePtr        wallShape;
   ShapePtr        floorShape;
   ShapePtr        torchShape;
+  ShapePtr        ghostShape;
   RenderInstances statics;
 
   static void InitializeWorld(ObjectInstances& ground, ObjectInstances& wall,
@@ -205,11 +114,14 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
     torchShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
+    ghostShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
     std::vector<glm::mat4> scene;
 
     frame.pointLights.push_back(PointLight());
     frame.pointLights[0].color = glm::vec3(0.25f);
 
+    RenderInstances lateComer;
     // Prepare vertices for the bounding box:
     std::vector<glm::vec4> wallVertices;
     for (const auto& sub : wallShape->getSubShapes()) {
@@ -219,12 +131,13 @@ namespace Soleil {
     }
 
     std::string level;
+#if 1
     level += "xxxxxxxxxxxxxx\n";
-    level += "xD.xxl.....xxx\n";
-    level += "xl.xxxxxx..xxx\n";
-    level += "x..xxl.....xxx\n";
+    level += "xD.xx.....lxxx\n";
+    level += "x..xxxxxx..xxx\n";
+    level += "x..xx......xxx\n";
     level += "x..xx.......xx\n";
-    level += "x..xxl......xx\n";
+    level += "x..xx.......xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
@@ -233,8 +146,26 @@ namespace Soleil {
     level += "x......xxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x............x\n";
-    level += "x............x\n";
+    level += "xg...........x\n";
     level += "xxxxxxxxxxxxxx\n";
+#else
+    level += "xxxx\n";
+    level += "xD.x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "x..x\n";
+    level += "xg.x\n";
+    level += "xxxx\n";
+#endif
 
     std::istringstream     s(level);
     std::string            line;
@@ -270,10 +201,25 @@ namespace Soleil {
 
             glm::mat4 transformation =
               glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -1.0f, position.z)) * glm::scale(glm::mat4(), glm::vec3(0.5f));
+                             glm::vec3(position.x, -1.0f, position.z)) *
+              glm::scale(glm::mat4(), glm::vec3(0.5f));
             statics.push_back(DrawCommand(torchShape->getBuffer(),
                                           transformation,
                                           torchShape->getSubShapes()));
+          } else if (c == 'g') {
+            PointLight p;
+
+            p.color    = glm::vec3(0.20f, 0.15f, 0.0f);
+            p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
+            frame.pointLights.push_back(p);
+
+            glm::mat4 transformation =
+              glm::translate(glm::mat4(),
+                             glm::vec3(position.x, -1.0f, position.z)) *
+              glm::scale(glm::mat4(), glm::vec3(.5f));
+            lateComer.push_back(DrawCommand(ghostShape->getBuffer(),
+                                            transformation,
+                                            ghostShape->getSubShapes()));
           }
 
           glm::mat4 groundTransformation =
@@ -297,6 +243,10 @@ namespace Soleil {
       }
       z += 1.0f;
       x = 0.0f;
+    }
+
+    for (const auto& o : lateComer) {
+      statics.push_back(o);
     }
 
     SoundService::PlayMusic("farlands.ogg");
@@ -356,6 +306,11 @@ namespace Soleil {
 #if 0
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#else
+      if (ControllerService::GetPlayerController().option1)
+        glEnable(GL_BLEND);
+      else
+        glDisable(GL_BLEND);
 #endif
       for (const auto& sub : drawCommand.sub) {
         // Setting Materials
@@ -536,13 +491,15 @@ namespace Soleil {
                           Frame& frame)
   {
     UpdateTorchColor(frame.pointLights);
-    // RenderDrawable(ground, frame, floorShape.get());
-    // RenderDrawable(wall, frame, wallShape.get());
+#if 0
+    RenderDrawable(ground, frame, floorShape.get());
+    RenderDrawable(wall, frame, wallShape.get());
+#endif
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     RenderDrawCommands(statics, frame);
     DrawPad();
   }
-
-#endif
 
   glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
                          const float                     yaw,

@@ -31,13 +31,21 @@ namespace Soleil {
   struct Controller
   {
     glm::vec3 dpad;
+
+    bool option1;
+
+    Controller()
+      : dpad()
+      , option1(false)
+    {
+    }
   };
 
   class ControllerService
   {
   public:
     static Controller& GetPlayerController(void) noexcept;
-    static glm::vec2& GetPadPosition(void) noexcept;
+    static glm::vec2&  GetPadPosition(void) noexcept;
   };
 
 } // Soleil

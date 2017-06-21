@@ -82,6 +82,10 @@ render(SDL_Window* window, Ruine& r)
             case SDLK_s: controllerService.player.dpad.z = 0.0f; break;
             case SDLK_a: controllerService.player.dpad.x = 0.0f; break;
             case SDLK_d: controllerService.player.dpad.x = 0.0f; break;
+            case SDLK_g:
+              controllerService.player.option1 =
+                !controllerService.player.option1;
+              break;
           }
           break;
       }
