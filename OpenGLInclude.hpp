@@ -122,7 +122,6 @@ namespace Soleil {
       virtual ~Generator()
       {
         SOLEIL__LOGGER_DEBUG(toString("~GL Resource destructed"));
-
         DeleteFunction(1, &name);
       }
 

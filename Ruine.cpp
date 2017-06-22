@@ -124,8 +124,14 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
     torchShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
+#if 0
     ghostShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
+#else
+    ghostShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
+#endif
+
     std::vector<glm::mat4> scene;
 
     frame.pointLights.push_back(PointLight());
@@ -143,19 +149,19 @@ namespace Soleil {
     std::string level;
 #if 1
     level += "xxxxxxxxxxxxxx\n";
-    level += "xD.xx......xxx\n";
+    level += "xD.xx.g....xxx\n";
     level += "x..xxxxxx..xxx\n";
     level += "x..xx......xxx\n";
-    level += "x..xxg.....xx\n";
-    level += "x..xx.......xx\n";
-    level += "x..xxxxxxx..xx\n";
+    level += "x..xx......xx\n";
+    level += "x..xx...g...xx\n";
+    level += "xg.xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
     level += "x......xx..xx\n";
-    level += "xg......xx..xx\n";
-    level += "x......xxx..xx\n";
+    level += "x.......xxg.xx\n";
+    level += "x....g.xxx..xx\n";
     level += "x..xxxxxxx..xx\n";
-    level += "x.......g....x\n";
+    level += "x...g........x\n";
     level += "x............x\n";
     level += "xxxxxxxxxxxxxx\n";
 #else
@@ -204,7 +210,7 @@ namespace Soleil {
           if (c == 'l') {
             PointLight p;
 
-            p.color    = glm::vec3(0.20f, 0.15f, 0.0f);
+            p.color    = glm::vec3(0.5f, 0.0f, 0.0f);
             p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
             frame.pointLights.push_back(p);
 
@@ -218,7 +224,7 @@ namespace Soleil {
           } else if (c == 'g') {
             PointLight p;
 
-            p.color    = glm::vec3(0.20f, 0.15f, 0.0f);
+            p.color    = glm::vec3(0.50f, 0.35f, 0.0f);
             p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
             frame.pointLights.push_back(p);
 
@@ -277,7 +283,7 @@ namespace Soleil {
     // Setting Lights
     // ----------------------------------------------------------
     glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(.25f)));
+                 glm::value_ptr(glm::vec3(.05f)));
 
     glUniform3fv(instance.drawableEyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
@@ -292,12 +298,9 @@ namespace Soleil {
                    glm::value_ptr(pointLight.position));
       glUniform3fv(instance.drawablePointLights[i].color, 1,
                    glm::value_ptr(pointLight.color));
-#if 0
-      glUniform3fv(instance.drawablePointLights[i].color, 1,
-                   glm::value_ptr(glm::vec3(0.196f, 0.092f, 0.0f)));
-#endif
-      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.22);
-      glUniform1f(instance.drawablePointLights[i].quadraticAttenuation, 0.07);
+      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.007f);
+      glUniform1f(instance.drawablePointLights[i].quadraticAttenuation,
+                  0.0002f);
 
       ++i;
     }
@@ -381,6 +384,115 @@ namespace Soleil {
     }
   }
 
+  static inline void RenderFlatShape(const RenderInstances instances,
+                                     const Frame&          frame)
+  {
+    throwOnGlError();
+    constexpr GLsizei         stride    = sizeof(Vertex);
+    const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
+    const Program&            rendering = instance.flat.program;
+    glUseProgram(rendering.program);
+
+    // Setting Lights
+    // ----------------------------------------------------------
+    glUniform3fv(instance.flat.AmbiantLight, 1,
+                 glm::value_ptr(glm::vec3(.05f)));
+
+    glUniform3fv(instance.flat.EyeDirection, 1,
+                 glm::value_ptr(frame.cameraPosition));
+    glUniform1i(instance.flat.NumberOfLights, frame.pointLights.size());
+    throwOnGlError();
+
+    int i = 0;
+    for (const auto& pointLight : frame.pointLights) {
+      // TODO: Protect to avoid array verflow
+
+      glUniform3fv(instance.flat.PointLights[i].position, 1,
+                   glm::value_ptr(pointLight.position));
+      glUniform3fv(instance.flat.PointLights[i].color, 1,
+                   glm::value_ptr(pointLight.color));
+      glUniform1f(instance.flat.PointLights[i].linearAttenuation, 0.09f);
+      glUniform1f(instance.flat.PointLights[i].quadraticAttenuation, 0.032f);
+
+      ++i;
+    }
+
+    for (const auto& drawCommand : instances) {
+      gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, drawCommand.buffer);
+
+      glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
+                            (const GLvoid*)offsetof(Vertex, normal));
+      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
+                            (const GLvoid*)offsetof(Vertex, color));
+      glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
+                            (const GLvoid*)offsetof(Vertex, uv));
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glEnableVertexAttribArray(2);
+      glEnableVertexAttribArray(3);
+
+#if 0
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#else
+      if (ControllerService::GetPlayerController().option1)
+        glEnable(GL_BLEND);
+      else
+        glDisable(GL_BLEND);
+#endif
+      for (const auto& sub : drawCommand.sub) {
+        // Setting Materials
+        // -------------------------------------------------------
+        glUniform3fv(instance.flat.Material.ambiantColor, 1,
+                     glm::value_ptr(sub.material.ambiantColor));
+        glUniform1f(instance.flat.Material.shininess, sub.material.shininess);
+        glUniform3fv(instance.flat.Material.emissiveColor, 1,
+                     glm::value_ptr(sub.material.emissiveColor));
+        glUniform3fv(instance.flat.Material.diffuseColor, 1,
+                     glm::value_ptr(sub.material.diffuseColor));
+        glUniform3fv(instance.flat.Material.specularColor, 1,
+                     glm::value_ptr(sub.material.specularColor));
+
+        // Setting Textures
+        // --------------------------------------------------------
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
+        glUniform1i(instance.flat.Material.diffuseMap, 0);
+
+        auto ViewProjectionModel =
+          frame.ViewProjection * drawCommand.transformation;
+        glUniformMatrix4fv(instance.flat.MVPMatrix, 1, GL_FALSE,
+                           glm::value_ptr(ViewProjectionModel));
+
+/* The book has a mistake, it says using a MVMatrix while only using the Model
+ * Matrix*/
+#if 0
+    auto ModelView = frame.View * drawCommand.transformation;
+#endif
+        glUniformMatrix4fv(
+          instance.flat.MVMatrix, 1, GL_FALSE,
+          glm::value_ptr(drawCommand.transformation)); // ModelView
+
+/* TODO: If only rotation and isometric (nonshape changing) scaling was
+ * performed, the Mat3 is should be fine: */
+#if 0
+    auto NormalMatrix = glm::mat3(ModelView);
+#endif
+
+        auto NormalMatrix =
+          glm::transpose(glm::inverse(glm::mat3(drawCommand.transformation)));
+
+        glUniformMatrix3fv(instance.flat.NormalMatrix, 1, GL_FALSE,
+                           glm::value_ptr(NormalMatrix));
+        const std::vector<GLushort>& indices = sub.indices;
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
+                       indices.data());
+        throwOnGlError();
+      }
+    }
+  }
+
   static void UpdateTorchColor(std::vector<PointLight>& lights)
   {
     for (unsigned int i = 1; i < lights.size(); ++i) {
@@ -421,7 +533,11 @@ namespace Soleil {
 #endif
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+#if 0
     RenderDrawCommands(statics, frame);
+#else
+    RenderFlatShape(statics, frame);
+#endif
     DrawPad();
   }
 
@@ -535,7 +651,7 @@ namespace Soleil {
     frame.time           = time;
     frame.cameraPosition = camera.position;
     frame.updateViewProjectionMatrices(view, projection);
-    frame.pointLights[0].position = camera.position;
+    // frame.pointLights[0].position = camera.position;
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);

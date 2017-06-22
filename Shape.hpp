@@ -73,6 +73,16 @@ namespace Soleil {
     float     shininess;
 
     GLint diffuseMap;
+
+    Material()
+      : ambiantColor(0.0f)
+      , diffuseColor(0.0f)
+      , specularColor(0.0f)
+      , emissiveColor(0.0f)
+      , shininess(1.0f)
+      , diffuseMap(-1)
+    {
+    }
   };
 
   struct SubShape

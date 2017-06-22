@@ -51,6 +51,23 @@ namespace Soleil {
     GLint diffuseMap;
   };
 
+
+  struct FlatShape
+  {
+    Program program;
+    GLint MVPMatrix;
+    GLint MVMatrix;
+    GLint NormalMatrix;
+    GLint AmbiantLight;
+    GLint EyeDirection;
+    GLint ConstantAttenuation;
+    GLint NumberOfLights;
+
+    DrawableMaterial   Material;
+    DrawablePointLight PointLights[DefinedMaxLights];
+    
+  };
+  
   struct OpenGLDataInstance
   {
     // TODO: Create a struct for the Drawable Shader
@@ -63,6 +80,8 @@ namespace Soleil {
     GLint drawableEyeDirection;
     GLint drawableConstantAttenuation;
     GLint drawableNumberOfLights;
+
+    FlatShape flat;
 
     DrawableMaterial   drawableMaterial;
     DrawablePointLight drawablePointLights[DefinedMaxLights];
@@ -89,9 +108,9 @@ namespace Soleil {
     static void Initialize(void);
 
     OpenGLDataInstance()
-      : textures(32)
+      : textures(0)
     {
-      //textures.reserve(32); // TODO: Fix this number
+      textures.reserve(32); // TODO: Fix this number
     };
     OpenGLDataInstance(const OpenGLDataInstance&) = delete;
 

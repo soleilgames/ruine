@@ -38,6 +38,7 @@ namespace Soleil {
     glBindAttribLocation(drawable.program, 0, "positionAttribute");
     glBindAttribLocation(drawable.program, 1, "normalAttribute");
     glBindAttribLocation(drawable.program, 2, "colorAttribute");
+    glBindAttribLocation(drawable.program, 3, "uvAttribute");
 
     drawable.compile();
 
@@ -71,6 +72,51 @@ namespace Soleil {
       instance.drawablePointLights[i].quadraticAttenuation =
         drawable.getUniform(
           toString("pointLight[", i, "].quadraticAttenuation").data());
+    }
+  }
+
+  static inline void initializeFlatShape()
+  {
+    OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
+    Program&            flat     = instance.flat.program;
+
+    flat.attachShader(Shader(GL_VERTEX_SHADER, "flatshape.vert"));
+    flat.attachShader(Shader(GL_FRAGMENT_SHADER, "flatshape.frag"));
+
+    glBindAttribLocation(flat.program, 0, "positionAttribute");
+    glBindAttribLocation(flat.program, 1, "normalAttribute");
+    glBindAttribLocation(flat.program, 2, "colorAttribute");
+    glBindAttribLocation(flat.program, 3, "uvAttribute");
+
+    flat.compile();
+
+    instance.flat.MVPMatrix = flat.getUniform("MVPMatrix");
+    instance.flat.MVMatrix = flat.getUniform("MVMatrix");
+    instance.flat.NormalMatrix   = flat.getUniform("NormalMatrix");
+    instance.flat.NumberOfLights = flat.getUniform("numberOfLights");
+
+    instance.flat.Material.ambiantColor =
+      flat.getUniform("material.ambiantColor");
+    instance.flat.Material.shininess = flat.getUniform("material.shininess");
+    instance.flat.Material.emissiveColor =
+      flat.getUniform("material.emissiveColor");
+    instance.flat.Material.diffuseColor =
+      flat.getUniform("material.diffuseColor");
+    instance.flat.Material.specularColor =
+      flat.getUniform("material.specularColor");
+    instance.flat.Material.diffuseMap = flat.getUniform("material.diffuseMap");
+
+    instance.flat.AmbiantLight = flat.getUniform("AmbiantLight");
+    instance.flat.EyeDirection = flat.getUniform("EyeDirection");
+    for (int i = 0; i < DefinedMaxLights; ++i) {
+      instance.flat.PointLights[i].position =
+        flat.getUniform(toString("pointLight[", i, "].position").data());
+      instance.flat.PointLights[i].color =
+        flat.getUniform(toString("pointLight[", i, "].color").data());
+      instance.flat.PointLights[i].linearAttenuation = flat.getUniform(
+        toString("pointLight[", i, "].linearAttenuation").data());
+      instance.flat.PointLights[i].quadraticAttenuation = flat.getUniform(
+        toString("pointLight[", i, "].quadraticAttenuation").data());
     }
   }
 
@@ -138,9 +184,7 @@ namespace Soleil {
       instance.imageProgram.compile();
       instance.imageModelMatrix =
         instance.imageProgram.getUniform("ModelMatrix");
-      instance.imageImage =
-	instance.imageProgram.getUniform("image");
-
+      instance.imageImage = instance.imageProgram.getUniform("image");
     }
     throwOnGlError();
   }
@@ -153,6 +197,7 @@ namespace Soleil {
     }
     OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
     initializeDrawable();
+    initializeFlatShape();
     initializeTestResources();
     initializePad();
   }

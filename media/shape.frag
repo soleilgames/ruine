@@ -38,19 +38,19 @@ varying vec2 uv;
 void
 main()
 {
-  const float ConstantAttenuation = 1.0; // TODO: If kept, put it in an uniform
+  const float ConstantAttenuation = 0.5; // TODO: If kept, put it in an uniform
   const float Strength            = 1.0; // TODO: If kept, put it in an uniform
 
-  vec3 computedAmbiantColor = material.ambiantColor;
-  float alpha = 1.0;
+  vec3  materialColor = material.ambiantColor;
+  float alpha         = 1.0;
   if (uv.x > -42.0) {
     vec4 textureColor = texture2D(material.diffuseMap, uv);
 
-    computedAmbiantColor = textureColor.rgb;
-    alpha = textureColor.a;
+    materialColor = textureColor.rgb;
+    alpha         = textureColor.a;
   }
 
-  vec3 scatteredLight = AmbiantLight * computedAmbiantColor;
+  vec3 scatteredLight = AmbiantLight;
   vec3 reflectedLight = vec3(0.0);
 
   for (int i = 0; i < numberOfLights; ++i) {
@@ -72,14 +72,14 @@ main()
       (diffuse == 0.0) ? (0.0) : (pow(specular, material.shininess) * Strength);
 
     scatteredLight +=
-      pointLight[i].color * computedAmbiantColor * attenuation +
       pointLight[i].color * material.diffuseColor * diffuse * attenuation;
 
     reflectedLight +=
       pointLight[i].color * material.specularColor * specular * attenuation;
   }
-  vec3 rgb =
-    min(material.emissiveColor + scatteredLight + reflectedLight, vec3(1.0));
+  vec3 rgb = min(material.emissiveColor + materialColor * scatteredLight +
+                   reflectedLight,
+                 vec3(1.0));
 
   gl_FragColor = vec4(rgb, alpha);
 
