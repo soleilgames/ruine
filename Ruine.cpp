@@ -44,8 +44,11 @@
 
 namespace Soleil {
   namespace gval {
-    static const glm::vec3 ambiantLight(0.15f);
+    static const glm::vec3 ambiantLight(0.1f);
+    static const glm::vec3 cameraLight(0.15f);
     static const glm::vec3 ghostColor(0.30f, 0.20f, 0.20f);
+    static const float     ghostSpeed  = 0.01f;
+    static const float     cameraSpeed = 0.05f;
 
   } // gval
 
@@ -143,7 +146,8 @@ namespace Soleil {
 
     std::vector<glm::mat4> scene;
 
-    frame.pointLights.push_back({Position(0.0f), RGB(0.25f), 0.027f, 0.0028f});
+    frame.pointLights.push_back(
+      {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
 
     RenderInstances lateComer;
     // Prepare vertices for the bounding box:
@@ -508,12 +512,13 @@ namespace Soleil {
   }
 
   static void UpdateGhost(std::vector<GhostData>&  ghosts,
-                          std::vector<PointLight>& lights,
-                          const glm::vec3&         worldSize)
+                          std::vector<PointLight>& lights, const Timer& delta,
+                          const glm::vec3& worldSize)
   {
     for (GhostData& ghost : ghosts) {
-      const glm::mat4 transformation =
-        glm::translate(*(ghost.transformation), ghost.direction * 0.1f);
+      const glm::mat4 transformation = glm::translate(
+        *(ghost.transformation),
+        ghost.direction * gval::ghostSpeed * (float)delta.count());
 
       glm::vec3 position = glm::vec3(transformation[3]);
       if (position.z < 0.0f || position.z > worldSize.z) {
@@ -530,8 +535,8 @@ namespace Soleil {
 
   static void RenderScene(Frame& frame, const glm::vec3& worldPosition)
   {
-    UpdateGhost(moving, frame.pointLights, worldPosition);
 #if 0
+    UpdateGhost(moving, frame.pointLights, frame.delta, worldPosition);
     UpdateTorchColor(frame.pointLights);
     RenderDrawable(ground, frame, floorShape.get());
     RenderDrawable(wall, frame, wallShape.get());
@@ -546,13 +551,14 @@ namespace Soleil {
     DrawPad();
   }
 
-  glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
-                         const float                     yaw,
-                         const std::vector<BoundingBox>& wallBoundingBox)
+  static glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
+                                const float                     yaw,
+                                const std::vector<BoundingBox>& wallBoundingBox,
+                                const Timer&                    deltaTime)
   {
     camera->yaw += yaw;
 
-    const float speed = 1.0f;
+    const float speed = gval::cameraSpeed * deltaTime.count();
 
     // There is no pitch nor Roll, to the equation is simplified:
     glm::vec3 direction = glm::normalize(glm::vec3(
@@ -638,6 +644,7 @@ namespace Soleil {
     static Pristine FirstLoop;
     if (FirstLoop) {
       InitializeWorld(wallBoundingBox, frame, camera, worldSize);
+      frame.time = time;
     }
 
 #if 0
@@ -652,12 +659,15 @@ namespace Soleil {
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       50.0f);
 
+    frame.delta = time - frame.time;
+    frame.time  = time;
+
     const Controller& playerPad = ControllerService::GetPlayerController();
     const glm::vec3   translation(0.0f, 0.0f, playerPad.dpad.z / 20.0f);
     const float       yaw = playerPad.dpad.x;
-    this->view = updateCamera(&camera, translation, yaw, wallBoundingBox);
+    this->view =
+      updateCamera(&camera, translation, yaw, wallBoundingBox, frame.delta);
 
-    frame.time           = time;
     frame.cameraPosition = camera.position;
     frame.updateViewProjectionMatrices(view, projection);
     frame.pointLights[0].position = camera.position;

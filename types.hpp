@@ -64,6 +64,13 @@ namespace Soleil {
      */
     Timer time;
 
+    /**
+     * Time elapsed since last frame.
+     * 
+     * At 60fps it should always be 16ms.
+     */
+    Timer delta;
+
     glm::vec2 viewportSize;
 
     /**

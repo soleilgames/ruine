@@ -117,7 +117,6 @@ namespace Soleil {
     Timer time = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::seconds(now.tv_sec) + std::chrono::nanoseconds(now.tv_nsec));
 
-    // TODO: viewer->render(time);
     ruine->render(time);
 
     if (glContext->swap() == false) {
