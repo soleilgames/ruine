@@ -26,9 +26,11 @@
 #include "ControllerService.hpp"
 #include "Ruine.hpp"
 #include "TypesToOStream.hpp"
+#include "mathutils.hpp"
 #include "stringutils.hpp"
 #include "types.hpp"
 
+#include <math.h>
 #include <stdexcept>
 
 #include <glm/common.hpp>
@@ -168,19 +170,6 @@ namespace Soleil {
     }
   }
 
-  static float bezier(const float A, const float B, const float C,
-                      const float D, const float t)
-  {
-    float OneMinusT = 1.0f - t;
-    float ThreeT    = 3 * t;
-
-    return (OneMinusT * OneMinusT * OneMinusT) * A + (t * t * t) * D +
-           3 * (ThreeT * ThreeT) * OneMinusT * C +
-           3 * (OneMinusT * OneMinusT) * t * B;
-  }
-
-  template <typename T> T sgn(T val) { return (T(0) < val) - (val < T(0)); }
-
   int32_t AndroidEngine::HandleInput(struct android_app* androidApp,
                                      AInputEvent*        event)
   {
@@ -195,8 +184,8 @@ namespace Soleil {
         case AMOTION_EVENT_ACTION_UP:
           controllerService.player.dpad = glm::vec3(0.0f);
           break;
-        case AMOTION_EVENT_ACTION_MOVE:
-
+        case AMOTION_EVENT_ACTION_DOWN:
+        case AMOTION_EVENT_ACTION_MOVE: {
           const float x = AMotionEvent_getX(event, 0);
           const float y = AMotionEvent_getY(event, 0);
 
@@ -204,50 +193,36 @@ namespace Soleil {
           const glm::vec2  touch(x / (float)This->glContext->getScreenWidth(),
                                 y / (float)This->glContext->getScreenHeight());
 
-#if 0
-          glm::vec2 distance = point - touch;
-#else
-          const float radius = 0.30f;
-          glm::vec2   distance((point.x - touch.x) / radius,
-                             (point.y - touch.y) / radius);
-#endif
-// SOLEIL__LOGGER_DEBUG(toString("Distance:", distance));
+          const glm::vec2 distance = point - touch;
+          const float     length   = glm::length(distance);
 
-#if 0
-          distance.x = ((distance.x > 0.05f && distance.x < 0.15f) ||
-                        (distance.x < -0.05f && distance.x > -0.15f))
-                         ? distance.x
-                         : 0.0f;
-          distance.y = ((distance.y > 0.05f && distance.y < 0.15f) ||
-                        (distance.y < -0.05f && distance.y > -0.15f))
-                         ? distance.y
-                         : 0.0f;
+          static const float min = 0.05f;
+          static const float max = 0.175f;
 
-          // TODO: Better than exp (Bézier?)
-          controllerService.player.dpad.x =
-            5.0f * distance.x * glm::pow(5.0f, distance.x);
-          controllerService.player.dpad.z =
-            7.0f * distance.y * glm::pow(5.0f, distance.y);
-#else
-          float A = 0.0f;
-          float B = 0.005f;
-          float C = 0.5f;
-          float D = 1.0f;
+          if (length >= min && length <= max) {
+            // SOLEIL__LOGGER_DEBUG(toString("Touch= ", touch, ". Length=",
+            // length,
+            //                               ". Distance=", distance * 6.666f));
 
-          float signx = sgn(distance.x);
-          float signy = sgn(distance.y);
-          distance.x  = glm::min(signx * distance.x * 3.334f, 1.0f);
-          distance.y  = glm::min(signy * distance.y * 3.334f, 1.0f);
-          // SOLEIL__LOGGER_DEBUG(toString("Distance AFTER=", distance));
+            static const float A     = 0.0f;
+            static const float B     = 0.05f;
+            static const float C     = 0.5f;
+            static const float D     = 1.0f;
+            const float        signx = sgn(distance.x);
+            const float        signy = sgn(distance.y);
 
-          controllerService.player.dpad.x =
-            signx * bezier(A, B, C, D, distance.x);
-          controllerService.player.dpad.z =
-            signy * bezier(A, B, C, D, distance.y);
-// SOLEIL__LOGGER_DEBUG(
-//   toString("Dpad:", controllerService.player.dpad));
-#endif
-          break;
+            // SOLEIL__LOGGER_DEBUG(toString("Bezier(",signx, "*", distance.x,
+            // "*", "6.666f)=", bezier(A, B, C, D, signx * distance.x *
+            // 6.666f)));
+
+            controllerService.player.dpad.x =
+              signx * bezier(A, B, C, D, signx * distance.x * 6.666f);
+            controllerService.player.dpad.z =
+              signy * bezier(A, B, C, D, signy * distance.y * 6.666f);
+            // SOLEIL__LOGGER_DEBUG(
+            //   toString("PAD(after)=", controllerService.player.dpad));
+          }
+        }; break;
       }
     }
     return 0;

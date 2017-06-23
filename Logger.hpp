@@ -55,8 +55,14 @@ namespace Soleil {
 #define SOLEIL__LOGGER_DEBUG(...) ((void)0)
 #else
 #include "stringutils.hpp"
+#include <csignal>
 #define SOLEIL__LOGGER_DEBUG(...)                                              \
   ::Soleil::Logger::debug(::Soleil::toString(__VA_ARGS__))
+#define SOLEIL__ASSERT_BREAK(cond)                                             \
+  if (!(cond)) {                                                               \
+    std::cerr << #cond << "\n";                                                \
+    std::raise(SIGINT);                                                        \
+  }
 #endif // NDEBUG
 
 #endif /* SOLEIL__LOGGER_HPP_ */

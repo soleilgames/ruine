@@ -31,6 +31,7 @@
 #include "Shape.hpp"
 #include "TypesToOStream.hpp"
 #include "WavefrontLoader.hpp"
+#include "mathutils.hpp"
 #include "types.hpp"
 
 #include <cmath>
@@ -48,7 +49,12 @@ namespace Soleil {
     static const glm::vec3 cameraLight(0.15f);
     static const glm::vec3 ghostColor(0.30f, 0.20f, 0.20f);
     static const float     ghostSpeed  = 0.01f;
+    static const float     cameraYawSpeed  = 0.1f;
     static const float     cameraSpeed = 0.05f;
+
+#if 0 // Temp
+    static GLuint bezierTex;
+#endif
 
   } // gval
 
@@ -81,6 +87,38 @@ namespace Soleil {
                  glm::vec3(0.5625f, 1.0f, 1.0f)); // TODO: Static
     glUniformMatrix4fv(ogl.imageModelMatrix, 1, GL_FALSE,
                        glm::value_ptr(modelMatrix));
+    throwOnGlError();
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    throwOnGlError();
+  }
+
+  static void DrawImage(GLuint texture, const glm::mat4& transformation)
+  {
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
+    throwOnGlError();
+
+    glUseProgram(ogl.imageProgram.program);
+    throwOnGlError();
+    glBindBuffer(GL_ARRAY_BUFFER, *(ogl.imageBuffer));
+    throwOnGlError();
+
+    constexpr GLsizei stride = sizeof(GLfloat) * 2;
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    throwOnGlError();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glUniform1i(ogl.imageImage, 0);
+
+    glUniformMatrix4fv(ogl.imageModelMatrix, 1, GL_FALSE,
+                       glm::value_ptr(transformation));
     throwOnGlError();
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -274,6 +312,50 @@ namespace Soleil {
       moving.push_back(GhostData(&(statics.back().transformation),
                                  frame.pointLights.size(), glm::vec3(0, 0, 1)));
     }
+
+#if 0
+    // Test: Render Bézier to image
+    const int width     = 800;
+    const int height    = 600;
+    const int imageSize = width * height;
+
+    float               A = 0.0f;
+    float               B = 0.5f;
+    float               C = 0.9f;
+    float               D = 1.0f;
+    std::vector<GLuint> image(width * height, 0xFFFFFFFF);
+    for (int x = 0; x < width; ++x) {
+      {
+        int y = bezier(A, B, C, D, ((float)x / width)) / 2.0f * height;
+        if (y >= height) y = height - 1;
+
+        int index = width * y + x;
+        assert(index < imageSize && "Overflowing image");
+        image[index] = 0xFF0000FF;
+      }
+
+      {
+	int y = glm::mix(0.0f, (float)(height / 2), ((float)x / width));
+        int index = width * y + x;
+        assert(index < imageSize && "Overflowing image");
+        image[index] = 0xFF00FF00;
+      }
+
+      {
+        int index = width * (height / 2) + x;
+        assert(index < imageSize && "Overflowing image");
+        image[index] = 0xFFFF0000;
+      }
+    }
+    gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();
+    gl::BindTexture bindTexture(GL_TEXTURE_2D, *texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, image.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gval::bezierTex = *texture;
+
+#endif
 
     SoundService::PlayMusic("farlands.ogg");
   }
@@ -535,8 +617,8 @@ namespace Soleil {
 
   static void RenderScene(Frame& frame, const glm::vec3& worldPosition)
   {
-#if 0
     UpdateGhost(moving, frame.pointLights, frame.delta, worldPosition);
+#if 0
     UpdateTorchColor(frame.pointLights);
     RenderDrawable(ground, frame, floorShape.get());
     RenderDrawable(wall, frame, wallShape.get());
@@ -556,7 +638,7 @@ namespace Soleil {
                                 const std::vector<BoundingBox>& wallBoundingBox,
                                 const Timer&                    deltaTime)
   {
-    camera->yaw += yaw;
+    camera->yaw += yaw * gval::cameraYawSpeed * deltaTime.count();
 
     const float speed = gval::cameraSpeed * deltaTime.count();
 
@@ -676,6 +758,12 @@ namespace Soleil {
     glDepthFunc(GL_LESS);
 
     RenderScene(frame, worldSize);
+#if 0
+    glm::mat4 transformation =
+      glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
+                 glm::vec3(2.0f));
+    DrawImage(gval::bezierTex, transformation);
+#endif
   }
 
 } // Soleil
