@@ -43,6 +43,11 @@
 #include <glm/matrix.hpp>
 
 namespace Soleil {
+  namespace gval {
+    static const glm::vec3 ambiantLight(0.15f);
+    static const glm::vec3 ghostColor(0.30f, 0.20f, 0.20f);
+
+  } // gval
 
   static void DrawPad()
   {
@@ -99,11 +104,14 @@ namespace Soleil {
   struct GhostData
   {
     glm::mat4* transformation;
-    glm::vec3* lightPosition;
+    size_t     lightPosition;
+    glm::vec3  direction;
 
-    GhostData(glm::mat4* transformation, glm::vec3* lightPosition)
+    GhostData(glm::mat4* transformation, size_t lightPosition,
+              const glm::vec3& direction)
       : transformation(transformation)
       , lightPosition(lightPosition)
+      , direction(direction)
     {
     }
   };
@@ -116,7 +124,8 @@ namespace Soleil {
   std::vector<GhostData> moving;
 
   static void InitializeWorld(std::vector<BoundingBox>& wallBoundingBox,
-                              Frame& frame, Camera& camera)
+                              Frame& frame, Camera& camera,
+                              glm::vec3& worldSize)
   {
     wallShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("wallcube.obj"));
@@ -124,7 +133,7 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
     torchShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
-#if 0
+#if 1
     ghostShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
 #else
@@ -134,8 +143,7 @@ namespace Soleil {
 
     std::vector<glm::mat4> scene;
 
-    frame.pointLights.push_back(PointLight());
-    frame.pointLights[0].color = glm::vec3(0.25f);
+    frame.pointLights.push_back({Position(0.0f), RGB(0.25f), 0.027f, 0.0028f});
 
     RenderInstances lateComer;
     // Prepare vertices for the bounding box:
@@ -152,12 +160,12 @@ namespace Soleil {
     level += "xD.xx.g....xxx\n";
     level += "x..xxxxxx..xxx\n";
     level += "x..xx......xxx\n";
-    level += "x..xx......xx\n";
+    level += "x..xx.......xx\n";
     level += "x..xx...g...xx\n";
     level += "xg.xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
-    level += "x......xx..xx\n";
+    level += "x.......xx..xx\n";
     level += "x.......xxg.xx\n";
     level += "x....g.xxx..xx\n";
     level += "x..xxxxxxx..xx\n";
@@ -169,19 +177,11 @@ namespace Soleil {
     level += "xD.x\n";
     level += "x..x\n";
     level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "x..x\n";
     level += "xg.x\n";
     level += "xxxx\n";
 #endif
+
+    worldSize.y = 1.0f; // TODO: Change if the world is not flat
 
     std::istringstream     s(level);
     std::string            line;
@@ -204,6 +204,8 @@ namespace Soleil {
           }
           wallBoundingBox.push_back(bbox);
 
+          worldSize.x = glm::max(worldSize.x, bbox.getMax().x);
+          worldSize.z = glm::max(worldSize.z, bbox.getMax().z);
         } else if (c == 'D') {
           camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
         } else {
@@ -222,12 +224,6 @@ namespace Soleil {
                                           transformation,
                                           torchShape->getSubShapes()));
           } else if (c == 'g') {
-            PointLight p;
-
-            p.color    = glm::vec3(0.50f, 0.35f, 0.0f);
-            p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-            frame.pointLights.push_back(p);
-
             glm::mat4 transformation =
               glm::translate(glm::mat4(),
                              glm::vec3(position.x, -1.0f, position.z)) *
@@ -263,9 +259,16 @@ namespace Soleil {
 
       statics.push_back(o);
 
-      // TODO: Warning - There may be more ligth than ghost
+      PointLight p;
+
+      p.color     = gval::ghostColor;
+      p.position  = glm::vec3(statics.back().transformation[3]);
+      p.linear    = 0.09f;
+      p.quadratic = 0.032f;
+      frame.pointLights.push_back(p);
+
       moving.push_back(GhostData(&(statics.back().transformation),
-                                 &(frame.pointLights[i + 1].position)));
+                                 frame.pointLights.size(), glm::vec3(0, 0, 1)));
     }
 
     SoundService::PlayMusic("farlands.ogg");
@@ -396,7 +399,7 @@ namespace Soleil {
     // Setting Lights
     // ----------------------------------------------------------
     glUniform3fv(instance.flat.AmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(.05f)));
+                 glm::value_ptr(gval::ambiantLight));
 
     glUniform3fv(instance.flat.EyeDirection, 1,
                  glm::value_ptr(frame.cameraPosition));
@@ -411,8 +414,10 @@ namespace Soleil {
                    glm::value_ptr(pointLight.position));
       glUniform3fv(instance.flat.PointLights[i].color, 1,
                    glm::value_ptr(pointLight.color));
-      glUniform1f(instance.flat.PointLights[i].linearAttenuation, 0.09f);
-      glUniform1f(instance.flat.PointLights[i].quadraticAttenuation, 0.032f);
+      glUniform1f(instance.flat.PointLights[i].linearAttenuation,
+                  pointLight.linear);
+      glUniform1f(instance.flat.PointLights[i].quadraticAttenuation,
+                  pointLight.quadratic);
 
       ++i;
     }
@@ -502,30 +507,30 @@ namespace Soleil {
     }
   }
 
-  static void UpdateGhost(std::vector<GhostData>& ghosts)
+  static void UpdateGhost(std::vector<GhostData>&  ghosts,
+                          std::vector<PointLight>& lights,
+                          const glm::vec3&         worldSize)
   {
-    static int   frame = 0;
-    static float dir   = -1;
-    frame++;
-
-    // TODO: Just a quick way to move ghost. Should not be frame fixed ;)
-    if (frame > 60 * 10) {
-      frame = 0;
-      dir   = -dir;
-    }
-
     for (GhostData& ghost : ghosts) {
-      const glm::mat4 transformation = glm::translate(
-        *(ghost.transformation), glm::vec3(0.0f, 0.0f, dir * 0.1f));
-      *(ghost.transformation) = transformation;
+      const glm::mat4 transformation =
+        glm::translate(*(ghost.transformation), ghost.direction * 0.1f);
 
-      *(ghost.lightPosition) = glm::vec3(transformation[3]);
+      glm::vec3 position = glm::vec3(transformation[3]);
+      if (position.z < 0.0f || position.z > worldSize.z) {
+        const glm::mat4 rotation = glm::rotate(
+          *(ghost.transformation), glm::pi<float>(), glm::vec3(0, 1, 0));
+        *(ghost.transformation) = rotation;
+      } else {
+        *(ghost.transformation) = transformation;
+      }
+
+      lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
     }
   }
 
-  static void RenderScene(Frame& frame)
+  static void RenderScene(Frame& frame, const glm::vec3& worldPosition)
   {
-    UpdateGhost(moving);
+    UpdateGhost(moving, frame.pointLights, worldPosition);
 #if 0
     UpdateTorchColor(frame.pointLights);
     RenderDrawable(ground, frame, floorShape.get());
@@ -547,10 +552,13 @@ namespace Soleil {
   {
     camera->yaw += yaw;
 
+    const float speed = 1.0f;
+
     // There is no pitch nor Roll, to the equation is simplified:
     glm::vec3 direction = glm::normalize(glm::vec3(
       sin(glm::radians(camera->yaw)), 0.0f, cos(glm::radians(camera->yaw))));
-    glm::vec3 newPosition = camera->position + (translation.z * direction);
+    glm::vec3 newPosition =
+      camera->position + (translation.z * direction * speed);
     const glm::vec3 positionForward(camera->position.x, newPosition.y,
                                     newPosition.z);
     const glm::vec3 positionSideward(newPosition.x, newPosition.y,
@@ -622,13 +630,14 @@ namespace Soleil {
     }
 #endif
 
-    static Frame frame;
+    static Frame     frame;
+    static glm::vec3 worldSize;
 
     static std::vector<BoundingBox> wallBoundingBox;
 
     static Pristine FirstLoop;
     if (FirstLoop) {
-      InitializeWorld(wallBoundingBox, frame, camera);
+      InitializeWorld(wallBoundingBox, frame, camera, worldSize);
     }
 
 #if 0
@@ -651,12 +660,12 @@ namespace Soleil {
     frame.time           = time;
     frame.cameraPosition = camera.position;
     frame.updateViewProjectionMatrices(view, projection);
-    // frame.pointLights[0].position = camera.position;
+    frame.pointLights[0].position = camera.position;
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    RenderScene(frame);
+    RenderScene(frame, worldSize);
   }
 
 } // Soleil

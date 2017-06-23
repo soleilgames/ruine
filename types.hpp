@@ -40,17 +40,20 @@ namespace Soleil {
   typedef std::chrono::milliseconds Timer;
 
   typedef glm::vec4 Point;
+  typedef glm::vec3 Position;
   typedef glm::vec4 Color;
+  typedef glm::vec3 RGB;
   typedef glm::vec3 Normal;
   typedef glm::vec2 Coord2D;
-
 
   struct PointLight
   {
     glm::vec3 position;
     glm::vec3 color;
+    float     linear;
+    float     quadratic;
   };
-  
+
   /**
    * Provide information on the current frame
    */
@@ -67,7 +70,7 @@ namespace Soleil {
      * Camera position for rendering lights
      */
     glm::vec3 cameraPosition;
-    
+
     /**
      * An up to date View * Projection Matrix
      * @see updateViewProjectionMatrices(const glm::mat4& view, const glm::mat4
