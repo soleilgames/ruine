@@ -53,3 +53,9 @@ cd build
 cmake ../
 make
 ```
+
+
+# License
+L'application est sous license MIT.
+La musique a été composé par M. Horacio M. Goldberg (www.yosoygames.com.ar/royalty-free)
+Le fantôme par Antoine Tallon http://www.at-graphisme.fr/category/travauxperso/game-design/
