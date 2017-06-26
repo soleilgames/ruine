@@ -45,53 +45,18 @@
 
 namespace Soleil {
   namespace gval {
-    static const glm::vec3 ambiantLight(0.1f);
+    static const glm::vec3 ambiantLight(0.15f);
     static const glm::vec3 cameraLight(0.15f);
-    static const glm::vec3 ghostColor(0.30f, 0.20f, 0.20f);
-    static const float     ghostSpeed  = 0.01f;
-    static const float     cameraYawSpeed  = 0.1f;
-    static const float     cameraSpeed = 0.05f;
+    static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
+    static const float     ghostSpeed     = 0.01f;
+    static const float     cameraYawSpeed = 0.1f;
+    static const float     cameraSpeed    = 0.05f;
 
 #if 0 // Temp
     static GLuint bezierTex;
 #endif
 
   } // gval
-
-  static void DrawPad()
-  {
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
-    throwOnGlError();
-
-    glUseProgram(ogl.imageProgram.program);
-    throwOnGlError();
-    glBindBuffer(GL_ARRAY_BUFFER, *(ogl.imageBuffer));
-    throwOnGlError();
-
-    constexpr GLsizei stride = sizeof(GLfloat) * 2;
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    throwOnGlError();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, *ogl.texturePad);
-    glUniform1i(ogl.imageImage, 0);
-
-    const glm::mat4 modelMatrix =
-      glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
-                 glm::vec3(0.5625f, 1.0f, 1.0f)); // TODO: Static
-    glUniformMatrix4fv(ogl.imageModelMatrix, 1, GL_FALSE,
-                       glm::value_ptr(modelMatrix));
-    throwOnGlError();
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    throwOnGlError();
-  }
 
   static void DrawImage(GLuint texture, const glm::mat4& transformation)
   {
@@ -123,6 +88,15 @@ namespace Soleil {
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     throwOnGlError();
+  }
+
+  static void DrawPad()
+  {
+    static const glm::mat4 modelMatrix =
+      glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
+                 glm::vec3(0.5625f, 1.0f, 1.0f));
+
+    DrawImage(*OpenGLDataInstance::Instance().texturePad, modelMatrix);
   }
 
   struct DrawCommand
@@ -161,6 +135,7 @@ namespace Soleil {
   ShapePtr               floorShape;
   ShapePtr               torchShape;
   ShapePtr               ghostShape;
+  ShapePtr               gateShape;
   RenderInstances        statics;
   std::vector<GhostData> moving;
 
@@ -174,6 +149,8 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
     torchShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
+    gateShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("gate.obj"));
 #if 1
     ghostShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
@@ -198,20 +175,20 @@ namespace Soleil {
 
     std::string level;
 #if 1
-    level += "xxxxxxxxxxxxxx\n";
-    level += "xD.xx.g....xxx\n";
+    level += "xGxxxxxxxxxxxx\n";
+    level += "xD.xGg.....xxx\n";
     level += "x..xxxxxx..xxx\n";
     level += "x..xx......xxx\n";
     level += "x..xx.......xx\n";
-    level += "x..xx...g...xx\n";
-    level += "xg.xxxxxxx..xx\n";
+    level += "x..xx.......xx\n";
+    level += "x..xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
     level += "x.......xx..xx\n";
     level += "x.......xxg.xx\n";
-    level += "x....g.xxx..xx\n";
+    level += "x......xxx..xx\n";
     level += "x..xxxxxxx..xx\n";
-    level += "x...g........x\n";
+    level += "x............x\n";
     level += "x............x\n";
     level += "xxxxxxxxxxxxxx\n";
 #else
@@ -248,8 +225,21 @@ namespace Soleil {
 
           worldSize.x = glm::max(worldSize.x, bbox.getMax().x);
           worldSize.z = glm::max(worldSize.z, bbox.getMax().z);
-        } else if (c == 'D') {
-          camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
+        } else if (c == 'G') {
+          const glm::mat4 transformation = glm::translate(scale, position);
+
+          statics.push_back(DrawCommand(gateShape->getBuffer(), transformation,
+                                        gateShape->getSubShapes()));
+
+          BoundingBox bbox;
+          for (const auto& v : wallVertices) {
+            bbox.expandBy(glm::vec3(transformation * v));
+          }
+          wallBoundingBox.push_back(bbox);
+
+          worldSize.x = glm::max(worldSize.x, bbox.getMax().x);
+          worldSize.z = glm::max(worldSize.z, bbox.getMax().z);
+
         } else {
           if (c == 'l') {
             PointLight p;
@@ -273,6 +263,8 @@ namespace Soleil {
             lateComer.push_back(DrawCommand(ghostShape->getBuffer(),
                                             transformation,
                                             ghostShape->getSubShapes()));
+          } else if (c == 'D') {
+            camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
           }
 
           glm::mat4 groundTransformation =
@@ -360,8 +352,8 @@ namespace Soleil {
     SoundService::PlayMusic("farlands.ogg");
   }
 
-  static inline void RenderDrawCommands(const RenderInstances instances,
-                                        const Frame&          frame)
+  static inline void RenderPhongShape(const RenderInstances instances,
+                                      const Frame&          frame)
   {
     throwOnGlError();
     constexpr GLsizei         stride    = sizeof(Vertex);
@@ -523,15 +515,10 @@ namespace Soleil {
       glEnableVertexAttribArray(2);
       glEnableVertexAttribArray(3);
 
-#if 0
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#else
       if (ControllerService::GetPlayerController().option1)
         glEnable(GL_BLEND);
       else
         glDisable(GL_BLEND);
-#endif
       for (const auto& sub : drawCommand.sub) {
         // Setting Materials
         // -------------------------------------------------------
@@ -615,13 +602,13 @@ namespace Soleil {
     }
   }
 
-  static void RenderScene(Frame& frame, const glm::vec3& worldPosition)
+  static void RenderScene(Frame& frame, const glm::vec3& worldSize)
   {
-    UpdateGhost(moving, frame.pointLights, frame.delta, worldPosition);
+    if (ControllerService::GetPlayerController().option2)
+      UpdateGhost(moving, frame.pointLights, frame.delta, worldSize);
+
 #if 0
-    UpdateTorchColor(frame.pointLights);
-    RenderDrawable(ground, frame, floorShape.get());
-    RenderDrawable(wall, frame, wallShape.get());
+        UpdateTorchColor(frame.pointLights);
 #endif
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -693,7 +680,7 @@ namespace Soleil {
 
   void Ruine::render(Timer time)
   {
-#ifndef NDEBUG
+    //#ifndef NDEBUG
     {
       /* --- Peformance log --- */
       static Timer      firstTime = time;
@@ -702,9 +689,14 @@ namespace Soleil {
 
       frames++;
       if (time - firstTime > oneSec) {
+#if 0
         SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
                                       (time - firstTime) / frames),
                              " (FPS=", frames, ")");
+#endif // TODO:  Temporary ==>
+        Logger::info(toString("Time to draw previous frame: ",
+                              (time - firstTime) / frames, " (FPS=", frames,
+                              ")"));
 
         firstTime = time;
         frames    = 0;
@@ -716,7 +708,7 @@ namespace Soleil {
                                       sizeof(OpenGLDataInstance::Instance())));
       }
     }
-#endif
+    //#endif
 
     static Frame     frame;
     static glm::vec3 worldSize;

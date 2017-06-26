@@ -33,10 +33,12 @@ namespace Soleil {
     glm::vec3 dpad;
 
     bool option1;
+    bool option2;
 
     Controller()
       : dpad()
-      , option1(false)
+      , option1(true)
+      , option2(true)
     {
     }
   };
