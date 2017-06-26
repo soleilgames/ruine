@@ -10,12 +10,13 @@ C'est un mélange entre un jeu d'aventure et un Pac Man 3D.
 
 # Les étapes
 ## Étape 1
-![Image of Yaktocat](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape1.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape1.png)
 ## Étape 2
-![Image of Yaktocat](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape2.png)
-![Image of Yaktocat](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape2bis.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape2.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape2bis.png)
 ## Étape 3
-![Image of Yaktocat](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape3.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape3.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape3bis.png)
 
 ---
 
@@ -56,6 +57,6 @@ make
 
 
 # License
-L'application est sous license MIT.
-La musique a été composé par M. Horacio M. Goldberg (www.yosoygames.com.ar/royalty-free)
-Le fantôme par Antoine Tallon http://www.at-graphisme.fr/category/travauxperso/game-design/
+  L'application est sous license MIT.
+  La musique a été composé par M. Horacio M. Goldberg (www.yosoygames.com.ar/royalty-free)
+  Le fantôme par Antoine Tallon http://www.at-graphisme.fr/category/travauxperso/game-design/
