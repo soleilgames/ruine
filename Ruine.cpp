@@ -255,11 +255,11 @@ namespace Soleil {
             statics.push_back(DrawCommand(torchShape->getBuffer(),
                                           transformation,
                                           torchShape->getSubShapes()));
-          } else if (c == 'g') {
+          } else if (c == 'g') {	    
             glm::mat4 transformation =
               glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -1.0f, position.z)) *
-              glm::scale(glm::mat4(), glm::vec3(.5f));
+                             glm::vec3(position.x, -0.60f, position.z)) *
+              glm::scale(glm::mat4(), glm::vec3(.3f));
             lateComer.push_back(DrawCommand(ghostShape->getBuffer(),
                                             transformation,
                                             ghostShape->getSubShapes()));
