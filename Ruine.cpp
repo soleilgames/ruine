@@ -181,7 +181,7 @@ namespace Soleil {
     level += "x..xx......xxx\n";
     level += "x..xx.......xx\n";
     level += "x..xx.......xx\n";
-    level += "x..xxxxxxx..xx\n";
+    level += "xg.xxxxxxx..xx\n";
     level += "x..xxxxxxx..xx\n";
     level += "x.......xx..xx\n";
     level += "x.......xx..xx\n";
@@ -200,7 +200,7 @@ namespace Soleil {
     level += "xxxx\n";
 #endif
 
-    worldSize.y = 1.0f; // TODO: Change if the world is not flat
+    worldSize.y = 1.0f; // TODO: To change if the world become not flat anymore
 
     std::istringstream     s(level);
     std::string            line;
@@ -302,7 +302,7 @@ namespace Soleil {
       frame.pointLights.push_back(p);
 
       moving.push_back(GhostData(&(statics.back().transformation),
-                                 frame.pointLights.size(), glm::vec3(0, 0, 1)));
+                                 frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
     }
 
 #if 0
