@@ -43,6 +43,8 @@ add_library(ruinelib
   MTLLoader.cpp
   Group.cpp
   OpenGLDataInstance.cpp
+  Draw.cpp
+  World.cpp
   )
 
 

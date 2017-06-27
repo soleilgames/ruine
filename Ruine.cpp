@@ -24,6 +24,7 @@
 #include "AssetService.hpp"
 #include "BoundingBox.hpp"
 #include "ControllerService.hpp"
+#include "Draw.hpp"
 #include "Group.hpp"
 #include "Logger.hpp"
 #include "OpenGLDataInstance.hpp"
@@ -31,6 +32,7 @@
 #include "Shape.hpp"
 #include "TypesToOStream.hpp"
 #include "WavefrontLoader.hpp"
+#include "World.hpp"
 #include "mathutils.hpp"
 #include "types.hpp"
 
@@ -44,52 +46,6 @@
 #include <glm/matrix.hpp>
 
 namespace Soleil {
-  namespace gval {
-    static const glm::vec3 ambiantLight(0.15f);
-    static const glm::vec3 cameraLight(0.15f);
-    static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
-    static const float     ghostSpeed     = 0.01f;
-    static const float     cameraYawSpeed = 0.1f;
-    static const float     cameraSpeed    = 0.05f;
-
-#if 0 // Temp
-    static GLuint bezierTex;
-#endif
-
-  } // gval
-
-  static void DrawImage(GLuint texture, const glm::mat4& transformation)
-  {
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
-    throwOnGlError();
-
-    glUseProgram(ogl.imageProgram.program);
-    throwOnGlError();
-    glBindBuffer(GL_ARRAY_BUFFER, *(ogl.imageBuffer));
-    throwOnGlError();
-
-    constexpr GLsizei stride = sizeof(GLfloat) * 2;
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    throwOnGlError();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glUniform1i(ogl.imageImage, 0);
-
-    glUniformMatrix4fv(ogl.imageModelMatrix, 1, GL_FALSE,
-                       glm::value_ptr(transformation));
-    throwOnGlError();
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    throwOnGlError();
-  }
-
   static void DrawPad()
   {
     static const glm::mat4 modelMatrix =
@@ -99,82 +55,11 @@ namespace Soleil {
     DrawImage(*OpenGLDataInstance::Instance().texturePad, modelMatrix);
   }
 
-  struct DrawCommand
+  static void InitializeWorld(World&                    world,
+                              std::vector<BoundingBox>& wallBoundingBox,
+                              Frame& frame, Camera& camera)
   {
-    GLuint                       buffer;
-    glm::mat4                    transformation;
-    const std::vector<SubShape>& sub;
-
-    DrawCommand(GLuint buffer, const glm::mat4& transformation,
-                const std::vector<SubShape>& sub)
-      : buffer(buffer)
-      , transformation(transformation)
-      , sub(sub)
-    {
-    }
-  };
-
-  typedef std::vector<DrawCommand> RenderInstances;
-
-  struct GhostData
-  {
-    glm::mat4* transformation;
-    size_t     lightPosition;
-    glm::vec3  direction;
-
-    GhostData(glm::mat4* transformation, size_t lightPosition,
-              const glm::vec3& direction)
-      : transformation(transformation)
-      , lightPosition(lightPosition)
-      , direction(direction)
-    {
-    }
-  };
-
-  ShapePtr               wallShape;
-  ShapePtr               floorShape;
-  ShapePtr               torchShape;
-  ShapePtr               ghostShape;
-  ShapePtr               gateShape;
-  RenderInstances        statics;
-  std::vector<GhostData> moving;
-
-  static void InitializeWorld(std::vector<BoundingBox>& wallBoundingBox,
-                              Frame& frame, Camera& camera,
-                              glm::vec3& worldSize)
-  {
-    wallShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("wallcube.obj"));
-    floorShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
-    torchShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
-    gateShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("gate.obj"));
-#if 1
-    ghostShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
-#else
-    ghostShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
-#endif
-
-    std::vector<glm::mat4> scene;
-
-    frame.pointLights.push_back(
-      {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
-
-    RenderInstances lateComer;
-    // Prepare vertices for the bounding box:
-    std::vector<glm::vec4> wallVertices;
-    for (const auto& sub : wallShape->getSubShapes()) {
-      for (const auto& vertex : sub.vertices) {
-        wallVertices.push_back(vertex.position);
-      }
-    }
-
     std::string level;
-#if 1
     level += "xGxxxxxxxxxxxx\n";
     level += "xD.xGg.....xxx\n";
     level += "x..xxxxxx..xxx\n";
@@ -191,384 +76,11 @@ namespace Soleil {
     level += "x............x\n";
     level += "x............x\n";
     level += "xxxxxxxxxxxxxx\n";
-#else
-    level += "xxxx\n";
-    level += "xD.x\n";
-    level += "x..x\n";
-    level += "x..x\n";
-    level += "xg.x\n";
-    level += "xxxx\n";
-#endif
 
-    worldSize.y = 1.0f; // TODO: To change if the world become not flat anymore
-
-    std::istringstream     s(level);
-    std::string            line;
-    float                  x     = 0.0f;
-    float                  z     = 0.0f;
-    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
-    while (std::getline(s, line)) {
-      for (auto const& c : line) {
-        const glm::vec3 position(2.0f * x, 0.0f, 2.0f * z);
-
-        if (c == 'x') {
-          const glm::mat4 transformation = glm::translate(scale, position);
-
-          statics.push_back(DrawCommand(wallShape->getBuffer(), transformation,
-                                        wallShape->getSubShapes()));
-
-          BoundingBox bbox;
-          for (const auto& v : wallVertices) {
-            bbox.expandBy(glm::vec3(transformation * v));
-          }
-          wallBoundingBox.push_back(bbox);
-
-          worldSize.x = glm::max(worldSize.x, bbox.getMax().x);
-          worldSize.z = glm::max(worldSize.z, bbox.getMax().z);
-        } else if (c == 'G') {
-          const glm::mat4 transformation = glm::translate(scale, position);
-
-          statics.push_back(DrawCommand(gateShape->getBuffer(), transformation,
-                                        gateShape->getSubShapes()));
-
-          BoundingBox bbox;
-          for (const auto& v : wallVertices) {
-            bbox.expandBy(glm::vec3(transformation * v));
-          }
-          wallBoundingBox.push_back(bbox);
-
-          worldSize.x = glm::max(worldSize.x, bbox.getMax().x);
-          worldSize.z = glm::max(worldSize.z, bbox.getMax().z);
-
-        } else {
-          if (c == 'l') {
-            PointLight p;
-
-            p.color    = glm::vec3(0.5f, 0.0f, 0.0f);
-            p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-            frame.pointLights.push_back(p);
-
-            glm::mat4 transformation =
-              glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -1.0f, position.z)) *
-              glm::scale(glm::mat4(), glm::vec3(0.5f));
-            statics.push_back(DrawCommand(torchShape->getBuffer(),
-                                          transformation,
-                                          torchShape->getSubShapes()));
-          } else if (c == 'g') {	    
-            glm::mat4 transformation =
-              glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -0.60f, position.z)) *
-              glm::scale(glm::mat4(), glm::vec3(.3f));
-            lateComer.push_back(DrawCommand(ghostShape->getBuffer(),
-                                            transformation,
-                                            ghostShape->getSubShapes()));
-          } else if (c == 'D') {
-            camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-          }
-
-          glm::mat4 groundTransformation =
-            glm::translate(scale, glm::vec3(2.0f * x, -1.0f, 2.0f * z));
-
-          glm::mat4 ceilTransformation =
-            glm::translate(scale, glm::vec3(2.0f * x, 1.0f, 2.0f * z)) *
-            glm::rotate(glm::mat4(), glm::pi<float>(),
-                        glm::vec3(0.0f, 0.0f, 1.0f));
-
-          statics.push_back(DrawCommand(floorShape->getBuffer(),
-                                        groundTransformation,
-                                        floorShape->getSubShapes()));
-          statics.push_back(DrawCommand(floorShape->getBuffer(),
-                                        ceilTransformation,
-                                        floorShape->getSubShapes()));
-        }
-        x += 1.0f;
-      }
-      z += 1.0f;
-      x = 0.0f;
-    }
-
-    for (size_t i = 0; i < lateComer.size(); ++i) {
-      const auto& o = lateComer[i];
-
-      statics.push_back(o);
-
-      PointLight p;
-
-      p.color     = gval::ghostColor;
-      p.position  = glm::vec3(statics.back().transformation[3]);
-      p.linear    = 0.09f;
-      p.quadratic = 0.032f;
-      frame.pointLights.push_back(p);
-
-      moving.push_back(GhostData(&(statics.back().transformation),
-                                 frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
-    }
-
-#if 0
-    // Test: Render Bézier to image
-    const int width     = 800;
-    const int height    = 600;
-    const int imageSize = width * height;
-
-    float               A = 0.0f;
-    float               B = 0.5f;
-    float               C = 0.9f;
-    float               D = 1.0f;
-    std::vector<GLuint> image(width * height, 0xFFFFFFFF);
-    for (int x = 0; x < width; ++x) {
-      {
-        int y = bezier(A, B, C, D, ((float)x / width)) / 2.0f * height;
-        if (y >= height) y = height - 1;
-
-        int index = width * y + x;
-        assert(index < imageSize && "Overflowing image");
-        image[index] = 0xFF0000FF;
-      }
-
-      {
-	int y = glm::mix(0.0f, (float)(height / 2), ((float)x / width));
-        int index = width * y + x;
-        assert(index < imageSize && "Overflowing image");
-        image[index] = 0xFF00FF00;
-      }
-
-      {
-        int index = width * (height / 2) + x;
-        assert(index < imageSize && "Overflowing image");
-        image[index] = 0xFFFF0000;
-      }
-    }
-    gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();
-    gl::BindTexture bindTexture(GL_TEXTURE_2D, *texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, image.data());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    gval::bezierTex = *texture;
-
-#endif
+    InitializeWorldModels(world);
+    InitializeLevel(world, level, wallBoundingBox, frame, camera);
 
     SoundService::PlayMusic("farlands.ogg");
-  }
-
-  static inline void RenderPhongShape(const RenderInstances instances,
-                                      const Frame&          frame)
-  {
-    throwOnGlError();
-    constexpr GLsizei         stride    = sizeof(Vertex);
-    const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
-    const Program&            rendering = instance.drawable;
-    glUseProgram(rendering.program);
-
-    // Setting Lights
-    // ----------------------------------------------------------
-    glUniform3fv(instance.drawableAmbiantLight, 1,
-                 glm::value_ptr(glm::vec3(.05f)));
-
-    glUniform3fv(instance.drawableEyeDirection, 1,
-                 glm::value_ptr(frame.cameraPosition));
-    glUniform1i(instance.drawableNumberOfLights, frame.pointLights.size());
-    throwOnGlError();
-
-    int i = 0;
-    for (const auto& pointLight : frame.pointLights) {
-      // TODO: Protect to avoid array verflow
-
-      glUniform3fv(instance.drawablePointLights[i].position, 1,
-                   glm::value_ptr(pointLight.position));
-      glUniform3fv(instance.drawablePointLights[i].color, 1,
-                   glm::value_ptr(pointLight.color));
-      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.007f);
-      glUniform1f(instance.drawablePointLights[i].quadraticAttenuation,
-                  0.0002f);
-
-      ++i;
-    }
-
-    for (const auto& drawCommand : instances) {
-
-      gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, drawCommand.buffer);
-
-      glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, normal));
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, color));
-      glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, uv));
-      glEnableVertexAttribArray(0);
-      glEnableVertexAttribArray(1);
-      glEnableVertexAttribArray(2);
-      glEnableVertexAttribArray(3);
-
-#if 0
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#else
-      if (ControllerService::GetPlayerController().option1)
-        glEnable(GL_BLEND);
-      else
-        glDisable(GL_BLEND);
-#endif
-      for (const auto& sub : drawCommand.sub) {
-        // Setting Materials
-        // -------------------------------------------------------
-        glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
-                     glm::value_ptr(sub.material.ambiantColor));
-        glUniform1f(instance.drawableMaterial.shininess,
-                    sub.material.shininess);
-        glUniform3fv(instance.drawableMaterial.emissiveColor, 1,
-                     glm::value_ptr(sub.material.emissiveColor));
-        glUniform3fv(instance.drawableMaterial.diffuseColor, 1,
-                     glm::value_ptr(sub.material.diffuseColor));
-        glUniform3fv(instance.drawableMaterial.specularColor, 1,
-                     glm::value_ptr(sub.material.specularColor));
-
-        // Setting Textures
-        // --------------------------------------------------------
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
-        glUniform1i(instance.drawableMaterial.diffuseMap, 0);
-
-        auto ViewProjectionModel =
-          frame.ViewProjection * drawCommand.transformation;
-        glUniformMatrix4fv(instance.drawableMVPMatrix, 1, GL_FALSE,
-                           glm::value_ptr(ViewProjectionModel));
-
-/* The book has a mistake, it says using a MVMatrix while only using the Model
- * Matrix*/
-#if 0
-    auto ModelView = frame.View * getTransformation();
-#endif
-        glUniformMatrix4fv(
-          instance.drawableMVMatrix, 1, GL_FALSE,
-          glm::value_ptr(drawCommand.transformation)); // ModelView
-
-/* TODO: If only rotation and isometric (nonshape changing) scaling was
- * performed, the Mat3 is should be fine: */
-#if 0
-    auto NormalMatrix = glm::mat3(ModelView);
-#endif
-
-        auto NormalMatrix =
-          glm::transpose(glm::inverse(glm::mat3(drawCommand.transformation)));
-
-        glUniformMatrix3fv(instance.drawableNormalMatrix, 1, GL_FALSE,
-                           glm::value_ptr(NormalMatrix));
-        throwOnGlError();
-
-        const std::vector<GLushort>& indices = sub.indices;
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
-                       indices.data());
-      }
-    }
-  }
-
-  static inline void RenderFlatShape(const RenderInstances instances,
-                                     const Frame&          frame)
-  {
-    throwOnGlError();
-    constexpr GLsizei         stride    = sizeof(Vertex);
-    const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
-    const Program&            rendering = instance.flat.program;
-    glUseProgram(rendering.program);
-
-    // Setting Lights
-    // ----------------------------------------------------------
-    glUniform3fv(instance.flat.AmbiantLight, 1,
-                 glm::value_ptr(gval::ambiantLight));
-
-    glUniform3fv(instance.flat.EyeDirection, 1,
-                 glm::value_ptr(frame.cameraPosition));
-    glUniform1i(instance.flat.NumberOfLights, frame.pointLights.size());
-    throwOnGlError();
-
-    int i = 0;
-    for (const auto& pointLight : frame.pointLights) {
-      // TODO: Protect to avoid array verflow
-
-      glUniform3fv(instance.flat.PointLights[i].position, 1,
-                   glm::value_ptr(pointLight.position));
-      glUniform3fv(instance.flat.PointLights[i].color, 1,
-                   glm::value_ptr(pointLight.color));
-      glUniform1f(instance.flat.PointLights[i].linearAttenuation,
-                  pointLight.linear);
-      glUniform1f(instance.flat.PointLights[i].quadraticAttenuation,
-                  pointLight.quadratic);
-
-      ++i;
-    }
-
-    for (const auto& drawCommand : instances) {
-      gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, drawCommand.buffer);
-
-      glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, normal));
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, color));
-      glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
-                            (const GLvoid*)offsetof(Vertex, uv));
-      glEnableVertexAttribArray(0);
-      glEnableVertexAttribArray(1);
-      glEnableVertexAttribArray(2);
-      glEnableVertexAttribArray(3);
-
-      if (ControllerService::GetPlayerController().option1)
-        glEnable(GL_BLEND);
-      else
-        glDisable(GL_BLEND);
-      for (const auto& sub : drawCommand.sub) {
-        // Setting Materials
-        // -------------------------------------------------------
-        glUniform3fv(instance.flat.Material.ambiantColor, 1,
-                     glm::value_ptr(sub.material.ambiantColor));
-        glUniform1f(instance.flat.Material.shininess, sub.material.shininess);
-        glUniform3fv(instance.flat.Material.emissiveColor, 1,
-                     glm::value_ptr(sub.material.emissiveColor));
-        glUniform3fv(instance.flat.Material.diffuseColor, 1,
-                     glm::value_ptr(sub.material.diffuseColor));
-        glUniform3fv(instance.flat.Material.specularColor, 1,
-                     glm::value_ptr(sub.material.specularColor));
-
-        // Setting Textures
-        // --------------------------------------------------------
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
-        glUniform1i(instance.flat.Material.diffuseMap, 0);
-
-        auto ViewProjectionModel =
-          frame.ViewProjection * drawCommand.transformation;
-        glUniformMatrix4fv(instance.flat.MVPMatrix, 1, GL_FALSE,
-                           glm::value_ptr(ViewProjectionModel));
-
-/* The book has a mistake, it says using a MVMatrix while only using the Model
- * Matrix*/
-#if 0
-    auto ModelView = frame.View * drawCommand.transformation;
-#endif
-        glUniformMatrix4fv(
-          instance.flat.MVMatrix, 1, GL_FALSE,
-          glm::value_ptr(drawCommand.transformation)); // ModelView
-
-/* TODO: If only rotation and isometric (nonshape changing) scaling was
- * performed, the Mat3 is should be fine: */
-#if 0
-    auto NormalMatrix = glm::mat3(ModelView);
-#endif
-
-        auto NormalMatrix =
-          glm::transpose(glm::inverse(glm::mat3(drawCommand.transformation)));
-
-        glUniformMatrix3fv(instance.flat.NormalMatrix, 1, GL_FALSE,
-                           glm::value_ptr(NormalMatrix));
-        const std::vector<GLushort>& indices = sub.indices;
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
-                       indices.data());
-        throwOnGlError();
-      }
-    }
   }
 
   static void UpdateTorchColor(std::vector<PointLight>& lights)
@@ -602,10 +114,11 @@ namespace Soleil {
     }
   }
 
-  static void RenderScene(Frame& frame, const glm::vec3& worldSize)
+  static void RenderScene(World& world, Frame& frame)
   {
     if (ControllerService::GetPlayerController().option2)
-      UpdateGhost(moving, frame.pointLights, frame.delta, worldSize);
+      UpdateGhost(world.sentinels, frame.pointLights, frame.delta,
+                  world.bounds);
 
 #if 0
         UpdateTorchColor(frame.pointLights);
@@ -615,7 +128,7 @@ namespace Soleil {
 #if 0
     RenderDrawCommands(statics, frame);
 #else
-    RenderFlatShape(statics, frame);
+    RenderFlatShape(world.statics, frame);
 #endif
     DrawPad();
   }
@@ -680,7 +193,7 @@ namespace Soleil {
 
   void Ruine::render(Timer time)
   {
-    //#ifndef NDEBUG
+#ifndef NDEBUG
     {
       /* --- Peformance log --- */
       static Timer      firstTime = time;
@@ -689,15 +202,9 @@ namespace Soleil {
 
       frames++;
       if (time - firstTime > oneSec) {
-#if 0
         SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
                                       (time - firstTime) / frames),
                              " (FPS=", frames, ")");
-#endif // TODO:  Temporary ==>
-        Logger::info(toString("Time to draw previous frame: ",
-                              (time - firstTime) / frames, " (FPS=", frames,
-                              ")"));
-
         firstTime = time;
         frames    = 0;
       }
@@ -708,16 +215,15 @@ namespace Soleil {
                                       sizeof(OpenGLDataInstance::Instance())));
       }
     }
-    //#endif
+#endif
 
-    static Frame     frame;
-    static glm::vec3 worldSize;
-
+    static Frame                    frame;
+    static World                    world;
     static std::vector<BoundingBox> wallBoundingBox;
+    static Pristine                 FirstLoop;
 
-    static Pristine FirstLoop;
     if (FirstLoop) {
-      InitializeWorld(wallBoundingBox, frame, camera, worldSize);
+      InitializeWorld(world, wallBoundingBox, frame, camera);
       frame.time = time;
     }
 
@@ -749,7 +255,7 @@ namespace Soleil {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    RenderScene(frame, worldSize);
+    RenderScene(world, frame);
 #if 0
     glm::mat4 transformation =
       glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),

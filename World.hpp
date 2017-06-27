@@ -19,36 +19,51 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__RUINE_HPP_
-#define SOLEIL__RUINE_HPP_
+#ifndef SOLEIL__WORLD_HPP_
+#define SOLEIL__WORLD_HPP_
 
-#include "AssetService.hpp"
-#include "OpenGLInclude.hpp"
-#include "SoundService.hpp"
+#include <vector>
+
+#include "BoundingBox.hpp"
+#include "Draw.hpp"
 #include "types.hpp"
 
-#include <glm/vec3.hpp>
-
 namespace Soleil {
-  class Ruine
+
+  struct GhostData
   {
-  public:
-    Ruine(AssetService* assetService, SoundService* soundService,
-          int viewportWidth, int viewportHeight);
-    virtual ~Ruine();
+    glm::mat4* transformation;
+    size_t     lightPosition;
+    glm::vec3  direction;
 
-  public:
-    void render(Timer time);
-
-  private:
-    AssetService* assetService;
-    SoundService* soundService;
-    int           viewportWidth;
-    int           viewportHeight;
-    Camera        camera;
-    glm::mat4     view;
+    GhostData(glm::mat4* transformation, size_t lightPosition,
+              const glm::vec3& direction)
+      : transformation(transformation)
+      , lightPosition(lightPosition)
+      , direction(direction)
+    {
+    }
   };
+
+  struct World
+  {
+    // TODO:  std::vector<ShapePtr>  models;
+    ShapePtr wallShape;
+    ShapePtr floorShape;
+    ShapePtr torchShape;
+    ShapePtr ghostShape;
+    ShapePtr gateShape;
+
+    glm::vec3              bounds;
+    RenderInstances        statics;
+    std::vector<GhostData> sentinels;
+  };
+
+  void InitializeWorldModels(World& world);
+  void InitializeLevel(World& world, const std::string& level,
+                       std::vector<BoundingBox>& wallBoundingBox, Frame& frame,
+                       Camera& camera);
 
 } // Soleil
 
-#endif /* SOLEIL__RUINE_HPP_ */
+#endif /* SOLEIL__WORLD_HPP_ */

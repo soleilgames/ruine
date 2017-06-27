@@ -66,7 +66,7 @@ namespace Soleil {
 
     /**
      * Time elapsed since last frame.
-     * 
+     *
      * At 60fps it should always be 16ms.
      */
     Timer delta;
@@ -104,6 +104,26 @@ namespace Soleil {
 
     std::vector<PointLight> pointLights;
   };
+
+  struct Camera
+  {
+    glm::vec3 position;
+    float     yaw;
+  };
+
+  namespace gval {
+    static const glm::vec3 ambiantLight(0.15f);
+    static const glm::vec3 cameraLight(0.15f);
+    static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
+    static const float     ghostSpeed     = 0.01f;
+    static const float     cameraYawSpeed = 0.1f;
+    static const float     cameraSpeed    = 0.05f;
+
+#if 0 // Temp
+    static GLuint bezierTex;
+#endif
+
+  } // gval
 
 } // Soleil
 

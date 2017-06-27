@@ -19,36 +19,45 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__RUINE_HPP_
-#define SOLEIL__RUINE_HPP_
+#ifndef SOLEIL__DRAW_HPP_
+#define SOLEIL__DRAW_HPP_
 
-#include "AssetService.hpp"
 #include "OpenGLInclude.hpp"
-#include "SoundService.hpp"
+#include "Shape.hpp"
 #include "types.hpp"
 
-#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace Soleil {
-  class Ruine
+
+  struct DrawCommand
   {
-  public:
-    Ruine(AssetService* assetService, SoundService* soundService,
-          int viewportWidth, int viewportHeight);
-    virtual ~Ruine();
+    GLuint                       buffer;
+    glm::mat4                    transformation;
+    const std::vector<SubShape>& sub;
 
-  public:
-    void render(Timer time);
+    DrawCommand(GLuint buffer, const glm::mat4& transformation,
+                const std::vector<SubShape>& sub)
+      : buffer(buffer)
+      , transformation(transformation)
+      , sub(sub)
+    {
+    }
 
-  private:
-    AssetService* assetService;
-    SoundService* soundService;
-    int           viewportWidth;
-    int           viewportHeight;
-    Camera        camera;
-    glm::mat4     view;
+    DrawCommand(const Shape& shape, const glm::mat4& transformation)
+      : buffer(shape.getBuffer())
+      , transformation(transformation)
+      , sub(shape.getSubShapes())
+    {
+    }
   };
+
+  typedef std::vector<DrawCommand> RenderInstances;
+
+  void DrawImage(GLuint texture, const glm::mat4& transformation);
+  void RenderPhongShape(const RenderInstances instances, const Frame& frame);
+  void RenderFlatShape(const RenderInstances instances, const Frame& frame);
 
 } // Soleil
 
-#endif /* SOLEIL__RUINE_HPP_ */
+#endif /* SOLEIL__DRAW_HPP_ */
