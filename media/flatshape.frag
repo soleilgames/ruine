@@ -2,8 +2,6 @@
 
 precision lowp float;
 
-const int MAXLIGHTS = 10;
-
 struct Material
 {
   vec3  ambiantColor; // TODO: Should be a vec4

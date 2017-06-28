@@ -22,7 +22,7 @@ struct Material
   sampler2D diffuseMap;
 };
 
-const int MAXLIGHTS = 10; // TODO: In a header
+const int MAXLIGHTS = 16; // TODO: In a header
 
 attribute vec4 positionAttribute;
 attribute vec3 normalAttribute;

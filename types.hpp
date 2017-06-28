@@ -102,6 +102,7 @@ namespace Soleil {
       this->ViewProjection = projection * view;
     }
 
+    // TODO: Should be in world structure
     std::vector<PointLight> pointLights;
   };
 
@@ -112,11 +113,11 @@ namespace Soleil {
   };
 
   namespace gval {
-    static const glm::vec3 ambiantLight(0.15f);
+    static const glm::vec3 ambiantLight(0.35f);
     static const glm::vec3 cameraLight(0.15f);
     static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
     static const float     ghostSpeed     = 0.01f;
-    static const float     cameraYawSpeed = 0.1f;
+    static const float     cameraYawSpeed = 0.002f;
     static const float     cameraSpeed    = 0.05f;
 
 #if 0 // Temp

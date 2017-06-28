@@ -21,11 +21,11 @@
 
 #include "Draw.hpp"
 
-#include "OpenGLDataInstance.hpp"
 #include "ControllerService.hpp"
+#include "OpenGLDataInstance.hpp"
 
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Soleil {
 
@@ -192,6 +192,8 @@ namespace Soleil {
     throwOnGlError();
 
     int i = 0;
+    assert(frame.pointLights.size() < DefinedMaxLights &&
+           "Max number of light exceeded");
     for (const auto& pointLight : frame.pointLights) {
       // TODO: Protect to avoid array verflow
 
@@ -206,9 +208,11 @@ namespace Soleil {
 
       ++i;
     }
+    throwOnGlError();
 
     for (const auto& drawCommand : instances) {
       gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, drawCommand.buffer);
+      throwOnGlError();
 
       glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
       glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
@@ -217,10 +221,12 @@ namespace Soleil {
                             (const GLvoid*)offsetof(Vertex, color));
       glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
                             (const GLvoid*)offsetof(Vertex, uv));
+      throwOnGlError();
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
       glEnableVertexAttribArray(2);
       glEnableVertexAttribArray(3);
+      throwOnGlError();
 
       if (ControllerService::GetPlayerController().option1)
         glEnable(GL_BLEND);
@@ -238,12 +244,14 @@ namespace Soleil {
                      glm::value_ptr(sub.material.diffuseColor));
         glUniform3fv(instance.flat.Material.specularColor, 1,
                      glm::value_ptr(sub.material.specularColor));
+        throwOnGlError();
 
         // Setting Textures
         // --------------------------------------------------------
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
         glUniform1i(instance.flat.Material.diffuseMap, 0);
+        throwOnGlError();
 
         auto ViewProjectionModel =
           frame.ViewProjection * drawCommand.transformation;

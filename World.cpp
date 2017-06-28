@@ -47,12 +47,24 @@ namespace Soleil {
 #endif
   }
 
-  void InitializeLevel(World& world, const std::string& level,
-                       std::vector<BoundingBox>& wallBoundingBox, Frame& frame,
+  void InitializeLevelFromAsset(World& world, const std::string& asset,
+                                Frame& frame, Camera& camera)
+  {
+    InitializeLevel(world, AssetService::LoadAsString(asset), frame, camera);
+  }
+
+  void World::resetLevel()
+  {
+    bounds = glm::vec3(0.0f);
+    statics.clear();
+    sentinels.clear();
+    hardSurfaces.clear();
+    nextZoneTriggers.clear();
+  }
+
+  void InitializeLevel(World& world, const std::string& level, Frame& frame,
                        Camera& camera)
   {
-    std::vector<glm::mat4> scene;
-
     frame.pointLights.push_back(
       {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
 
@@ -70,8 +82,9 @@ namespace Soleil {
 
     std::istringstream     s(level);
     std::string            line;
-    float                  x     = 0.0f;
-    float                  z     = 0.0f;
+    float                  x           = 0.0f;
+    float                  z           = 0.0f;
+    bool                   positionSet = false;
     const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
     while (std::getline(s, line)) {
       for (auto const& c : line) {
@@ -87,7 +100,7 @@ namespace Soleil {
           for (const auto& v : wallVertices) {
             bbox.expandBy(glm::vec3(transformation * v));
           }
-          wallBoundingBox.push_back(bbox);
+          world.hardSurfaces.push_back(bbox);
 
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
@@ -101,11 +114,12 @@ namespace Soleil {
           for (const auto& v : wallVertices) {
             bbox.expandBy(glm::vec3(transformation * v));
           }
-          wallBoundingBox.push_back(bbox);
+          world.hardSurfaces.push_back(bbox);
 
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
 
+          world.nextZoneTriggers.push_back({bbox, "intro.level"});
         } else {
           if (c == 'l') {
             PointLight p;
@@ -127,7 +141,15 @@ namespace Soleil {
               glm::scale(glm::mat4(), glm::vec3(.3f));
             lateComer.push_back(DrawCommand(*world.ghostShape, transformation));
           } else if (c == 'D') {
+            assert(positionSet == false && "Position already set");
+
             camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
+            positionSet     = true;
+          } else if (c == 'd') {
+            assert(positionSet == true && "Position not set yet");
+
+            glm::vec3 dir = glm::normalize(position - camera.position);
+            camera.yaw    = std::atan2(dir.x, dir.z);
           }
 
           glm::mat4 groundTransformation =

@@ -31,7 +31,7 @@
 
 namespace Soleil {
 
-  static constexpr int DefinedMaxLights = 10;
+  static constexpr int DefinedMaxLights = 16;
 
   struct DrawablePointLight
   {

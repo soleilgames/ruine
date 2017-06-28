@@ -55,30 +55,10 @@ namespace Soleil {
     DrawImage(*OpenGLDataInstance::Instance().texturePad, modelMatrix);
   }
 
-  static void InitializeWorld(World&                    world,
-                              std::vector<BoundingBox>& wallBoundingBox,
-                              Frame& frame, Camera& camera)
+  static void InitializeWorld(World& world, Frame& frame, Camera& camera)
   {
-    std::string level;
-    level += "xGxxxxxxxxxxxx\n";
-    level += "xD.xGg.....xxx\n";
-    level += "x..xxxxxx..xxx\n";
-    level += "x..xx......xxx\n";
-    level += "x..xx.......xx\n";
-    level += "x..xx.......xx\n";
-    level += "xg.xxxxxxx..xx\n";
-    level += "x..xxxxxxx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x.......xx..xx\n";
-    level += "x.......xxg.xx\n";
-    level += "x......xxx..xx\n";
-    level += "x..xxxxxxx..xx\n";
-    level += "x............x\n";
-    level += "x............x\n";
-    level += "xxxxxxxxxxxxxx\n";
-
     InitializeWorldModels(world);
-    InitializeLevel(world, level, wallBoundingBox, frame, camera);
+    InitializeLevelFromAsset(world, "outro.level", frame, camera);
 
     SoundService::PlayMusic("farlands.ogg");
   }
@@ -143,8 +123,8 @@ namespace Soleil {
     const float speed = gval::cameraSpeed * deltaTime.count();
 
     // There is no pitch nor Roll, to the equation is simplified:
-    glm::vec3 direction = glm::normalize(glm::vec3(
-      sin(glm::radians(camera->yaw)), 0.0f, cos(glm::radians(camera->yaw))));
+    glm::vec3 direction =
+      glm::normalize(glm::vec3(sin(camera->yaw), 0.0f, cos(camera->yaw)));
     glm::vec3 newPosition =
       camera->position + (translation.z * direction * speed);
     const glm::vec3 positionForward(camera->position.x, newPosition.y,
@@ -156,12 +136,10 @@ namespace Soleil {
     bboxForward.expandBy(positionForward);
     bboxForward.expandBy(positionForward + 0.15f);
     bboxForward.expandBy(positionForward - 0.15f);
-    bboxForward.expandBy(positionForward);
     BoundingBox bboxSideward;
     bboxSideward.expandBy(positionSideward);
     bboxSideward.expandBy(positionSideward + 0.15f);
     bboxSideward.expandBy(positionSideward - 0.15f);
-    bboxSideward.expandBy(positionSideward);
 
     for (const auto& boundingBox : wallBoundingBox) {
       if (boundingBox.intersect(bboxForward))
@@ -173,6 +151,23 @@ namespace Soleil {
     camera->position = newPosition;
     return glm::lookAt(camera->position, camera->position + direction,
                        glm::vec3(0, 1, 0));
+  }
+
+  static void UpdateTriggers(Camera& camera, Frame& frame, World& world)
+  {
+    BoundingBox playerbox;
+    playerbox.expandBy(camera.position);
+    playerbox.expandBy(camera.position + 0.25f);
+    playerbox.expandBy(camera.position - 0.25f);
+
+    for (const auto& trigger : world.nextZoneTriggers) {
+      if (playerbox.intersect(trigger.aoe)) {
+        world.resetLevel();
+        frame.pointLights.clear();
+        InitializeLevelFromAsset(world, trigger.nextZone, frame, camera);
+        return;
+      }
+    }
   }
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
@@ -217,13 +212,12 @@ namespace Soleil {
     }
 #endif
 
-    static Frame                    frame;
-    static World                    world;
-    static std::vector<BoundingBox> wallBoundingBox;
-    static Pristine                 FirstLoop;
+    static Frame    frame;
+    static World    world;
+    static Pristine FirstLoop;
 
     if (FirstLoop) {
-      InitializeWorld(world, wallBoundingBox, frame, camera);
+      InitializeWorld(world, frame, camera);
       frame.time = time;
     }
 
@@ -246,7 +240,7 @@ namespace Soleil {
     const glm::vec3   translation(0.0f, 0.0f, playerPad.dpad.z / 20.0f);
     const float       yaw = playerPad.dpad.x;
     this->view =
-      updateCamera(&camera, translation, yaw, wallBoundingBox, frame.delta);
+      updateCamera(&camera, translation, yaw, world.hardSurfaces, frame.delta);
 
     frame.cameraPosition = camera.position;
     frame.updateViewProjectionMatrices(view, projection);
@@ -262,6 +256,8 @@ namespace Soleil {
                  glm::vec3(2.0f));
     DrawImage(gval::bezierTex, transformation);
 #endif
+
+    UpdateTriggers(camera, frame, world);
   }
 
 } // Soleil

@@ -2,7 +2,7 @@
 
 precision lowp float;
 
-const int MAXLIGHTS = 10;
+const int MAXLIGHTS = 16;
 
 struct Material
 {

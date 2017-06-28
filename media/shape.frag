@@ -22,7 +22,7 @@ struct PointLight
   float quadraticAttenuation;
 };
 
-const int MAXLIGHTS = 10;
+const int MAXLIGHTS = 16;
 
 uniform Material material;
 uniform vec3 AmbiantLight;

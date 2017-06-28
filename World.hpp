@@ -45,6 +45,12 @@ namespace Soleil {
     }
   };
 
+  struct NextZoneTrigger
+  {
+    BoundingBox       aoe;
+    const std::string nextZone;
+  };
+
   struct World
   {
     // TODO:  std::vector<ShapePtr>  models;
@@ -54,15 +60,23 @@ namespace Soleil {
     ShapePtr ghostShape;
     ShapePtr gateShape;
 
-    glm::vec3              bounds;
-    RenderInstances        statics;
-    std::vector<GhostData> sentinels;
+    glm::vec3                    bounds;
+    RenderInstances              statics;
+    std::vector<GhostData>       sentinels;
+    std::vector<BoundingBox>     hardSurfaces;
+    std::vector<NextZoneTrigger> nextZoneTriggers;
+
+    World() {}
+    World(const World&) = delete;
+    World& operator=(const World&) = delete;
+    void resetLevel(void);
   };
 
   void InitializeWorldModels(World& world);
-  void InitializeLevel(World& world, const std::string& level,
-                       std::vector<BoundingBox>& wallBoundingBox, Frame& frame,
+  void InitializeLevel(World& world, const std::string& level, Frame& frame,
                        Camera& camera);
+  void InitializeLevelFromAsset(World& world, const std::string& asset,
+                                Frame& frame, Camera& camera);
 
 } // Soleil
 

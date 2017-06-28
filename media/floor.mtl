@@ -8,8 +8,4 @@ Kd 1.000000 1.000000 1.000000
 Ks 0.000000 0.000000 0.000000
 d 1
 illum 2
-map_Kd ground1.png
-map_Ks ground1-spec.png
-#map_Kd rock1.png
-#map_Kd brickwall.png
-#map_Bump brickwall_normal.png
+map_Kd text-mur-dalle.png
