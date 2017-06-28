@@ -34,6 +34,8 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/MTLLoader.cpp
   ${RUINE_SOURCES}/Group.cpp
   ${RUINE_SOURCES}/OpenGLDataInstance.cpp
+  ${RUINE_SOURCES}/Draw.cpp
+  ${RUINE_SOURCES}/World.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE

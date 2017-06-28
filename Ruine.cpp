@@ -58,7 +58,7 @@ namespace Soleil {
   static void InitializeWorld(World& world, Frame& frame, Camera& camera)
   {
     InitializeWorldModels(world);
-    InitializeLevelFromAsset(world, "outro.level", frame, camera);
+    InitializeLevelFromAsset(world, "intro.level", frame, camera);
 
     SoundService::PlayMusic("farlands.ogg");
   }
