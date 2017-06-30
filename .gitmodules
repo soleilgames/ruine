@@ -2,3 +2,6 @@
 	path = glm
 	url = https://github.com/g-truc/glm.git
 	branch = 0.9.8.4
+[submodule "freetype2"]
+	path = freetype2
+	url = git://git.savannah.gnu.org/freetype/freetype2.git
