@@ -110,7 +110,7 @@ namespace Soleil {
       if (point.z > max.z) max.z = point.z;
     }
 
-    void expandBy(const BoundingBox& other)
+    void expandBy(const BoundingBox& other) noexcept
     {
       this->expandBy(other.min);
       this->expandBy(other.max);

@@ -58,7 +58,7 @@ namespace Soleil {
   static void InitializeWorld(World& world, Frame& frame, Camera& camera)
   {
     InitializeWorldModels(world);
-    InitializeLevelFromAsset(world, "intro.level", frame, camera);
+    InitializeLevelFromAsset(world, gval::firstLevel, frame, camera);
 
     SoundService::PlayMusic("farlands.ogg");
   }
@@ -90,6 +90,7 @@ namespace Soleil {
         *(ghost.transformation) = transformation;
       }
 
+      ghost.updateBounds();
       lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
     }
   }
@@ -110,7 +111,8 @@ namespace Soleil {
 #else
     RenderFlatShape(world.statics, frame);
 #endif
-    DrawPad();
+
+    //if (ControllerService::GetPlayerController().locked == false) DrawPad();
   }
 
   static glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
@@ -153,7 +155,22 @@ namespace Soleil {
                        glm::vec3(0, 1, 0));
   }
 
-  static void UpdateTriggers(Camera& camera, Frame& frame, World& world)
+  glm::mat4 TargetPosition(const glm::vec3& target, const float zoom,
+                           const float angle)
+  {
+    // TODO: Angle -> degrees as a type
+
+    glm::vec3 position;
+
+    position.z = glm::cos(angle);
+    position.y = glm::sin(angle);
+
+    position *= zoom;
+
+    return glm::lookAt(position + target, target, glm::vec3(0, 1, 0));
+  }
+
+  static void UpdateTriggers(Camera& camera, Frame& frame, World& world, Timer& timeToReset)
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
@@ -165,6 +182,27 @@ namespace Soleil {
         world.resetLevel();
         frame.pointLights.clear();
         InitializeLevelFromAsset(world, trigger.nextZone, frame, camera);
+        return;
+      }
+    }
+
+    for (const auto& ghost : world.sentinels) {
+
+      if (playerbox.intersect(ghost.bounds)) {
+        glm::mat4 transformation =
+          glm::translate(glm::mat4(), glm::vec3(camera.position.x, -0.60f,
+                                                camera.position.z)) *
+          glm::scale(glm::mat4(), glm::vec3(.3f));
+        // TODO: Use same transformation as for world
+
+        world.statics.emplace_back(
+          DrawCommand(*world.ghostShape, transformation));
+        world.sentinels.push_back(GhostData(
+          &(world.statics.back().transformation), 0, glm::vec3(0, 0, 1)));
+
+        SOLEIL__LOGGER_DEBUG(toString("Perduuuuuuuuuuuuuuuuuuuuuuuu"));
+        ControllerService::GetPlayerController().locked = true;
+	timeToReset = frame.time + Timer(5000);
         return;
       }
     }
@@ -236,15 +274,24 @@ namespace Soleil {
     frame.delta = time - frame.time;
     frame.time  = time;
 
-    const Controller& playerPad = ControllerService::GetPlayerController();
-    const glm::vec3   translation(0.0f, 0.0f, playerPad.dpad.z / 20.0f);
-    const float       yaw = playerPad.dpad.x;
-    this->view =
-      updateCamera(&camera, translation, yaw, world.hardSurfaces, frame.delta);
+    Controller& playerPad = ControllerService::GetPlayerController();
 
-    frame.cameraPosition = camera.position;
-    frame.updateViewProjectionMatrices(view, projection);
-    frame.pointLights[0].position = camera.position;
+    if (playerPad.locked == false) {
+      const glm::vec3 translation(0.0f, 0.0f, playerPad.dpad.z / 20.0f);
+      const float     yaw = playerPad.dpad.x;
+      this->view = updateCamera(&camera, translation, yaw, world.hardSurfaces,
+                                frame.delta);
+
+      frame.cameraPosition = camera.position;
+      frame.updateViewProjectionMatrices(view, projection);
+      frame.pointLights[0].position = camera.position;
+    } else {
+      this->view =
+        TargetPosition(glm::vec3(world.statics.back().transformation[3]), 5.0f,
+                       glm::pi<float>() / 2.5f);
+      frame.cameraPosition = camera.position;
+      frame.updateViewProjectionMatrices(view, projection);
+    }
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -257,7 +304,15 @@ namespace Soleil {
     DrawImage(gval::bezierTex, transformation);
 #endif
 
-    UpdateTriggers(camera, frame, world);
+    if (playerPad.locked == false)
+      UpdateTriggers(camera, frame, world, timeToReset);
+    else if (time >= timeToReset) {
+      // TODO: Use different function for each scene or camera
+      playerPad.locked = false;
+      world.resetLevel();
+      frame.pointLights.clear();
+      InitializeLevelFromAsset(world, gval::firstLevel, frame, camera);
+    }
   }
 
 } // Soleil

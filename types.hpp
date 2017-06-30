@@ -119,6 +119,7 @@ namespace Soleil {
     static const float     ghostSpeed     = 0.01f;
     static const float     cameraYawSpeed = 0.002f;
     static const float     cameraSpeed    = 0.05f;
+    static const char*     firstLevel     = "intro.level";
 
 #if 0 // Temp
     static GLuint bezierTex;

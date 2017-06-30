@@ -32,17 +32,15 @@ namespace Soleil {
 
   struct GhostData
   {
-    glm::mat4* transformation;
-    size_t     lightPosition;
-    glm::vec3  direction;
+    glm::mat4*  transformation;
+    size_t      lightPosition;
+    glm::vec3   direction;
+    BoundingBox bounds;
 
     GhostData(glm::mat4* transformation, size_t lightPosition,
-              const glm::vec3& direction)
-      : transformation(transformation)
-      , lightPosition(lightPosition)
-      , direction(direction)
-    {
-    }
+              const glm::vec3& direction);
+
+    void updateBounds(void) noexcept;
   };
 
   struct NextZoneTrigger
@@ -69,7 +67,7 @@ namespace Soleil {
     World() {}
     World(const World&) = delete;
     World& operator=(const World&) = delete;
-    void resetLevel(void);
+    void   resetLevel(void);
   };
 
   void InitializeWorldModels(World& world);

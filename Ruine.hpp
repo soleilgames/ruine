@@ -47,6 +47,8 @@ namespace Soleil {
     int           viewportHeight;
     Camera        camera;
     glm::mat4     view;
+
+    Timer timeToReset;
   };
 
 } // Soleil

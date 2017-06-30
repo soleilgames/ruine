@@ -30,13 +30,15 @@ namespace Soleil {
 
   struct Controller
   {
+    bool      locked;
     glm::vec3 dpad;
 
     bool option1;
     bool option2;
 
     Controller()
-      : dpad()
+      : locked(false)
+      , dpad()
       , option1(true)
       , option2(true)
     {

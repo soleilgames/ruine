@@ -119,7 +119,7 @@ namespace Soleil {
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
 
-          world.nextZoneTriggers.push_back({bbox, "intro.level"});
+          world.nextZoneTriggers.push_back({bbox, "outro.level"});
         } else {
           if (c == 'l') {
             PointLight p;
@@ -170,6 +170,10 @@ namespace Soleil {
       z += 1.0f;
       x = 0.0f;
     }
+
+    // TODO: In a future release move the ghost in a specific vector instead of
+    // using the static one. +1 is for the player ghost.
+    world.statics.reserve(world.statics.size() + lateComer.size() + 100);
 
     for (size_t i = 0; i < lateComer.size(); ++i) {
       const auto& o = lateComer[i];
@@ -232,6 +236,21 @@ namespace Soleil {
     gval::bezierTex = *texture;
 
 #endif
+  }
+
+  GhostData::GhostData(glm::mat4* transformation, size_t lightPosition,
+                       const glm::vec3& direction)
+    : transformation(transformation)
+    , lightPosition(lightPosition)
+    , direction(direction)
+  {
+  }
+
+  void GhostData::updateBounds(void) noexcept
+  {
+    // TODO: check 0.95f from scale and rotation
+    bounds = BoundingBox(glm::vec3((*this->transformation)[3]) - 0.95f,
+                         glm::vec3((*this->transformation)[3]) + 0.95f);
   }
 
 } // Soleil
