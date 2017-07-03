@@ -231,6 +231,11 @@ namespace Soleil {
     static World    world;
     static Pristine FirstLoop;
 
+#ifndef NDEBUG
+    // TODO: Use CPU clock
+    auto workBegin = std::chrono::high_resolution_clock::now();
+#endif
+
     if (FirstLoop) {
       InitializeWorld(world, frame, camera);
       frame.time = time;
@@ -312,16 +317,27 @@ namespace Soleil {
       /* ---------------------- */
 
       frames++;
+      auto         workEnd = std::chrono::high_resolution_clock::now();
+      static Timer TotalDuration(0);
+
+      TotalDuration += std::chrono::duration_cast<std::chrono::milliseconds>(
+        workEnd - workBegin);
+
       if (time - firstTime > oneSec) {
+#if 0
         const auto duration = (time - firstTime) / frames;
+#else
+        const auto duration = TotalDuration / frames;
+#endif
         SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
                              " (FPS=", frames, ")");
         FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
                              " (FPS=", frames, ")"),
                    textCommand, OpenGLDataInstance::Instance().textAtlas,
                    glm::vec2(viewportWidth, viewportHeight));
-        firstTime = time;
-        frames    = 0;
+        firstTime     = time;
+        frames        = 0;
+        TotalDuration = Timer(0);
       }
       DrawText(
         textCommand,

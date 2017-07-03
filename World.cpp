@@ -62,11 +62,14 @@ namespace Soleil {
     nextZoneTriggers.clear();
   }
 
-  void InitializeLevel(World& world, const std::string& level, Frame& frame,
-                       Camera& camera)
+  static void parseMaze(World& world, std::istringstream& s, Frame& frame,
+                        Camera& camera)
   {
-    frame.pointLights.push_back(
-      {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
+    std::string            line;
+    float                  x           = 0.0f;
+    float                  z           = 0.0f;
+    bool                   positionSet = false;
+    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
 
     RenderInstances lateComer;
     // Prepare vertices for the bounding box:
@@ -77,16 +80,7 @@ namespace Soleil {
       }
     }
 
-    world.bounds.y =
-      1.0f; // TODO: To change if the world become not flat anymore
-
-    std::istringstream     s(level);
-    std::string            line;
-    float                  x           = 0.0f;
-    float                  z           = 0.0f;
-    bool                   positionSet = false;
-    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
-    while (std::getline(s, line)) {
+    while (std::getline(s, line) && line.size() > 0) {
       for (auto const& c : line) {
         const glm::vec3 position(2.0f * x, 0.0f, 2.0f * z);
 
@@ -118,8 +112,9 @@ namespace Soleil {
 
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
-
+#if 0
           world.nextZoneTriggers.push_back({bbox, "intro.level"});
+#endif
         } else {
           if (c == 'l') {
             PointLight p;
@@ -173,7 +168,7 @@ namespace Soleil {
 
     // TODO: In a future release move the ghost in a specific vector instead of
     // using the static one. +1 is for the player ghost.
-    world.statics.reserve(world.statics.size() + lateComer.size() + 100);
+    world.statics.reserve(world.statics.size() + lateComer.size() + 1);
 
     for (size_t i = 0; i < lateComer.size(); ++i) {
       const auto& o = lateComer[i];
@@ -191,6 +186,43 @@ namespace Soleil {
       world.sentinels.push_back(
         GhostData(&(world.statics.back().transformation),
                   frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
+    }
+  }
+
+  void InitializeLevel(World& world, const std::string& level, Frame& frame,
+                       Camera& camera)
+  {
+    frame.pointLights.push_back(
+      {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
+    world.bounds.y =
+      1.0f; // TODO: To change if the world become not flat anymore
+
+    std::istringstream s(level);
+    parseMaze(world, s, frame, camera);
+
+    // Parse the triggers
+    std::string line;
+    while (std::getline(s, line)) {
+      glm::vec3   aoePos;
+      std::string nextZone;
+
+      std::istringstream triggerText(line);
+
+      triggerText >> aoePos.x;
+      triggerText >> aoePos.z;
+      triggerText >> nextZone;
+      assert(nextZone.empty() == false && "Next zone cannot be empty");
+
+      aoePos.x *= 2.0f;
+      aoePos.z *= 2.0f;
+
+      BoundingBox bbox;
+
+      bbox.expandBy(aoePos);
+      bbox.expandBy(aoePos + 1.1f);
+      bbox.expandBy(aoePos - 1.1f);
+      
+      world.nextZoneTriggers.push_back({bbox, nextZone});
     }
 
 #if 0
