@@ -22,6 +22,7 @@
 #include "OpenGLDataInstance.hpp"
 
 #include "AssetService.hpp"
+#include "Text.hpp"
 
 namespace Soleil {
 
@@ -90,8 +91,8 @@ namespace Soleil {
 
     flat.compile();
 
-    instance.flat.MVPMatrix = flat.getUniform("MVPMatrix");
-    instance.flat.MVMatrix = flat.getUniform("MVMatrix");
+    instance.flat.MVPMatrix      = flat.getUniform("MVPMatrix");
+    instance.flat.MVMatrix       = flat.getUniform("MVMatrix");
     instance.flat.NormalMatrix   = flat.getUniform("NormalMatrix");
     instance.flat.NumberOfLights = flat.getUniform("numberOfLights");
 
@@ -148,6 +149,61 @@ namespace Soleil {
     throwOnGlError();
   }
 
+  static inline void initializeText(void)
+  {
+    OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
+    Program&            drawable = instance.textProgram;
+
+    drawable.attachShader(Shader(GL_VERTEX_SHADER, "text.vert"));
+    drawable.attachShader(Shader(GL_FRAGMENT_SHADER, "text.frag"));
+
+    glBindAttribLocation(drawable.program, 0, "positionAttribute");
+    glBindAttribLocation(drawable.program, 1, "uvAttribute");
+
+    drawable.compile();
+
+    instance.textModelMatrix = drawable.getUniform("ModelMatrix");
+    instance.textTexture     = drawable.getUniform("FontAtlas");
+    instance.textColor       = drawable.getUniform("Color");
+
+#if 0
+    // TODO: From FreeType:
+    const GLuint chessBoard[] = {
+      0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+      0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+      0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
+      0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+      0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+      0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+      0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF,
+      0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+      0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+      0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+      0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF};
+
+    {
+      gl::BindTexture bindTexture(GL_TEXTURE_2D,
+                                  *instance.textDefaultFontAtlas);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, chessBoard);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    throwOnGlError();
+#endif
+
+#if 0
+    instance.textAtlas =
+      InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "LiberationSerif-Regular.ttf"
+			 , *instance.textDefaultFontAtlas);
+#else
+    instance.textAtlas =
+      InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "juju.ttf",
+                         *instance.textDefaultFontAtlas);
+#endif
+  }
+
   static inline void initializePad(void)
   {
     OpenGLDataInstance& instance = OpenGLDataInstance::Instance();
@@ -199,6 +255,7 @@ namespace Soleil {
     initializeDrawable();
     initializeFlatShape();
     initializeTestResources();
+    initializeText();
     initializePad();
   }
 

@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -rdynamic -W -Wall -Wextra
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
+
 include_directories (SYSTEM
   ${OPENGL_INCLUDE_DIR}
   glm/
@@ -45,6 +46,7 @@ add_library(ruinelib
   OpenGLDataInstance.cpp
   Draw.cpp
   World.cpp
+  Text.cpp
   )
 
 

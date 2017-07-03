@@ -61,6 +61,41 @@ namespace Soleil {
     throwOnGlError();
   }
 
+  void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
+                const glm::vec4& color)
+  {
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
+
+    glUseProgram(ogl.textProgram.program);
+    glBindBuffer(GL_ARRAY_BUFFER, textCommand.buffer);
+
+    const GLsizei stride = sizeof(CharVertex);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride,
+                          (const GLvoid*)offsetof(CharVertex, uv));
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, *(ogl.textDefaultFontAtlas));
+    glUniform1i(ogl.textTexture, 0);
+
+    glUniformMatrix4fv(ogl.textModelMatrix, 1, GL_FALSE,
+                       glm::value_ptr(transformation));
+
+    glUniform4fv(ogl.textColor, 1, glm::value_ptr(color));
+
+    glDrawElements(GL_TRIANGLES, textCommand.elements.size(), GL_UNSIGNED_SHORT,
+                   textCommand.elements.data());
+    throwOnGlError();
+  }
+
   void RenderPhongShape(const RenderInstances instances, const Frame& frame)
   {
     throwOnGlError();

@@ -60,4 +60,11 @@ namespace std {
       return os;
     }
   }
+
+  std::wostream& operator<<(std::wostream&                   os,
+                           const std::chrono::milliseconds& ms)
+  {
+    os << ms.count() << "ms";
+    return os;
+  }
 }

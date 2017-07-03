@@ -25,6 +25,7 @@
 #include "OpenGLInclude.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
+#include "Text.hpp"
 
 #include <cassert>
 #include <memory>
@@ -51,23 +52,21 @@ namespace Soleil {
     GLint diffuseMap;
   };
 
-
   struct FlatShape
   {
     Program program;
-    GLint MVPMatrix;
-    GLint MVMatrix;
-    GLint NormalMatrix;
-    GLint AmbiantLight;
-    GLint EyeDirection;
-    GLint ConstantAttenuation;
-    GLint NumberOfLights;
+    GLint   MVPMatrix;
+    GLint   MVMatrix;
+    GLint   NormalMatrix;
+    GLint   AmbiantLight;
+    GLint   EyeDirection;
+    GLint   ConstantAttenuation;
+    GLint   NumberOfLights;
 
     DrawableMaterial   Material;
     DrawablePointLight PointLights[DefinedMaxLights];
-    
   };
-  
+
   struct OpenGLDataInstance
   {
     // TODO: Create a struct for the Drawable Shader
@@ -91,6 +90,14 @@ namespace Soleil {
     Program    imageProgram;
     GLint      imageModelMatrix;
     GLint      imageImage;
+
+    // Text
+    Program     textProgram;
+    gl::Texture textDefaultFontAtlas;
+    FontAtlas   textAtlas;
+    GLint       textTexture;
+    GLint       textColor;
+    GLint       textModelMatrix;
 
     // Textures
     gl::Texture              textureTest;

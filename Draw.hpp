@@ -52,12 +52,25 @@ namespace Soleil {
     }
   };
 
+  struct TextCommand
+  {
+    GLuint                buffer;
+    std::vector<GLushort> elements;
+  };
+
+  struct CharVertex
+  {
+    glm::vec3 position;
+    glm::vec2 uv;
+  };
+
   typedef std::vector<DrawCommand> RenderInstances;
 
   void DrawImage(GLuint texture, const glm::mat4& transformation);
   void RenderPhongShape(const RenderInstances instances, const Frame& frame);
   void RenderFlatShape(const RenderInstances instances, const Frame& frame);
-
+  void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
+                const glm::vec4& color);
 } // Soleil
 
 #endif /* SOLEIL__DRAW_HPP_ */

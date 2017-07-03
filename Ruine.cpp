@@ -112,7 +112,7 @@ namespace Soleil {
     RenderFlatShape(world.statics, frame);
 #endif
 
-    //if (ControllerService::GetPlayerController().locked == false) DrawPad();
+    if (ControllerService::GetPlayerController().locked == false) DrawPad();
   }
 
   static glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
@@ -170,7 +170,8 @@ namespace Soleil {
     return glm::lookAt(position + target, target, glm::vec3(0, 1, 0));
   }
 
-  static void UpdateTriggers(Camera& camera, Frame& frame, World& world, Timer& timeToReset)
+  static void UpdateTriggers(Camera& camera, Frame& frame, World& world,
+                             Timer& timeToReset)
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
@@ -202,7 +203,7 @@ namespace Soleil {
 
         SOLEIL__LOGGER_DEBUG(toString("Perduuuuuuuuuuuuuuuuuuuuuuuu"));
         ControllerService::GetPlayerController().locked = true;
-	timeToReset = frame.time + Timer(5000);
+        timeToReset = frame.time + Timer(5000);
         return;
       }
     }
@@ -226,30 +227,6 @@ namespace Soleil {
 
   void Ruine::render(Timer time)
   {
-#ifndef NDEBUG
-    {
-      /* --- Peformance log --- */
-      static Timer      firstTime = time;
-      static unsigned   frames    = 0;
-      static const auto oneSec    = std::chrono::milliseconds(1000);
-
-      frames++;
-      if (time - firstTime > oneSec) {
-        SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
-                                      (time - firstTime) / frames),
-                             " (FPS=", frames, ")");
-        firstTime = time;
-        frames    = 0;
-      }
-      /* ---------------------- */
-      static Pristine FirstLoop;
-      if (FirstLoop) {
-        SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
-                                      sizeof(OpenGLDataInstance::Instance())));
-      }
-    }
-#endif
-
     static Frame    frame;
     static World    world;
     static Pristine FirstLoop;
@@ -313,6 +290,69 @@ namespace Soleil {
       frame.pointLights.clear();
       InitializeLevelFromAsset(world, gval::firstLevel, frame, camera);
     }
+
+#ifndef NDEBUG
+    {
+      /* --- Peformance log --- */
+      static Timer       firstTime = time;
+      static unsigned    frames    = 0;
+      static const auto  oneSec    = std::chrono::milliseconds(1000);
+      static gl::Buffer  textBuffer;
+      static TextCommand textCommand;
+
+      /* ---------------------- */
+      static Pristine FirstLoop;
+      if (FirstLoop) {
+        const OpenGLDataInstance& gameInstance = OpenGLDataInstance::Instance();
+        SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
+                                      sizeof(OpenGLDataInstance::Instance())));
+
+#if 1
+        const float sx = 50.0f * 2.0f / (float)viewportWidth;
+        const float sy = 50.0f * 2.0f / (float)viewportHeight;
+
+        const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at('F');
+        const glm::vec2  uvOffset = g.uvOffset;
+        const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
+                               uvOffset.y + g.uvSize.y);
+#else
+        const float sx = 1.0f;
+        const float sy = 1.0f;
+
+        const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at('F');
+        const glm::vec2  uvOffset = g.uvOffset;
+        const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
+                               uvOffset.y + g.uvSize.y);
+#endif
+        // clang-format off
+        CharVertex test[] = {
+          {glm::vec3(0.0f, -sy  , 0.0f), glm::vec2(uvOffset.x, uvSize.y)},
+          {glm::vec3(  sx, -sy  , 0.0f), glm::vec2(uvSize.x  , uvSize.y)},
+          {glm::vec3(  sx,  0.0f, 0.0f), glm::vec2(uvSize.x  , uvOffset.y)},
+          {glm::vec3(0.0f,  0.0f, 0.0f), glm::vec2(uvOffset.x, uvOffset.y)},
+        };
+        // clang-format on
+
+        // TODO: A method to fill text
+        glBindBuffer(GL_ARRAY_BUFFER, *textBuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(test), test, GL_DYNAMIC_DRAW);
+
+        textCommand.buffer   = *textBuffer;
+        textCommand.elements = {0, 1, 2, 2, 3, 0};
+      }
+      /* ---------------------- */
+
+      frames++;
+      if (time - firstTime > oneSec) {
+        SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
+                                      (time - firstTime) / frames),
+                             " (FPS=", frames, ")");
+        firstTime = time;
+        frames    = 0;
+      }
+      DrawText(textCommand, glm::mat4(), Color(0.8f));
+    }
+#endif
   }
 
 } // Soleil

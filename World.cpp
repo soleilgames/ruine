@@ -119,7 +119,7 @@ namespace Soleil {
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
 
-          world.nextZoneTriggers.push_back({bbox, "outro.level"});
+          world.nextZoneTriggers.push_back({bbox, "intro.level"});
         } else {
           if (c == 'l') {
             PointLight p;
@@ -249,8 +249,8 @@ namespace Soleil {
   void GhostData::updateBounds(void) noexcept
   {
     // TODO: check 0.95f from scale and rotation
-    bounds = BoundingBox(glm::vec3((*this->transformation)[3]) - 0.95f,
-                         glm::vec3((*this->transformation)[3]) + 0.95f);
+    bounds = BoundingBox(glm::vec3((*this->transformation)[3]) - 0.65f,
+                         glm::vec3((*this->transformation)[3]) + 0.65f);
   }
 
 } // Soleil

@@ -19,36 +19,36 @@
  * THE SOFTWARE.
  */
 
-#ifndef SOLEIL__TYPESTOOSTREAM_HPP_
-#define SOLEIL__TYPESTOOSTREAM_HPP_
+#ifndef SOLEIL__TEXT_HPP_
+#define SOLEIL__TEXT_HPP_
 
-#include <chrono>
-#include <iostream>
+#include "OpenGLInclude.hpp"
+#include "stb_truetype.h"
 
-#include <utility>
+#include <map>
+#include <string>
 
-#define GLM_ENABLE_EXPERIMENTAL // Required to compile with string_cast
-#include <glm/gtx/string_cast.hpp>
-#include <glm/matrix.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include <glm/vec2.hpp>
 
-namespace glm {
+namespace Soleil {
 
-  std::ostream& operator<<(std::ostream& os, const glm::mat4& mat);
-  std::ostream& operator<<(std::ostream& os, const glm::vec4& vec);
-  std::ostream& operator<<(std::ostream& os, const glm::vec3& vec);
-  std::ostream& operator<<(std::ostream& os, const glm::vec2& vec);
+  struct GlyphSlot
+  {
+    glm::vec2 uvOffset;
+    glm::vec2 uvSize;
 
-} // glm
-
-namespace std {
-  namespace chrono {
-    std::ostream& operator<<(std::ostream&                    os,
-                             const std::chrono::milliseconds& ms);
-    std::wostream& operator<<(std::wostream&                   os,
-                             const std::chrono::milliseconds& ms);
+    GlyphSlot(glm::vec2 uvOffset, glm::vec2 uvSize);
+    ~GlyphSlot(void);
   };
-};
 
-#endif /* SOLEIL__TYPESTOOSTREAM_HPP_ */
+  struct FontAtlas
+  {
+    std::map<wchar_t, GlyphSlot> glyphs;
+  };
+
+  FontAtlas InitializeAtlasMap(const std::wstring& charMap,
+                               const std::string& assetFont, GLuint texture);
+
+} // Soleil
+
+#endif /* SOLEIL__TEXT_HPP_ */
