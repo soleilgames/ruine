@@ -47,10 +47,31 @@ namespace Soleil {
 #endif
   }
 
-  void InitializeLevelFromAsset(World& world, const std::string& asset,
-                                Frame& frame, Camera& camera)
+  void InitializeWorldDoors(World& world, const std::string& assetName)
   {
-    InitializeLevel(world, AssetService::LoadAsString(asset), frame, camera);
+    std::istringstream file(AssetService::LoadAsString(assetName));
+    world.doors.clear();
+
+    std::string line;
+    while (std::getline(file, line)) {
+      if (line[0] == '#') continue;
+
+      std::istringstream sline(line);
+      Door               d;
+      sline >> d.id;
+      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
+      sline >> d.level;
+      SOLEIL__LOGGER_DEBUG(toString("d.level", d.level));
+      sline >> d.aoe.x;
+      sline >> d.aoe.y;
+      SOLEIL__LOGGER_DEBUG(toString("d.aoe", d.aoe));
+      sline >> d.output;
+      SOLEIL__LOGGER_DEBUG(toString("d.output", d.output));
+      sline >> d.start.x;
+      sline >> d.start.y;
+      SOLEIL__LOGGER_DEBUG(toString("d.start", d.start));
+      world.doors.push_back(d);
+    }
   }
 
   void World::resetLevel()
@@ -135,12 +156,12 @@ namespace Soleil {
                              glm::vec3(position.x, -0.60f, position.z)) *
               glm::scale(glm::mat4(), glm::vec3(.3f));
             lateComer.push_back(DrawCommand(*world.ghostShape, transformation));
+#if 0
           } else if (c == 'D') {
             assert(positionSet == false && "Position already set");
 
             camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
             positionSet     = true;
-#if 0
           } else if (c == 'd') {
             assert(positionSet == true && "Position not set yet");
 
@@ -191,7 +212,17 @@ namespace Soleil {
     }
   }
 
-  void InitializeLevel(World& world, const std::string& level, Frame& frame,
+  static const Door getDoor(const std::vector<Door>& doors,
+                            const std::string&       doorId)
+  {
+    for (const Door& door : doors) {
+      if (door.id == doorId) return door;
+    }
+
+    throw std::runtime_error(toString("No door found with id =", doorId));
+  }
+
+  void InitializeLevel(World& world, const std::string& doorId, Frame& frame,
                        Camera& camera)
   {
     frame.pointLights.push_back(
@@ -199,10 +230,21 @@ namespace Soleil {
     world.bounds.y =
       1.0f; // TODO: To change if the world become not flat anymore
 
+    const Door         start = getDoor(world.doors, doorId);
+    const std::string  level = AssetService::LoadAsString(start.level);
     std::istringstream s(level);
     parseMaze(world, s, frame, camera);
 
-    // Parse the triggers
+    // The '2 Times (*= 2.0f)' works because position are in 'lines and
+    // columns space'
+    // and everything has the same size. It will not work anymore if blocks
+    // may have different size and shape.
+    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
+    const glm::vec3 position(2.0f * start.start.x, 0.0f, 2.0f * start.start.y);
+    camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
+
+// Parse the triggers
+#if 0
     std::string line;
     while (std::getline(s, line)) {
       glm::vec3   aoePos;
@@ -226,6 +268,30 @@ namespace Soleil {
 
       world.nextZoneTriggers.push_back({bbox, nextZone});
     }
+#else
+    for (const Door door : world.doors) {
+      if (door.level == start.level) {
+
+        // The '2 Times (*= 2.0f)' works because position are in 'lines and
+        // columns space'
+        // and everything has the same size. It will not work anymore if blocks
+        // may have different size and shape.
+        glm::vec3 aoe(door.aoe.x, 0.0f, door.aoe.y);
+        aoe *= 2.0f;
+
+        BoundingBox bbox;
+        bbox.expandBy(aoe);
+        bbox.expandBy(aoe + 1.1f);
+        bbox.expandBy(aoe - 1.1f);
+
+	SOLEIL__LOGGER_DEBUG(toString("AOE: ", bbox));
+
+	
+        world.nextZoneTriggers.push_back(
+          {bbox, door.output});
+      }
+    }
+#endif
 
 #if 0
     // Test: Render Bézier to image

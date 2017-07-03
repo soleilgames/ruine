@@ -58,7 +58,8 @@ namespace Soleil {
   static void InitializeWorld(World& world, Frame& frame, Camera& camera)
   {
     InitializeWorldModels(world);
-    InitializeLevelFromAsset(world, gval::firstLevel, frame, camera);
+    InitializeWorldDoors(world, "doors.ini");
+    InitializeLevel(world, gval::firstLevel, frame, camera);
 
     SoundService::PlayMusic("farlands.ogg");
   }
@@ -182,7 +183,7 @@ namespace Soleil {
       if (playerbox.intersect(trigger.aoe)) {
         world.resetLevel();
         frame.pointLights.clear();
-        InitializeLevelFromAsset(world, trigger.nextZone, frame, camera);
+        InitializeLevel(world, trigger.nextZone, frame, camera);
         return;
       }
     }
@@ -293,7 +294,8 @@ namespace Soleil {
       playerPad.locked = false;
       world.resetLevel();
       frame.pointLights.clear();
-      InitializeLevelFromAsset(world, gval::firstLevel, frame, camera);
+      camera.yaw = 0.0f;
+      InitializeLevel(world, gval::firstLevel, frame, camera);
     }
 
 #ifndef NDEBUG

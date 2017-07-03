@@ -51,11 +51,11 @@ namespace Soleil {
 
   struct Door
   {
-    const std::string id;
-    const std::string level;
-    const glm::vec2   aoe;
-    const std::string output;
-    const glm::vec2   start;
+    std::string id;
+    std::string level;
+    glm::vec2   aoe;
+    std::string output;
+    glm::vec2   start;
   };
 
   struct World
@@ -82,10 +82,9 @@ namespace Soleil {
   };
 
   void InitializeWorldModels(World& world);
+  void InitializeWorldDoors(World& world, const std::string& assetName);
   void InitializeLevel(World& world, const std::string& level, Frame& frame,
                        Camera& camera);
-  void InitializeLevelFromAsset(World& world, const std::string& asset,
-                                Frame& frame, Camera& camera);
 
 } // Soleil
 
