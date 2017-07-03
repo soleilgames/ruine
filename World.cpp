@@ -140,11 +140,13 @@ namespace Soleil {
 
             camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
             positionSet     = true;
+#if 0
           } else if (c == 'd') {
             assert(positionSet == true && "Position not set yet");
 
             glm::vec3 dir = glm::normalize(position - camera.position);
             camera.yaw    = std::atan2(dir.x, dir.z);
+#endif
           }
 
           glm::mat4 groundTransformation =
@@ -221,7 +223,7 @@ namespace Soleil {
       bbox.expandBy(aoePos);
       bbox.expandBy(aoePos + 1.1f);
       bbox.expandBy(aoePos - 1.1f);
-      
+
       world.nextZoneTriggers.push_back({bbox, nextZone});
     }
 

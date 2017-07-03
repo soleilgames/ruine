@@ -45,8 +45,17 @@ namespace Soleil {
 
   struct NextZoneTrigger
   {
-    BoundingBox       aoe;
-    const std::string nextZone;
+    BoundingBox aoe;
+    std::string nextZone;
+  };
+
+  struct Door
+  {
+    const std::string id;
+    const std::string level;
+    const glm::vec2   aoe;
+    const std::string output;
+    const glm::vec2   start;
   };
 
   struct World
@@ -57,6 +66,8 @@ namespace Soleil {
     ShapePtr torchShape;
     ShapePtr ghostShape;
     ShapePtr gateShape;
+
+    std::vector<Door> doors;
 
     glm::vec3                    bounds;
     RenderInstances              statics;
