@@ -175,4 +175,46 @@ namespace Soleil {
     return atlas;
   }
 
+  void FillBuffer(const std::wstring& text, TextCommand& textCommand,
+                  const FontAtlas& atlas, glm::vec2 viewport)
+  {
+    const float             sx     = 50.0f * 2.0f / viewport.x;
+    const float             sy     = 50.0f * 2.0f / viewport.y;
+    int                     elemId = 0;
+    glm::vec2               offset(0.0f);
+    std::vector<CharVertex> vertices;
+
+    textCommand.elements.clear();
+
+    for (wchar_t c : text) {
+      const glm::vec2 size(offset.x + sx, offset.y + sy);
+
+      const GlyphSlot& g        = atlas.glyphs.at(c);
+      const glm::vec2  uvOffset = g.uvOffset;
+      const glm::vec2  uvSize(uvOffset.x + g.uvSize.x, uvOffset.y + g.uvSize.y);
+
+      vertices.push_back(
+        {glm::vec3(offset.x, -size.y, 0.0f), glm::vec2(uvOffset.x, uvSize.y)});
+      vertices.push_back(
+        {glm::vec3(size.x, -size.y, 0.0f), glm::vec2(uvSize.x, uvSize.y)});
+      vertices.push_back(
+        {glm::vec3(size.x, offset.y, 0.0f), glm::vec2(uvSize.x, uvOffset.y)});
+      vertices.push_back({glm::vec3(offset.x, offset.y, 0.0f),
+                          glm::vec2(uvOffset.x, uvOffset.y)});
+
+      offset = glm::vec2(size.x, offset.y);
+      textCommand.elements.push_back(0 + elemId);
+      textCommand.elements.push_back(1 + elemId);
+      textCommand.elements.push_back(2 + elemId);
+      textCommand.elements.push_back(2 + elemId);
+      textCommand.elements.push_back(3 + elemId);
+      textCommand.elements.push_back(0 + elemId);
+      elemId += 4;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, textCommand.buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
+                 vertices.data(), GL_DYNAMIC_DRAW);
+  }
+
 } // Soleil

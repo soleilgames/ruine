@@ -194,14 +194,13 @@ namespace Soleil {
 #endif
 
 #if 0
-    instance.textAtlas =
-      InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "LiberationSerif-Regular.ttf"
-			 , *instance.textDefaultFontAtlas);
+    const char* font = "LiberationSerif-Regular.ttf";
 #else
-    instance.textAtlas =
-      InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", "juju.ttf",
-                         *instance.textDefaultFontAtlas);
+    const char* font = "juju.ttf";
 #endif
+    instance.textAtlas =
+      InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ():ms=", font,
+                         *instance.textDefaultFontAtlas);
   }
 
   static inline void initializePad(void)

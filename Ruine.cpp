@@ -298,75 +298,43 @@ namespace Soleil {
       static unsigned    frames    = 0;
       static const auto  oneSec    = std::chrono::milliseconds(1000);
       static gl::Buffer  textBuffer;
-      static TextCommand textCommand;
+      static TextCommand textCommand = {*textBuffer, {}};
 
       /* ---------------------- */
       static Pristine FirstLoop;
       if (FirstLoop) {
-        const OpenGLDataInstance& gameInstance = OpenGLDataInstance::Instance();
+        FillBuffer(toWString(frames, "FPS"), textCommand,
+                   OpenGLDataInstance::Instance().textAtlas,
+                   glm::vec2(viewportWidth, viewportHeight));
         SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
                                       sizeof(OpenGLDataInstance::Instance())));
-
-        int                     codes[] = {'F', 'P', 'S'};
-        const float             sx      = 50.0f * 2.0f / (float)viewportWidth;
-        const float             sy      = 50.0f * 2.0f / (float)viewportHeight;
-        int                     elemId  = 0;
-        glm::vec2               offset(0.0f);
-        std::vector<CharVertex> vertices;
-
-        for (int c : codes) {
-#if 1
-          const glm::vec2 size(offset.x + sx, offset.y + sy);
-
-          const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at(c);
-          const glm::vec2  uvOffset = g.uvOffset;
-          const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
-                                 uvOffset.y + g.uvSize.y);
-#else
-          const float sx = 1.0f;
-          const float sy = 1.0f;
-
-          const glm::vec2 uvOffset(0.0f);
-          const glm::vec2 uvSize(1.0f);
-#endif
-          // clang-format off
-          vertices.push_back({glm::vec3(offset.x, -size.y  , 0.0f), glm::vec2(uvOffset.x, uvSize.y)});
-          vertices.push_back({glm::vec3(size.x  , -size.y  , 0.0f), glm::vec2(uvSize.x  , uvSize.y)});
-	  vertices.push_back({glm::vec3(size.x  ,  offset.y, 0.0f), glm::vec2(uvSize.x  , uvOffset.y)});
-	  vertices.push_back({glm::vec3(offset.x,  offset.y, 0.0f), glm::vec2(uvOffset.x, uvOffset.y)});
-          // clang-format on
-
-          offset = glm::vec2(size.x, offset.y);
-          textCommand.elements.push_back(0 + elemId);
-          textCommand.elements.push_back(1 + elemId);
-          textCommand.elements.push_back(2 + elemId);
-          textCommand.elements.push_back(2 + elemId);
-          textCommand.elements.push_back(3 + elemId);
-          textCommand.elements.push_back(0 + elemId);
-          elemId += 4;
-        }
-
-        // TODO: A method to fill text
-        glBindBuffer(GL_ARRAY_BUFFER, *textBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
-                     vertices.data(), GL_DYNAMIC_DRAW);
-
-        textCommand.buffer = *textBuffer;
-#if 0
-        textCommand.elements = {0, 1, 2, 2, 3, 0};
-#endif
       }
       /* ---------------------- */
 
       frames++;
       if (time - firstTime > oneSec) {
-        SOLEIL__LOGGER_DEBUG(toString("Time to draw previous frame: ",
-                                      (time - firstTime) / frames),
+        const auto duration = (time - firstTime) / frames;
+        SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
                              " (FPS=", frames, ")");
+        FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
+                             " (FPS=", frames, ")"),
+                   textCommand, OpenGLDataInstance::Instance().textAtlas,
+                   glm::vec2(viewportWidth, viewportHeight));
         firstTime = time;
         frames    = 0;
       }
-      DrawText(textCommand, glm::mat4(), Color(0.8f));
+      DrawText(
+        textCommand,
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.9f, 0.0f)),
+                   glm::vec3(0.5f)),
+        Color(0.8f));
+#if 0
+      glm::mat4 transformation =
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
+                   glm::vec3(2.0f));
+      DrawImage(*OpenGLDataInstance::Instance().textDefaultFontAtlas,
+                transformation);
+#endif
     }
 #endif
   }

@@ -22,6 +22,7 @@
 #ifndef SOLEIL__TEXT_HPP_
 #define SOLEIL__TEXT_HPP_
 
+#include "Draw.hpp"
 #include "OpenGLInclude.hpp"
 #include "stb_truetype.h"
 
@@ -48,6 +49,8 @@ namespace Soleil {
 
   FontAtlas InitializeAtlasMap(const std::wstring& charMap,
                                const std::string& assetFont, GLuint texture);
+  void FillBuffer(const std::wstring& text, TextCommand& textCommand,
+                  const FontAtlas& atlas, glm::vec2 viewport);
 
 } // Soleil
 

@@ -59,12 +59,12 @@ namespace std {
       os << ms.count() << "ms";
       return os;
     }
-  }
 
-  std::wostream& operator<<(std::wostream&                   os,
-                           const std::chrono::milliseconds& ms)
-  {
-    os << ms.count() << "ms";
-    return os;
+    std::wostream& operator<<(std::wostream&                   os,
+                              const std::chrono::milliseconds& ms)
+    {
+      os << ms.count() << L"ms";
+      return os;
+    }
   }
 }
