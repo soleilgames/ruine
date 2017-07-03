@@ -307,38 +307,54 @@ namespace Soleil {
         SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
                                       sizeof(OpenGLDataInstance::Instance())));
 
+        int                     codes[] = {'F', 'P', 'S'};
+        const float             sx      = 50.0f * 2.0f / (float)viewportWidth;
+        const float             sy      = 50.0f * 2.0f / (float)viewportHeight;
+        int                     elemId  = 0;
+        glm::vec2               offset(0.0f);
+        std::vector<CharVertex> vertices;
+
+        for (int c : codes) {
 #if 1
-        const float sx = 50.0f * 2.0f / (float)viewportWidth;
-        const float sy = 50.0f * 2.0f / (float)viewportHeight;
+          const glm::vec2 size(offset.x + sx, offset.y + sy);
 
-        const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at('F');
-        const glm::vec2  uvOffset = g.uvOffset;
-        const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
-                               uvOffset.y + g.uvSize.y);
+          const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at(c);
+          const glm::vec2  uvOffset = g.uvOffset;
+          const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
+                                 uvOffset.y + g.uvSize.y);
 #else
-        const float sx = 1.0f;
-        const float sy = 1.0f;
+          const float sx = 1.0f;
+          const float sy = 1.0f;
 
-        const GlyphSlot& g        = gameInstance.textAtlas.glyphs.at('F');
-        const glm::vec2  uvOffset = g.uvOffset;
-        const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
-                               uvOffset.y + g.uvSize.y);
+          const glm::vec2 uvOffset(0.0f);
+          const glm::vec2 uvSize(1.0f);
 #endif
-        // clang-format off
-        CharVertex test[] = {
-          {glm::vec3(0.0f, -sy  , 0.0f), glm::vec2(uvOffset.x, uvSize.y)},
-          {glm::vec3(  sx, -sy  , 0.0f), glm::vec2(uvSize.x  , uvSize.y)},
-          {glm::vec3(  sx,  0.0f, 0.0f), glm::vec2(uvSize.x  , uvOffset.y)},
-          {glm::vec3(0.0f,  0.0f, 0.0f), glm::vec2(uvOffset.x, uvOffset.y)},
-        };
-        // clang-format on
+          // clang-format off
+          vertices.push_back({glm::vec3(offset.x, -size.y  , 0.0f), glm::vec2(uvOffset.x, uvSize.y)});
+          vertices.push_back({glm::vec3(size.x  , -size.y  , 0.0f), glm::vec2(uvSize.x  , uvSize.y)});
+	  vertices.push_back({glm::vec3(size.x  ,  offset.y, 0.0f), glm::vec2(uvSize.x  , uvOffset.y)});
+	  vertices.push_back({glm::vec3(offset.x,  offset.y, 0.0f), glm::vec2(uvOffset.x, uvOffset.y)});
+          // clang-format on
+
+          offset = glm::vec2(size.x, offset.y);
+          textCommand.elements.push_back(0 + elemId);
+          textCommand.elements.push_back(1 + elemId);
+          textCommand.elements.push_back(2 + elemId);
+          textCommand.elements.push_back(2 + elemId);
+          textCommand.elements.push_back(3 + elemId);
+          textCommand.elements.push_back(0 + elemId);
+          elemId += 4;
+        }
 
         // TODO: A method to fill text
         glBindBuffer(GL_ARRAY_BUFFER, *textBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(test), test, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
+                     vertices.data(), GL_DYNAMIC_DRAW);
 
-        textCommand.buffer   = *textBuffer;
+        textCommand.buffer = *textBuffer;
+#if 0
         textCommand.elements = {0, 1, 2, 2, 3, 0};
+#endif
       }
       /* ---------------------- */
 
