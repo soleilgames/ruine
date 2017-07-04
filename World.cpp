@@ -243,11 +243,8 @@ namespace Soleil {
     std::istringstream s(level);
     parseMaze(world, s, frame);
 
-    // TODO: Timer -> should have an activate method;
-    // TODO: Transformation should be public
-    // TODO: 3500 should be gval
-    // TODO: Parse level name somehow (start.level)
-    caption.fillText(start.name, Timer(3500), frame.time);
+    caption.fillText(start.name, 0.45f);
+    caption.activate(gval::timeToFadeText, frame.time);
 
     // The '2 Times (*= 2.0f)' works because position are in 'lines and
     // columns space'

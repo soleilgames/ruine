@@ -321,17 +321,16 @@ namespace Soleil {
     }
   }
 
-  void Caption::fillText(const std::wstring& text, const Timer& timeToFadeOut,
-                         const Timer& startTime)
+  void Caption::fillText(const std::wstring& text, const float em)
+  {
+    Text::FillBuffer(text, label, OpenGLDataInstance::Instance().textAtlas, em);
+  }
+
+  void Caption::activate(const Timer& timeToFadeOut, const Timer& startTime)
   {
     this->fadeOut   = timeToFadeOut.count();
     this->active    = true;
     this->startTime = startTime;
-
-    // TODO: FillText must ask for text percentage or em then have a singleton
-    // value for the viewport.
-    Text::FillBuffer(text, label, OpenGLDataInstance::Instance().textAtlas,
-                     glm::vec2(1920, 1080));
   }
 
   Caption::Caption(void)

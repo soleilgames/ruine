@@ -67,8 +67,8 @@ namespace Soleil {
     bool isActive(void) const noexcept { return active; }
 
   public:
-    void fillText(const std::wstring& label, const Timer& timeToFadeOut,
-                  const Timer& startTime);
+    void fillText(const std::wstring& label, const float em);
+    void activate(const Timer& timeToFadeOut, const Timer& startTime);
     void render(Timer time);
 
   public:

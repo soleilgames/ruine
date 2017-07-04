@@ -104,6 +104,10 @@ namespace Soleil {
     gl::Texture              texturePad;
     std::vector<gl::Texture> textures; // TODO: Do not let the container extend.
 
+
+    // Meta information (may change during runtime)
+    glm::vec2 viewport;
+
     static OpenGLDataInstance& Instance(void) noexcept
     {
       assert(instance != nullptr &&

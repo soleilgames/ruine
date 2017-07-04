@@ -22,6 +22,7 @@
 #include "Text.hpp"
 
 #include "AssetService.hpp"
+#include "OpenGLDataInstance.hpp"
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STBRP_LARGE_RECTS
@@ -177,13 +178,14 @@ namespace Soleil {
     }
 
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
-                    const FontAtlas& atlas, glm::vec2 viewport)
+                    const FontAtlas& atlas, float em)
     {
-      // TODO: 50 is the char size
-      const float             sx     = 50.0f * 2.0f / viewport.x;
-      const float             sy     = 50.0f * 2.0f / viewport.y;
-      int                     elemId = 0;
-      glm::vec2               offset(0.0f);
+      // 200 = 2.0 (OpenGL unit) * 100 (% of the em)
+      const glm::vec2& viewport = OpenGLDataInstance::Instance().viewport;
+      const float      sx       = em * 200.0f / viewport.x;
+      const float      sy       = em * 200.0f / viewport.y;
+      int              elemId   = 0;
+      glm::vec2        offset(0.0f);
       std::vector<CharVertex> vertices;
 
       textCommand.elements.clear();

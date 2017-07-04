@@ -221,6 +221,9 @@ namespace Soleil {
     warnOnGlError();
     OpenGLDataInstance::Initialize();
 
+    OpenGLDataInstance::Instance().viewport =
+      glm::vec2(viewportWidth, viewportHeight);
+
     camera.yaw      = 0.0f;
     camera.position = glm::vec3(0.0f);
   }
@@ -242,7 +245,7 @@ namespace Soleil {
       InitializeWorld(world, frame, camera, caption);
       frame.time = time;
       caption.transformation =
-        glm::translate(glm::mat4(), glm::vec3(-0.25f, -0.5f, 0.0f));
+        glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
     }
 
 #if 0
@@ -315,16 +318,6 @@ namespace Soleil {
       static const auto  oneSec    = std::chrono::milliseconds(1000);
       static TextCommand textCommand;
 
-      /* ---------------------- */
-      static Pristine FirstLoop;
-      if (FirstLoop) {
-        FillBuffer(toWString(frames, "FPS"), textCommand,
-                   OpenGLDataInstance::Instance().textAtlas,
-                   glm::vec2(viewportWidth, viewportHeight));
-        SOLEIL__LOGGER_DEBUG(toString("SIZEOF OpenGLData: ",
-                                      sizeof(OpenGLDataInstance::Instance())));
-      }
-      /* ---------------------- */
 
       frames++;
       auto         workEnd = std::chrono::high_resolution_clock::now();
@@ -343,8 +336,7 @@ namespace Soleil {
                              " (FPS=", frames, ")");
         FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
                              " (FPS=", frames, ")"),
-                   textCommand, OpenGLDataInstance::Instance().textAtlas,
-                   glm::vec2(viewportWidth, viewportHeight));
+                   textCommand, OpenGLDataInstance::Instance().textAtlas, 0.4f);
         firstTime     = time;
         frames        = 0;
         TotalDuration = Timer(0);
@@ -352,7 +344,7 @@ namespace Soleil {
       DrawText(
         textCommand,
         glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.9f, 0.0f)),
-                   glm::vec3(0.5f)),
+                   glm::vec3(0.3f)),
         Color(0.8f));
 #if 0
       glm::mat4 transformation =
