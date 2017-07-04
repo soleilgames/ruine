@@ -24,7 +24,6 @@
 #include "AssetService.hpp"
 #include "BoundingBox.hpp"
 #include "ControllerService.hpp"
-#include "Draw.hpp"
 #include "Group.hpp"
 #include "Logger.hpp"
 #include "OpenGLDataInstance.hpp"
@@ -46,6 +45,7 @@
 #include <glm/matrix.hpp>
 
 namespace Soleil {
+
   static void DrawPad()
   {
     static const glm::mat4 modelMatrix =
@@ -55,11 +55,12 @@ namespace Soleil {
     DrawImage(*OpenGLDataInstance::Instance().texturePad, modelMatrix);
   }
 
-  static void InitializeWorld(World& world, Frame& frame, Camera& camera)
+  static void InitializeWorld(World& world, Frame& frame, Camera& camera,
+                              Caption& caption)
   {
     InitializeWorldModels(world);
     InitializeWorldDoors(world, "doors.ini");
-    InitializeLevel(world, gval::firstLevel, frame, camera);
+    InitializeLevel(world, gval::firstLevel, frame, camera, caption);
 
     SoundService::PlayMusic("farlands.ogg");
   }
@@ -172,7 +173,7 @@ namespace Soleil {
   }
 
   static void UpdateTriggers(Camera& camera, Frame& frame, World& world,
-                             Timer& timeToReset)
+                             Timer& timeToReset, Caption& caption)
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
@@ -183,7 +184,7 @@ namespace Soleil {
       if (playerbox.intersect(trigger.aoe)) {
         world.resetLevel();
         frame.pointLights.clear();
-        InitializeLevel(world, trigger.nextZone, frame, camera);
+        InitializeLevel(world, trigger.nextZone, frame, camera, caption);
         return;
       }
     }
@@ -238,8 +239,10 @@ namespace Soleil {
 #endif
 
     if (FirstLoop) {
-      InitializeWorld(world, frame, camera);
+      InitializeWorld(world, frame, camera, caption);
       frame.time = time;
+      caption.transformation =
+        glm::translate(glm::mat4(), glm::vec3(-0.25f, -0.5f, 0.0f));
     }
 
 #if 0
@@ -279,7 +282,13 @@ namespace Soleil {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    // --------------- Render Scene ---------------
     RenderScene(world, frame);
+    if (caption.isActive()) {
+      caption.render(time);
+    }
+// --------------- Render Scene ---------------
+
 #if 0
     glm::mat4 transformation =
       glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
@@ -288,14 +297,14 @@ namespace Soleil {
 #endif
 
     if (playerPad.locked == false)
-      UpdateTriggers(camera, frame, world, timeToReset);
+      UpdateTriggers(camera, frame, world, timeToReset, caption);
     else if (time >= timeToReset) {
       // TODO: Use different function for each scene or camera
       playerPad.locked = false;
       world.resetLevel();
       frame.pointLights.clear();
       camera.yaw = 0.0f;
-      InitializeLevel(world, gval::firstLevel, frame, camera);
+      InitializeLevel(world, gval::firstLevel, frame, camera, caption);
     }
 
 #ifndef NDEBUG
@@ -304,8 +313,7 @@ namespace Soleil {
       static Timer       firstTime = time;
       static unsigned    frames    = 0;
       static const auto  oneSec    = std::chrono::milliseconds(1000);
-      static gl::Buffer  textBuffer;
-      static TextCommand textCommand = {*textBuffer, {}};
+      static TextCommand textCommand;
 
       /* ---------------------- */
       static Pristine FirstLoop;

@@ -92,12 +92,12 @@ namespace Soleil {
     GLint      imageImage;
 
     // Text
-    Program     textProgram;
-    gl::Texture textDefaultFontAtlas;
-    FontAtlas   textAtlas;
-    GLint       textTexture;
-    GLint       textColor;
-    GLint       textModelMatrix;
+    Program         textProgram;
+    gl::Texture     textDefaultFontAtlas;
+    Text::FontAtlas textAtlas;
+    GLint           textTexture;
+    GLint           textColor;
+    GLint           textModelMatrix;
 
     // Textures
     gl::Texture              textureTest;

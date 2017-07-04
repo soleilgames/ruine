@@ -23,9 +23,12 @@
 #define SOLEIL__STRINGUTILS_HPP_
 
 #include <algorithm>
+#include <codecvt>
 #include <iostream>
+#include <locale>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace Soleil {
   template <typename... T> std::string toCommaString(T&&... t)
@@ -62,6 +65,22 @@ namespace Soleil {
               std::find_if(str.begin(), str.end(),
                            std::not1(std::ptr_fun<int, int>(std::isspace))));
     return str;
+  }
+
+  inline std::wstring StringToWstring(const std::string& str)
+  {
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.from_bytes(str);
+  }
+
+  inline std::string WstringToString(const std::wstring& wstr)
+  {
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
   }
 }
 

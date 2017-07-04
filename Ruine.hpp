@@ -23,6 +23,7 @@
 #define SOLEIL__RUINE_HPP_
 
 #include "AssetService.hpp"
+#include "Draw.hpp"
 #include "OpenGLInclude.hpp"
 #include "SoundService.hpp"
 #include "types.hpp"
@@ -49,6 +50,8 @@ namespace Soleil {
     glm::mat4     view;
 
     Timer timeToReset;
+
+    Caption caption;
   };
 
 } // Soleil

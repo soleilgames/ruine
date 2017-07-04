@@ -56,6 +56,7 @@ namespace Soleil {
     glm::vec2   aoe;
     std::string output;
     glm::vec2   start;
+    std::wstring name;
   };
 
   struct World
@@ -84,7 +85,7 @@ namespace Soleil {
   void InitializeWorldModels(World& world);
   void InitializeWorldDoors(World& world, const std::string& assetName);
   void InitializeLevel(World& world, const std::string& level, Frame& frame,
-                       Camera& camera);
+                       Camera& camera, Caption& caption);
 
 } // Soleil
 

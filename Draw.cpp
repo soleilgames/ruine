@@ -71,7 +71,7 @@ namespace Soleil {
     const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
 
     glUseProgram(ogl.textProgram.program);
-    glBindBuffer(GL_ARRAY_BUFFER, textCommand.buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, *textCommand.buffer);
 
     const GLsizei stride = sizeof(CharVertex);
 
@@ -319,6 +319,42 @@ namespace Soleil {
         throwOnGlError();
       }
     }
+  }
+
+  void Caption::fillText(const std::wstring& text, const Timer& timeToFadeOut,
+                         const Timer& startTime)
+  {
+    this->fadeOut   = timeToFadeOut.count();
+    this->active    = true;
+    this->startTime = startTime;
+
+    // TODO: FillText must ask for text percentage or em then have a singleton
+    // value for the viewport.
+    Text::FillBuffer(text, label, OpenGLDataInstance::Instance().textAtlas,
+                     glm::vec2(1920, 1080));
+  }
+
+  Caption::Caption(void)
+    : label()
+    , fadeOut(0)
+    , active(false)
+  {
+  }
+
+  void Caption::render(Timer time)
+  {
+    long alpha = (time - startTime).count();
+
+    if (alpha > fadeOut) {
+      active = false;
+      return;
+    }
+
+    // TODO: Use Bezier Curve
+    Color color =
+      glm::mix(Color(0.8f), Color(0.0f), (float)alpha / (float)fadeOut);
+
+    DrawText(label, transformation, color);
   }
 
 } // Soleil

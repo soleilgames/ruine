@@ -54,8 +54,33 @@ namespace Soleil {
 
   struct TextCommand
   {
-    GLuint                buffer;
+    gl::Buffer            buffer;
     std::vector<GLushort> elements;
+  };
+
+  class Caption
+  {
+  public:
+    Caption();
+
+  public:
+    bool isActive(void) const noexcept { return active; }
+
+  public:
+    void fillText(const std::wstring& label, const Timer& timeToFadeOut,
+                  const Timer& startTime);
+    void render(Timer time);
+
+  public:
+    glm::mat4 transformation;
+
+  private:
+    TextCommand label;
+    long        fadeOut;
+    bool        active;
+
+  private:
+    Timer startTime;
   };
 
   struct CharVertex

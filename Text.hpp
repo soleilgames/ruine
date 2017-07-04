@@ -32,25 +32,27 @@
 #include <glm/vec2.hpp>
 
 namespace Soleil {
+  namespace Text {
 
-  struct GlyphSlot
-  {
-    glm::vec2 uvOffset;
-    glm::vec2 uvSize;
+    struct GlyphSlot
+    {
+      glm::vec2 uvOffset;
+      glm::vec2 uvSize;
 
-    GlyphSlot(glm::vec2 uvOffset, glm::vec2 uvSize);
-    ~GlyphSlot(void);
-  };
+      GlyphSlot(glm::vec2 uvOffset, glm::vec2 uvSize);
+      ~GlyphSlot(void);
+    };
 
-  struct FontAtlas
-  {
-    std::map<wchar_t, GlyphSlot> glyphs;
-  };
+    struct FontAtlas
+    {
+      std::map<wchar_t, GlyphSlot> glyphs;
+    };
 
-  FontAtlas InitializeAtlasMap(const std::wstring& charMap,
-                               const std::string& assetFont, GLuint texture);
-  void FillBuffer(const std::wstring& text, TextCommand& textCommand,
-                  const FontAtlas& atlas, glm::vec2 viewport);
+    FontAtlas InitializeAtlasMap(const std::wstring& charMap,
+                                 const std::string& assetFont, GLuint texture);
+    void FillBuffer(const std::wstring& text, TextCommand& textCommand,
+                    const FontAtlas& atlas, glm::vec2 viewport);
+  } // Text
 
 } // Soleil
 

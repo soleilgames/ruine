@@ -23,6 +23,7 @@
 
 #include "AssetService.hpp"
 #include "WavefrontLoader.hpp"
+#include "stringutils.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -70,6 +71,14 @@ namespace Soleil {
       sline >> d.start.x;
       sline >> d.start.y;
       SOLEIL__LOGGER_DEBUG(toString("d.start", d.start));
+
+      std::string name;
+#if 0
+      sline >> name;
+#endif
+      sline.get(); // Consume \t
+      std::getline(sline, name);
+      d.name = StringToWstring(name);
       world.doors.push_back(d);
     }
   }
@@ -83,8 +92,7 @@ namespace Soleil {
     nextZoneTriggers.clear();
   }
 
-  static void parseMaze(World& world, std::istringstream& s, Frame& frame,
-                        Camera& camera)
+  static void parseMaze(World& world, std::istringstream& s, Frame& frame)
   {
     std::string            line;
     float                  x           = 0.0f;
@@ -223,7 +231,7 @@ namespace Soleil {
   }
 
   void InitializeLevel(World& world, const std::string& doorId, Frame& frame,
-                       Camera& camera)
+                       Camera& camera, Caption& caption)
   {
     frame.pointLights.push_back(
       {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
@@ -233,7 +241,13 @@ namespace Soleil {
     const Door         start = getDoor(world.doors, doorId);
     const std::string  level = AssetService::LoadAsString(start.level);
     std::istringstream s(level);
-    parseMaze(world, s, frame, camera);
+    parseMaze(world, s, frame);
+
+    // TODO: Timer -> should have an activate method;
+    // TODO: Transformation should be public
+    // TODO: 3500 should be gval
+    // TODO: Parse level name somehow (start.level)
+    caption.fillText(start.name, Timer(3500), frame.time);
 
     // The '2 Times (*= 2.0f)' works because position are in 'lines and
     // columns space'
@@ -284,11 +298,9 @@ namespace Soleil {
         bbox.expandBy(aoe + 1.1f);
         bbox.expandBy(aoe - 1.1f);
 
-	SOLEIL__LOGGER_DEBUG(toString("AOE: ", bbox));
+        SOLEIL__LOGGER_DEBUG(toString("AOE: ", bbox));
 
-	
-        world.nextZoneTriggers.push_back(
-          {bbox, door.output});
+        world.nextZoneTriggers.push_back({bbox, door.output});
       }
     }
 #endif
