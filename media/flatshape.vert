@@ -76,6 +76,7 @@ main()
       specular = pow(specular, material.shininess);
 
     scatteredLight += pointLight[i].color * diffuse * attenuation;
+    scatteredLight += material.emissiveColor;
     reflectedLight += pointLight[i].color * specular * attenuation;
   }
 

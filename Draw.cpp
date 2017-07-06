@@ -96,7 +96,7 @@ namespace Soleil {
     throwOnGlError();
   }
 
-  void RenderPhongShape(const RenderInstances instances, const Frame& frame)
+  void RenderPhongShape(const RenderInstances& instances, const Frame& frame)
   {
     throwOnGlError();
     constexpr GLsizei         stride    = sizeof(Vertex);
@@ -154,7 +154,7 @@ namespace Soleil {
       else
         glDisable(GL_BLEND);
 #endif
-      for (const auto& sub : drawCommand.sub) {
+      for (const auto& sub : *drawCommand.sub) {
         // Setting Materials
         // -------------------------------------------------------
         glUniform3fv(instance.drawableMaterial.ambiantColor, 1,
@@ -208,7 +208,7 @@ namespace Soleil {
     }
   }
 
-  void RenderFlatShape(const RenderInstances instances, const Frame& frame)
+  void RenderFlatShape(const RenderInstances& instances, const Frame& frame)
   {
     throwOnGlError();
     constexpr GLsizei         stride    = sizeof(Vertex);
@@ -267,7 +267,7 @@ namespace Soleil {
         glEnable(GL_BLEND);
       else
         glDisable(GL_BLEND);
-      for (const auto& sub : drawCommand.sub) {
+      for (const auto& sub : *drawCommand.sub) {
         // Setting Materials
         // -------------------------------------------------------
         glUniform3fv(instance.flat.Material.ambiantColor, 1,
@@ -321,26 +321,26 @@ namespace Soleil {
     }
   }
 
-  void Caption::fillText(const std::wstring& text, const float em)
+  void PopUp::fillText(const std::wstring& text, const float em)
   {
     Text::FillBuffer(text, label, OpenGLDataInstance::Instance().textAtlas, em);
   }
 
-  void Caption::activate(const Timer& timeToFadeOut, const Timer& startTime)
+  void PopUp::activate(const Timer& timeToFadeOut, const Timer& startTime)
   {
     this->fadeOut   = timeToFadeOut.count();
     this->active    = true;
     this->startTime = startTime;
   }
 
-  Caption::Caption(void)
+  PopUp::PopUp(void)
     : label()
     , fadeOut(0)
     , active(false)
   {
   }
 
-  void Caption::render(Timer time)
+  void PopUp::render(Timer time)
   {
     long alpha = (time - startTime).count();
 

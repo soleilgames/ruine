@@ -113,7 +113,7 @@ namespace Soleil {
   };
 
   namespace gval {
-    static const glm::vec3 ambiantLight(0.35f);
+    static const glm::vec3 ambiantLight(0.30f);
     static const glm::vec3 cameraLight(0.15f);
     static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
     static const float     ghostSpeed     = 0.01f;
@@ -121,6 +121,8 @@ namespace Soleil {
     static const float     cameraSpeed    = 0.05f;
     static const char*     firstLevel     = "0";
     static const Timer     timeToFadeText(3500);
+    static const float     textLabelSize = 0.35f;
+    static const Color     textLabelColor(0.8f);
 
 #if 0 // Temp
     static GLuint bezierTex;

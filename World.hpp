@@ -49,13 +49,19 @@ namespace Soleil {
     std::string nextZone;
   };
 
+  struct CoinTrigger
+  {
+    BoundingBox aoe;
+    glm::mat4   coinTransformation;
+  };
+
   struct Door
   {
-    std::string id;
-    std::string level;
-    glm::vec2   aoe;
-    std::string output;
-    glm::vec2   start;
+    std::string  id;
+    std::string  level;
+    glm::vec2    aoe;
+    std::string  output;
+    glm::vec2    start;
     std::wstring name;
   };
 
@@ -67,6 +73,7 @@ namespace Soleil {
     ShapePtr torchShape;
     ShapePtr ghostShape;
     ShapePtr gateShape;
+    ShapePtr purseShape;
 
     std::vector<Door> doors;
 
@@ -75,6 +82,8 @@ namespace Soleil {
     std::vector<GhostData>       sentinels;
     std::vector<BoundingBox>     hardSurfaces;
     std::vector<NextZoneTrigger> nextZoneTriggers;
+    std::vector<CoinTrigger>     coinTriggers;
+    std::vector<glm::mat4>       coinPickedUp;
 
     World() {}
     World(const World&) = delete;
@@ -85,7 +94,7 @@ namespace Soleil {
   void InitializeWorldModels(World& world);
   void InitializeWorldDoors(World& world, const std::string& assetName);
   void InitializeLevel(World& world, const std::string& level, Frame& frame,
-                       Camera& camera, Caption& caption);
+                       Camera& camera, PopUp& caption);
 
 } // Soleil
 

@@ -32,7 +32,6 @@ main()
     materialColor = textureColor.rgb;
     alpha         = textureColor.a;
   }
-  // TODO: material.emissiveColor
   vec3 rgb = min(materialColor * scatteredLight + reflectedLight, vec3(1.0));
 
   gl_FragColor = vec4(rgb, alpha);

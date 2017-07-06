@@ -56,7 +56,7 @@ namespace Soleil {
   }
 
   static void InitializeWorld(World& world, Frame& frame, Camera& camera,
-                              Caption& caption)
+                              PopUp& caption)
   {
     InitializeWorldModels(world);
     InitializeWorldDoors(world, "doors.ini");
@@ -109,7 +109,7 @@ namespace Soleil {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 #if 0
-    RenderDrawCommands(statics, frame);
+    RenderPhongShape(world.statics, frame);
 #else
     RenderFlatShape(world.statics, frame);
 #endif
@@ -138,12 +138,12 @@ namespace Soleil {
 
     BoundingBox bboxForward;
     bboxForward.expandBy(positionForward);
-    bboxForward.expandBy(positionForward + 0.15f);
-    bboxForward.expandBy(positionForward - 0.15f);
+    bboxForward.expandBy(positionForward + 0.25f);
+    bboxForward.expandBy(positionForward - 0.25f);
     BoundingBox bboxSideward;
     bboxSideward.expandBy(positionSideward);
-    bboxSideward.expandBy(positionSideward + 0.15f);
-    bboxSideward.expandBy(positionSideward - 0.15f);
+    bboxSideward.expandBy(positionSideward + 0.25f);
+    bboxSideward.expandBy(positionSideward - 0.25f);
 
     for (const auto& boundingBox : wallBoundingBox) {
       if (boundingBox.intersect(bboxForward))
@@ -172,8 +172,10 @@ namespace Soleil {
     return glm::lookAt(position + target, target, glm::vec3(0, 1, 0));
   }
 
+  // TODO: Refactor this method as it has too much parameters
   static void UpdateTriggers(Camera& camera, Frame& frame, World& world,
-                             Timer& timeToReset, Caption& caption)
+                             Timer& timeToReset, PopUp& caption, int& goldScore,
+                             TextCommand& goldLabel)
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
@@ -209,6 +211,39 @@ namespace Soleil {
         return;
       }
     }
+
+    for (auto coinTrigger = world.coinTriggers.begin();
+         coinTrigger != world.coinTriggers.end();) {
+      if (playerbox.intersect(coinTrigger->aoe)) {
+        SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD")); // TODO: Increment score
+        goldScore += 6;                             // TODO: Constant
+        Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
+                         OpenGLDataInstance::Instance().textAtlas,
+                         gval::textLabelSize);
+
+        for (auto it = world.statics.begin(); it != world.statics.end(); ++it) {
+          const auto& drawCommand = *it;
+          if (drawCommand.buffer == world.purseShape->getBuffer() &&
+              drawCommand.transformation == coinTrigger->coinTransformation) {
+            world.statics.erase(it);
+            break;
+          }
+        }
+
+        world.coinPickedUp.push_back(coinTrigger->coinTransformation);
+        world.coinTriggers.erase(coinTrigger);
+      } else {
+        ++coinTrigger;
+      }
+    }
+
+    // Quick hack before a better implementation:
+    const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
+                            glm::vec3(7.1f, 0.0f, 1.1f));
+    if (playerbox.intersect(start)) {
+      caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
+      caption.activate(gval::timeToFadeText, frame.time);
+    }
   }
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
@@ -217,6 +252,7 @@ namespace Soleil {
     , soundService(soundService)
     , viewportWidth(viewportWidth)
     , viewportHeight(viewportHeight)
+    , goldScore(0)
   {
     warnOnGlError();
     OpenGLDataInstance::Initialize();
@@ -246,6 +282,11 @@ namespace Soleil {
       frame.time = time;
       caption.transformation =
         glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
+      goldLabelTransformation =
+        glm::translate(glm::mat4(), glm::vec3(+0.35f, +0.75f, 0.0f));
+      Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
+                       OpenGLDataInstance::Instance().textAtlas,
+                       gval::textLabelSize);
     }
 
 #if 0
@@ -290,6 +331,7 @@ namespace Soleil {
     if (caption.isActive()) {
       caption.render(time);
     }
+    DrawText(goldLabel, goldLabelTransformation, gval::textLabelColor);
 // --------------- Render Scene ---------------
 
 #if 0
@@ -300,7 +342,8 @@ namespace Soleil {
 #endif
 
     if (playerPad.locked == false)
-      UpdateTriggers(camera, frame, world, timeToReset, caption);
+      UpdateTriggers(camera, frame, world, timeToReset, caption, goldScore,
+                     goldLabel);
     else if (time >= timeToReset) {
       // TODO: Use different function for each scene or camera
       playerPad.locked = false;
@@ -317,7 +360,6 @@ namespace Soleil {
       static unsigned    frames    = 0;
       static const auto  oneSec    = std::chrono::milliseconds(1000);
       static TextCommand textCommand;
-
 
       frames++;
       auto         workEnd = std::chrono::high_resolution_clock::now();

@@ -34,20 +34,20 @@ namespace Soleil {
   {
     GLuint                       buffer;
     glm::mat4                    transformation;
-    const std::vector<SubShape>& sub;
+    std::vector<SubShape> const* sub;
 
     DrawCommand(GLuint buffer, const glm::mat4& transformation,
                 const std::vector<SubShape>& sub)
       : buffer(buffer)
       , transformation(transformation)
-      , sub(sub)
+      , sub(&sub)
     {
     }
 
     DrawCommand(const Shape& shape, const glm::mat4& transformation)
       : buffer(shape.getBuffer())
       , transformation(transformation)
-      , sub(shape.getSubShapes())
+      , sub(&shape.getSubShapes())
     {
     }
   };
@@ -58,10 +58,10 @@ namespace Soleil {
     std::vector<GLushort> elements;
   };
 
-  class Caption
+  class PopUp
   {
   public:
-    Caption();
+    PopUp();
 
   public:
     bool isActive(void) const noexcept { return active; }
@@ -83,6 +83,7 @@ namespace Soleil {
     Timer startTime;
   };
 
+  
   struct CharVertex
   {
     glm::vec3 position;
@@ -92,8 +93,8 @@ namespace Soleil {
   typedef std::vector<DrawCommand> RenderInstances;
 
   void DrawImage(GLuint texture, const glm::mat4& transformation);
-  void RenderPhongShape(const RenderInstances instances, const Frame& frame);
-  void RenderFlatShape(const RenderInstances instances, const Frame& frame);
+  void RenderPhongShape(const RenderInstances& instances, const Frame& frame);
+  void RenderFlatShape(const RenderInstances& instances, const Frame& frame);
   void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
                 const glm::vec4& color);
 } // Soleil

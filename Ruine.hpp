@@ -51,7 +51,10 @@ namespace Soleil {
 
     Timer timeToReset;
 
-    Caption caption;
+    PopUp       caption;
+    TextCommand goldLabel;
+    glm::mat4   goldLabelTransformation;
+    int         goldScore;
   };
 
 } // Soleil

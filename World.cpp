@@ -46,6 +46,9 @@ namespace Soleil {
     world.ghostShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
 #endif
+
+    world.purseShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("purse01.obj"));
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -176,6 +179,26 @@ namespace Soleil {
             glm::vec3 dir = glm::normalize(position - camera.position);
             camera.yaw    = std::atan2(dir.x, dir.z);
 #endif
+          } else if (c == 'p') {
+            const glm::vec3 coinPosition =
+              glm::vec3(position.x, -1.0f, position.z);
+            const glm::mat4 transformation =
+              glm::translate(scale, coinPosition);
+            auto pos = std::find(std::begin(world.coinPickedUp),
+                                 std::end(world.coinPickedUp), transformation);
+            if (pos == std::end(world.coinPickedUp)) {
+              // TODO: Do put in a specific vector;
+              world.statics.push_back(
+                DrawCommand(*world.purseShape, transformation));
+
+              BoundingBox bbox(
+                glm::vec3(position.x - 0.5f, -1.0f, position.z - 0.5f),
+                glm::vec3(position.x + 0.5f, 2.0f, position.z + 0.5f));
+              bbox.expandBy(coinPosition);
+              bbox.expandBy(coinPosition - 0.55f);
+              bbox.expandBy(coinPosition + 0.55f);
+              world.coinTriggers.push_back({bbox, transformation});
+            }
           }
 
           glm::mat4 groundTransformation =
@@ -231,7 +254,7 @@ namespace Soleil {
   }
 
   void InitializeLevel(World& world, const std::string& doorId, Frame& frame,
-                       Camera& camera, Caption& caption)
+                       Camera& camera, PopUp& caption)
   {
     frame.pointLights.push_back(
       {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});

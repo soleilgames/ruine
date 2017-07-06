@@ -73,13 +73,11 @@ main()
 
     scatteredLight +=
       pointLight[i].color * material.diffuseColor * diffuse * attenuation;
-
+    scatteredLight += material.emissiveColor;
     reflectedLight +=
       pointLight[i].color * material.specularColor * specular * attenuation;
   }
-  vec3 rgb = min(material.emissiveColor + materialColor * scatteredLight +
-                   reflectedLight,
-                 vec3(1.0));
+  vec3 rgb = min(materialColor * scatteredLight + reflectedLight, vec3(1.0));
 
   gl_FragColor = vec4(rgb, alpha);
 
