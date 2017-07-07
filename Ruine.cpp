@@ -29,6 +29,7 @@
 #include "OpenGLDataInstance.hpp"
 #include "Pristine.hpp"
 #include "Shape.hpp"
+#include "SoundService.hpp"
 #include "TypesToOStream.hpp"
 #include "WavefrontLoader.hpp"
 #include "World.hpp"
@@ -61,8 +62,9 @@ namespace Soleil {
     InitializeWorldModels(world);
     InitializeWorldDoors(world, "doors.ini");
     InitializeLevel(world, gval::firstLevel, frame, camera, caption);
-
+#if 1
     SoundService::PlayMusic("farlands.ogg");
+#endif
   }
 
   static void UpdateTorchColor(std::vector<PointLight>& lights)
@@ -186,6 +188,9 @@ namespace Soleil {
       if (playerbox.intersect(trigger.aoe)) {
         world.resetLevel();
         frame.pointLights.clear();
+
+        SoundService::FireSound("doors.wav", SoundProperties(100));
+
         InitializeLevel(world, trigger.nextZone, frame, camera, caption);
         return;
       }
@@ -232,6 +237,7 @@ namespace Soleil {
 
         world.coinPickedUp.push_back(coinTrigger->coinTransformation);
         world.coinTriggers.erase(coinTrigger);
+        SoundService::FireSound("coins.wav", SoundProperties(100));
       } else {
         ++coinTrigger;
       }
@@ -240,7 +246,9 @@ namespace Soleil {
     // Quick hack before a better implementation:
     const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
                             glm::vec3(7.1f, 0.0f, 1.1f));
-    if (playerbox.intersect(start)) {
+    if (caption.isActive() == false && playerbox.intersect(start)) {
+      SoundService::FireSound("locked.wav", SoundProperties(100));
+
       caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
       caption.activate(gval::timeToFadeText, frame.time);
     }

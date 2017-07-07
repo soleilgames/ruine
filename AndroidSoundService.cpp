@@ -50,7 +50,7 @@ namespace Soleil {
 
     /* Sounds initialization */
     SLDataLocator_AndroidSimpleBufferQueue bufferLocator = {
-      SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 20};
+      SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
     SLDataFormat_PCM pcmFormat = {
       SL_DATAFORMAT_PCM,           1,
       SL_SAMPLINGRATE_44_1,        SL_PCMSAMPLEFORMAT_FIXED_16,
@@ -72,7 +72,6 @@ namespace Soleil {
                              soundRequest);
     soundPlayerObj.realize(Async::False);
     soundPlayerObj.getInterface(SL_IID_PLAY, &(soundPlayer.getPlayer()));
-    // TODO: get the volume interface
     soundPlayerObj.getInterface(SL_IID_BUFFERQUEUE, &(soundBuffer.data()));
     soundPlayerObj.getInterface(SL_IID_EFFECTSEND, &(soundEffectSend));
     soundPlayerObj.getInterface(SL_IID_VOLUME, &soundVolume);
@@ -118,6 +117,11 @@ namespace Soleil {
 
     playerObj.getInterface(SL_IID_VOLUME, &volume);
 
+    const int level       = 10;
+    const int attenuation = 100 - 50;
+    const int millibel    = attenuation * -50;
+    SLresult  result      = (*volume)->SetVolumeLevel(volume, millibel);
+
     player.setPlayState(PlayState::playing);
   }
 
@@ -143,28 +147,31 @@ namespace Soleil {
   void AndroidSoundService::fireSound(const std::string&     sound,
                                       const SoundProperties& properties)
   {
-    const auto buffer = loadSound(sound);
+    assert(soundPlayerObj.isRealized() &&
+           "Sound Player was not in realize state");
 
     if (soundPlayerObj.isRealized()) {
-      // soundPlayer.setPlayState(PlayState::paused);
+      soundPlayer.setPlayState(PlayState::stopped);
+
       soundBuffer.clear();
+      const auto& buffer = loadSound(sound);
       soundBuffer.enqueue(buffer);
-      // soundPlayer.setPlayState(PlayState::playing);
 
       const int level       = 10;
       const int attenuation = 100 - properties.volume;
       const int millibel    = attenuation * -50;
-      SLresult  result      = (*soundVolume)->SetVolumeLevel(soundVolume, millibel);
+      SLresult  result = (*soundVolume)->SetVolumeLevel(soundVolume, millibel);
       assert(SL_RESULT_SUCCESS == result &&
              "Android state that this never fails");
       (void)result;
+      soundPlayer.setPlayState(PlayState::playing);
     }
   }
 
   const PcmBuffer& AndroidSoundService::loadSound(const std::string& fileName)
   {
     // TODO: Might be better to allow load and caching sound while loading
-    // application.
+    // application. Chaching should be a pure vector to benefit cpu cache?
 
     auto const found = soundCache.find(fileName);
     if (found != soundCache.end()) {

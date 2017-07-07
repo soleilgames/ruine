@@ -49,6 +49,9 @@ namespace Soleil {
 
     world.purseShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("purse01.obj"));
+
+    world.keyShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("key.obj"));
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -199,6 +202,13 @@ namespace Soleil {
               bbox.expandBy(coinPosition + 0.55f);
               world.coinTriggers.push_back({bbox, transformation});
             }
+          } else if (c == 'k') {
+            const glm::vec3 keyPosition =
+              glm::vec3(position.x, -1.0f, position.z);
+            const glm::mat4 transformation = glm::translate(scale, keyPosition);
+
+            world.statics.push_back(
+              DrawCommand(*world.keyShape, transformation));
           }
 
           glm::mat4 groundTransformation =

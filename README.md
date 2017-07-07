@@ -59,4 +59,6 @@ make
 # License
   L'application est sous license MIT.
   La musique a été composé par M. Horacio M. Goldberg (www.yosoygames.com.ar/royalty-free)
-  Le fantôme par Antoine Tallon http://www.at-graphisme.fr/category/travauxperso/game-design/
+  Le fantôme par Antoine Tallon (http://www.at-graphisme.fr/category/travauxperso/game-design/)
+  La pièce et la clé sont d'après le travail de yd (https://opengameart.org/users/yd)
+  La texture de mur d'après le travail rubberduck (https://opengameart.org/users/rubberduck)
