@@ -50,6 +50,12 @@ namespace Soleil {
       , sub(&shape.getSubShapes())
     {
     }
+
+    bool operator==(const DrawCommand& other) const noexcept
+    {
+      return buffer == other.buffer && transformation == other.transformation &&
+             sub == other.sub;
+    }
   };
 
   struct TextCommand
@@ -83,7 +89,6 @@ namespace Soleil {
     Timer startTime;
   };
 
-  
   struct CharVertex
   {
     glm::vec3 position;

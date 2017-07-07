@@ -50,6 +50,16 @@ namespace Soleil {
     {
     }
 
+    BoundingBox(const glm::mat4 &transformation, const float volume)
+    {
+      const glm::vec3 point = glm::vec3(transformation[3]);
+
+      expandBy(point);
+      expandBy(point - volume);
+      expandBy(point + volume);
+      
+    }
+
     virtual ~BoundingBox() {}
 
     inline bool contains(const glm::vec3& point) const noexcept

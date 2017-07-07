@@ -243,13 +243,28 @@ namespace Soleil {
       }
     }
 
+    BoundingBox keybox(world.theKey, 0.25f);
+    if (playerbox.intersect(keybox)) {
+      world.keyPickedUp = true;
+      auto pos = std::find(std::begin(world.statics), std::end(world.statics),
+                           DrawCommand(*world.keyShape, world.theKey));
+      if (pos != std::end(world.statics)) {
+	world.statics.erase(pos);
+      }
+      // TODO: Play sound;
+    }
+
     // Quick hack before a better implementation:
     const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
                             glm::vec3(7.1f, 0.0f, 1.1f));
     if (caption.isActive() == false && playerbox.intersect(start)) {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
-      caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
+      if (world.keyPickedUp) {
+        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRES À FAIRE...", 0.35f);
+      } else {
+        caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
+      }
       caption.activate(gval::timeToFadeText, frame.time);
     }
   }

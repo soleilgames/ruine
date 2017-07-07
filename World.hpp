@@ -84,7 +84,11 @@ namespace Soleil {
     std::vector<BoundingBox>     hardSurfaces;
     std::vector<NextZoneTrigger> nextZoneTriggers;
     std::vector<CoinTrigger>     coinTriggers;
-    std::vector<glm::mat4>       coinPickedUp;
+    glm::mat4                    theKey;
+
+    // Player's progression
+    std::vector<glm::mat4> coinPickedUp;
+    bool                   keyPickedUp = false;
 
     World() {}
     World(const World&) = delete;

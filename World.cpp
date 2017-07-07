@@ -205,10 +205,12 @@ namespace Soleil {
           } else if (c == 'k') {
             const glm::vec3 keyPosition =
               glm::vec3(position.x, -1.0f, position.z);
-            const glm::mat4 transformation = glm::translate(scale, keyPosition);
+            const glm::mat4 transformation =
+              glm::scale(glm::translate(scale, keyPosition), glm::vec3(2.0f));
 
             world.statics.push_back(
               DrawCommand(*world.keyShape, transformation));
+            world.theKey = transformation;
           }
 
           glm::mat4 groundTransformation =

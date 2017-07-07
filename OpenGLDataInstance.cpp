@@ -199,7 +199,7 @@ namespace Soleil {
     const char* font = "juju.ttf";
 #endif
     instance.textAtlas =
-      Text::InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ():ms=\",'", font,
+      Text::InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789 !.():ms=\",'", font,
                          *instance.textDefaultFontAtlas);
   }
 
