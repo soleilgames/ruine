@@ -270,7 +270,7 @@ namespace Soleil {
                        Camera& camera, PopUp& caption)
   {
     frame.pointLights.push_back(
-      {Position(0.0f), gval::cameraLight, .10000000027f, .0301f});
+      {Position(0.0f), gval::cameraLight, .000010, .00301f});
     world.bounds.y =
       1.0f; // TODO: To change if the world become not flat anymore
 

@@ -48,7 +48,7 @@ varying vec3 reflectedLight;
 void
 main()
 {
-  const float ConstantAttenuation = 0.01; // TODO: If kept, put it in an uniform
+  const float ConstantAttenuation = 0.1; // TODO: If kept, put it in an uniform
 
   scatteredLight = AmbiantLight;
   reflectedLight = vec3(0.0);
