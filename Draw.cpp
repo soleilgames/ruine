@@ -246,7 +246,8 @@ namespace Soleil {
     throwOnGlError();
 
     for (const auto& drawCommand : instances) {
-      gl::BindBuffer bindBuffer(GL_ARRAY_BUFFER, drawCommand.buffer);
+      gl::BindBuffer bindBuffer(
+        GL_ARRAY_BUFFER, drawCommand.buffer); // TODO: use glBind (check perf)
       throwOnGlError();
 
       glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
@@ -355,5 +356,36 @@ namespace Soleil {
 
     DrawText(label, transformation, color);
   }
+
+#ifndef NDEBUG
+  void DrawBoundingBox(const BoundingBox& box, const Frame& frame,
+                       const glm::vec4& color)
+  {
+    constexpr GLsizei       stride    = sizeof(GLfloat) * 3;
+    const BoundingBoxShape& shape     = OpenGLDataInstance::Instance().box;
+    const Program&          rendering = shape.program;
+
+    glUseProgram(rendering.program);
+    glBindBuffer(GL_ARRAY_BUFFER, *shape.buffer);
+    glUniform3fv(shape.min, 1, glm::value_ptr(box.getMin()));
+    glUniform3fv(shape.max, 1, glm::value_ptr(box.getMax()));
+    glUniform4fv(shape.color, 1, glm::value_ptr(color)); // TODO: Add color;
+    glUniformMatrix4fv(shape.VPMatrix, 1, GL_FALSE,
+                       glm::value_ptr(frame.ViewProjection));
+    throwOnGlError();
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
+    throwOnGlError();
+
+    glEnableVertexAttribArray(0);
+    throwOnGlError();
+
+    const std::vector<GLushort>& indices = shape.indices;
+    assert(indices.size() == 36);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
+                   indices.data());
+    throwOnGlError();
+  }
+#endif
 
 } // Soleil

@@ -96,6 +96,7 @@ namespace Soleil {
     sentinels.clear();
     hardSurfaces.clear();
     nextZoneTriggers.clear();
+    coinTriggers.clear();
   }
 
   static void parseMaze(World& world, std::istringstream& s, Frame& frame)
@@ -269,7 +270,7 @@ namespace Soleil {
                        Camera& camera, PopUp& caption)
   {
     frame.pointLights.push_back(
-      {Position(0.0f), gval::cameraLight, 0.027f, 0.0028f});
+      {Position(0.0f), gval::cameraLight, .10000000027f, .0301f});
     world.bounds.y =
       1.0f; // TODO: To change if the world become not flat anymore
 

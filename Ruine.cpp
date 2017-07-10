@@ -112,8 +112,17 @@ namespace Soleil {
     glCullFace(GL_BACK);
 #if 0
     RenderPhongShape(world.statics, frame);
-#else
+#endif
     RenderFlatShape(world.statics, frame);
+
+#if 0
+    for (const auto& box : world.hardSurfaces) {
+      DrawBoundingBox(box, frame);
+    }
+
+    for (const auto& t : world.coinTriggers) {
+      DrawBoundingBox(t.aoe, frame, glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
+    }
 #endif
 
     if (ControllerService::GetPlayerController().locked == false) DrawPad();
@@ -138,6 +147,7 @@ namespace Soleil {
     const glm::vec3 positionSideward(newPosition.x, newPosition.y,
                                      camera->position.z);
 
+#if 1 // TODO: controller Option
     BoundingBox bboxForward;
     bboxForward.expandBy(positionForward);
     bboxForward.expandBy(positionForward + 0.25f);
@@ -153,6 +163,7 @@ namespace Soleil {
       if (boundingBox.intersect(bboxSideward))
         newPosition.x = camera->position.x;
     }
+#endif
 
     camera->position = newPosition;
     return glm::lookAt(camera->position, camera->position + direction,
@@ -181,8 +192,8 @@ namespace Soleil {
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
-    playerbox.expandBy(camera.position + 0.25f);
-    playerbox.expandBy(camera.position - 0.25f);
+    playerbox.expandBy(camera.position + glm::vec3(0.25f, 1.5f, 0.25f));
+    playerbox.expandBy(camera.position - glm::vec3(0.25f, 1.5f, 0.25f));
 
     for (const auto& trigger : world.nextZoneTriggers) {
       if (playerbox.intersect(trigger.aoe)) {
@@ -243,17 +254,19 @@ namespace Soleil {
       }
     }
 
-    BoundingBox keybox(world.theKey, 0.25f);
-    if (playerbox.intersect(keybox)) {
-      world.keyPickedUp = true;
-      auto pos = std::find(std::begin(world.statics), std::end(world.statics),
-                           DrawCommand(*world.keyShape, world.theKey));
-      if (pos != std::end(world.statics)) {
-	world.statics.erase(pos);
-      }
-      // TODO: Play sound;
-    }
+    if (world.keyPickedUp == false) {
+      const BoundingBox keybox(world.theKey, 0.3f);
 
+      if (playerbox.intersect(keybox)) {
+        world.keyPickedUp = true;
+        auto pos = std::find(std::begin(world.statics), std::end(world.statics),
+                             DrawCommand(*world.keyShape, world.theKey));
+        assert(pos != std::end(world.statics) && "Key was not found");
+        world.statics.erase(pos);
+
+        SoundService::FireSound("key.wav", SoundProperties(100));
+      }
+    }
     // Quick hack before a better implementation:
     const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
                             glm::vec3(7.1f, 0.0f, 1.1f));
@@ -261,7 +274,7 @@ namespace Soleil {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
       if (world.keyPickedUp) {
-        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRES À FAIRE...", 0.35f);
+        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRES À FAIRE...", 0.25f);
       } else {
         caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
       }

@@ -48,7 +48,7 @@ varying vec3 reflectedLight;
 void
 main()
 {
-  const float ConstantAttenuation = .50; // TODO: If kept, put it in an uniform
+  const float ConstantAttenuation = 0.01; // TODO: If kept, put it in an uniform
 
   scatteredLight = AmbiantLight;
   reflectedLight = vec3(0.0);
@@ -75,9 +75,11 @@ main()
     else
       specular = pow(specular, material.shininess);
 
-    scatteredLight += pointLight[i].color * diffuse * attenuation;
+    scatteredLight +=
+      material.diffuseColor * pointLight[i].color * diffuse * attenuation;
     scatteredLight += material.emissiveColor;
-    reflectedLight += pointLight[i].color * specular * attenuation;
+    reflectedLight +=
+      material.specularColor * pointLight[i].color * specular * attenuation;
   }
 
   uv          = uvAttribute;

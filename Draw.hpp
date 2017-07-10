@@ -26,6 +26,10 @@
 #include "Shape.hpp"
 #include "types.hpp"
 
+#ifndef NDEBUG
+#include "BoundingBox.hpp"
+#endif
+
 #include <glm/mat4x4.hpp>
 
 namespace Soleil {
@@ -102,6 +106,11 @@ namespace Soleil {
   void RenderFlatShape(const RenderInstances& instances, const Frame& frame);
   void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
                 const glm::vec4& color);
+#ifndef NDEBUG
+  void DrawBoundingBox(const BoundingBox& box, const Frame& frame,
+                       const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f,
+                                                          0.5f));
+#endif
 } // Soleil
 
 #endif /* SOLEIL__DRAW_HPP_ */

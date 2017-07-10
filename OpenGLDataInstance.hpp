@@ -67,6 +67,19 @@ namespace Soleil {
     DrawablePointLight PointLights[DefinedMaxLights];
   };
 
+#ifndef NDEBUG
+  struct BoundingBoxShape
+  {
+    Program               program;
+    GLint                 min;
+    GLint                 max;
+    GLint                 color;
+    GLint                 VPMatrix;
+    gl::Buffer            buffer;
+    std::vector<GLushort> indices;
+  };
+#endif
+
   struct OpenGLDataInstance
   {
     // TODO: Create a struct for the Drawable Shader
@@ -104,6 +117,9 @@ namespace Soleil {
     gl::Texture              texturePad;
     std::vector<gl::Texture> textures; // TODO: Do not let the container extend.
 
+#ifndef NDEBUG
+    BoundingBoxShape box;
+#endif
 
     // Meta information (may change during runtime)
     glm::vec2 viewport;

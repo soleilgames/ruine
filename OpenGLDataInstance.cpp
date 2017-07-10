@@ -147,6 +147,51 @@ namespace Soleil {
       glGenerateMipmap(GL_TEXTURE_2D);
     }
     throwOnGlError();
+
+#ifndef NDEBUG
+    BoundingBoxShape& box     = instance.box;
+    Program&          program = box.program;
+
+    // clang-format off
+    GLfloat vertices[] = {
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+       -1.0f, -1.0f,  1.0f,
+       -1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+       -1.0f,  1.0f,  1.0f,
+       -1.0f,  1.0f, -1.0f
+    };
+    box.indices = {1, 2, 3,
+		   7, 6, 5,
+		   4, 5, 1,
+		   5, 6, 2,
+		   2, 6, 7,
+		   0, 3, 7,
+		   0, 1, 3,
+		   4, 7, 5,
+		   0, 4, 1,
+		   1, 5, 2,
+		   3, 2, 7,
+		   4, 0, 7,
+    };
+    // clang-format on
+    glBindBuffer(GL_ARRAY_BUFFER, *instance.box.buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    program.attachShader(Shader(GL_VERTEX_SHADER, "box.vert"));
+    program.attachShader(Shader(GL_FRAGMENT_SHADER, "box.frag"));
+
+    glBindAttribLocation(program.program, 0, "positionAttribute");
+
+    program.compile();
+
+    box.min      = program.getUniform("min");
+    box.max      = program.getUniform("max");
+    box.color    = program.getUniform("color");
+    box.VPMatrix = program.getUniform("VPMatrix");
+#endif
   }
 
   static inline void initializeText(void)
@@ -167,7 +212,6 @@ namespace Soleil {
     instance.textColor       = drawable.getUniform("Color");
 
 #if 0
-    // TODO: From FreeType:
     const GLuint chessBoard[] = {
       0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
       0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
@@ -198,9 +242,9 @@ namespace Soleil {
 #else
     const char* font = "juju.ttf";
 #endif
-    instance.textAtlas =
-      Text::InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789 !.():ms=\",'", font,
-                         *instance.textDefaultFontAtlas);
+    instance.textAtlas = Text::InitializeAtlasMap(
+      L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789 !.():ms=\",'", font,
+      *instance.textDefaultFontAtlas);
   }
 
   static inline void initializePad(void)
