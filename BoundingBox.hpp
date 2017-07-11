@@ -51,6 +51,7 @@ namespace Soleil {
     }
 
     BoundingBox(const glm::mat4 &transformation, const float volume)
+      : initialized(false)
     {
       const glm::vec3 point = glm::vec3(transformation[3]);
 

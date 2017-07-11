@@ -74,22 +74,21 @@ namespace Soleil {
       std::istringstream sline(line);
       Door               d;
       sline >> d.id;
-      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
       sline >> d.level;
-      SOLEIL__LOGGER_DEBUG(toString("d.level", d.level));
       sline >> d.aoe.x;
       sline >> d.aoe.y;
-      SOLEIL__LOGGER_DEBUG(toString("d.aoe", d.aoe));
       sline >> d.output;
-      SOLEIL__LOGGER_DEBUG(toString("d.output", d.output));
       sline >> d.start.x;
       sline >> d.start.y;
+
+      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
+      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
+      SOLEIL__LOGGER_DEBUG(toString("d.level", d.level));
+      SOLEIL__LOGGER_DEBUG(toString("d.aoe", d.aoe));
+      SOLEIL__LOGGER_DEBUG(toString("d.output", d.output));
       SOLEIL__LOGGER_DEBUG(toString("d.start", d.start));
 
       std::string name;
-#if 0
-      sline >> name;
-#endif
       sline.get(); // Consume \t
       std::getline(sline, name);
       d.name = StringToWstring(name);
@@ -110,19 +109,11 @@ namespace Soleil {
   static void parseMaze(World& world, std::istringstream& s, Frame& frame)
   {
     std::string            line;
-    float                  x           = 0.0f;
-    float                  z           = 0.0f;
-    bool                   positionSet = false;
+    float                  x     = 0.0f;
+    float                  z     = 0.0f;
     const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
 
     RenderInstances lateComer;
-    // Prepare vertices for wall the bounding box:
-    std::vector<glm::vec4> wallVertices;
-    for (const auto& sub : world.wallShape->getSubShapes()) {
-      for (const auto& vertex : sub.vertices) {
-        wallVertices.push_back(vertex.position);
-      }
-    }
 
     while (std::getline(s, line) && line.size() > 0) {
       for (auto const& c : line) {
@@ -134,42 +125,24 @@ namespace Soleil {
           world.statics.push_back(
             DrawCommand(*world.wallShape, transformation));
 
-          BoundingBox bbox;
-          for (const auto& v : wallVertices) {
-            bbox.expandBy(glm::vec3(transformation * v));
-          }
-
-#if 0	  
-	  world.hardSurfaces.push_back(bbox);
-#else
-	  BoundingBox box = world.wallShape->makeBoundingBox();
-	  box.transform(transformation);
+          BoundingBox box = world.wallShape->makeBoundingBox();
+          box.transform(transformation);
           world.hardSurfaces.push_back(box);
-#endif
 
-          world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
-          world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
+          world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
+          world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
         } else if (c == 'G') {
           const glm::mat4 transformation = glm::translate(scale, position);
 
           world.statics.push_back(
             DrawCommand(*world.gateShape, transformation));
 
-          BoundingBox bbox;
-          for (const auto& v : wallVertices) {
-            bbox.expandBy(glm::vec3(transformation * v));
-          }
-          // world.hardSurfaces.push_back(bbox);
-	  BoundingBox box = world.wallShape->makeBoundingBox();
-	  box.transform(transformation);
+          BoundingBox box = world.wallShape->makeBoundingBox();
+          box.transform(transformation);
           world.hardSurfaces.push_back(box);
 
-
-          world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
-          world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
-#if 0
-          world.nextZoneTriggers.push_back({bbox, "intro.level"});
-#endif
+          world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
+          world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
         } else {
           if (c == 'l') {
             PointLight p;
@@ -190,18 +163,6 @@ namespace Soleil {
                              glm::vec3(position.x, -0.60f, position.z)) *
               glm::scale(glm::mat4(), glm::vec3(.3f));
             lateComer.push_back(DrawCommand(*world.ghostShape, transformation));
-#if 0
-          } else if (c == 'D') {
-            assert(positionSet == false && "Position already set");
-
-            camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-            positionSet     = true;
-          } else if (c == 'd') {
-            assert(positionSet == true && "Position not set yet");
-
-            glm::vec3 dir = glm::normalize(position - camera.position);
-            camera.yaw    = std::atan2(dir.x, dir.z);
-#endif
           } else if (c == 'p') {
             const glm::vec3 coinPosition =
               glm::vec3(position.x, -1.0f, position.z);
@@ -214,12 +175,7 @@ namespace Soleil {
               world.statics.push_back(
                 DrawCommand(*world.purseShape, transformation));
 
-              BoundingBox bbox(
-                glm::vec3(position.x - 0.5f, -1.0f, position.z - 0.5f),
-                glm::vec3(position.x + 0.5f, 2.0f, position.z + 0.5f));
-              bbox.expandBy(coinPosition);
-              bbox.expandBy(coinPosition - 0.55f);
-              bbox.expandBy(coinPosition + 0.55f);
+              BoundingBox bbox(transformation, 0.3f);
               world.coinTriggers.push_back({bbox, transformation});
             }
           } else if (c == 'k') {
@@ -237,11 +193,10 @@ namespace Soleil {
             const glm::mat4 transformation =
               glm::translate(scale, barrelPosition);
 
-	    BoundingBox box = world.barrelShape->makeBoundingBox();
-	    box.transform(transformation);
-	    world.hardSurfaces.push_back(box);
+            BoundingBox box = world.barrelShape->makeBoundingBox();
+            box.transform(transformation);
+            world.hardSurfaces.push_back(box);
 
-	    
             world.statics.push_back(
               DrawCommand(*world.barrelShape, transformation));
           }
@@ -322,32 +277,7 @@ namespace Soleil {
     const glm::vec3 position(2.0f * start.start.x, 0.0f, 2.0f * start.start.y);
     camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
 
-// Parse the triggers
-#if 0
-    std::string line;
-    while (std::getline(s, line)) {
-      glm::vec3   aoePos;
-      std::string nextZone;
-
-      std::istringstream triggerText(line);
-
-      triggerText >> aoePos.x;
-      triggerText >> aoePos.z;
-      triggerText >> nextZone;
-      assert(nextZone.empty() == false && "Next zone cannot be empty");
-
-      aoePos.x *= 2.0f;
-      aoePos.z *= 2.0f;
-
-      BoundingBox bbox;
-
-      bbox.expandBy(aoePos);
-      bbox.expandBy(aoePos + 1.1f);
-      bbox.expandBy(aoePos - 1.1f);
-
-      world.nextZoneTriggers.push_back({bbox, nextZone});
-    }
-#else
+    // Parse the triggers
     for (const Door door : world.doors) {
       if (door.level == start.level) {
 
@@ -368,7 +298,6 @@ namespace Soleil {
         world.nextZoneTriggers.push_back({bbox, door.output});
       }
     }
-#endif
 
 #if 0
     // Test: Render Bézier to image

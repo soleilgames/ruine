@@ -234,8 +234,8 @@ namespace Soleil {
     for (auto coinTrigger = world.coinTriggers.begin();
          coinTrigger != world.coinTriggers.end();) {
       if (playerbox.intersect(coinTrigger->aoe)) {
-        SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD")); // TODO: Increment score
-        goldScore += 6;                             // TODO: Constant
+        SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
+        goldScore += 5; // TODO: Constant
         Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
                          OpenGLDataInstance::Instance().textAtlas,
                          gval::textLabelSize);
