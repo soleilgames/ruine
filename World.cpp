@@ -47,11 +47,19 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
 #endif
 
+#if 0    
     world.purseShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("purse01.obj"));
+#else
+    world.purseShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("coin.obj"));
+#endif
 
     world.keyShape =
       WavefrontLoader::fromContent(AssetService::LoadAsString("key.obj"));
+
+    world.barrelShape =
+      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel.obj"));
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -108,7 +116,7 @@ namespace Soleil {
     const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
 
     RenderInstances lateComer;
-    // Prepare vertices for the bounding box:
+    // Prepare vertices for wall the bounding box:
     std::vector<glm::vec4> wallVertices;
     for (const auto& sub : world.wallShape->getSubShapes()) {
       for (const auto& vertex : sub.vertices) {
@@ -130,7 +138,14 @@ namespace Soleil {
           for (const auto& v : wallVertices) {
             bbox.expandBy(glm::vec3(transformation * v));
           }
-          world.hardSurfaces.push_back(bbox);
+
+#if 0	  
+	  world.hardSurfaces.push_back(bbox);
+#else
+	  BoundingBox box = world.wallShape->makeBoundingBox();
+	  box.transform(transformation);
+          world.hardSurfaces.push_back(box);
+#endif
 
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
@@ -144,7 +159,11 @@ namespace Soleil {
           for (const auto& v : wallVertices) {
             bbox.expandBy(glm::vec3(transformation * v));
           }
-          world.hardSurfaces.push_back(bbox);
+          // world.hardSurfaces.push_back(bbox);
+	  BoundingBox box = world.wallShape->makeBoundingBox();
+	  box.transform(transformation);
+          world.hardSurfaces.push_back(box);
+
 
           world.bounds.x = glm::max(world.bounds.x, bbox.getMax().x);
           world.bounds.z = glm::max(world.bounds.z, bbox.getMax().z);
@@ -212,6 +231,19 @@ namespace Soleil {
             world.statics.push_back(
               DrawCommand(*world.keyShape, transformation));
             world.theKey = transformation;
+          } else if (c == 'b') {
+            const glm::vec3 barrelPosition =
+              glm::vec3(position.x, -0.7f, position.z);
+            const glm::mat4 transformation =
+              glm::translate(scale, barrelPosition);
+
+	    BoundingBox box = world.barrelShape->makeBoundingBox();
+	    box.transform(transformation);
+	    world.hardSurfaces.push_back(box);
+
+	    
+            world.statics.push_back(
+              DrawCommand(*world.barrelShape, transformation));
           }
 
           glm::mat4 groundTransformation =

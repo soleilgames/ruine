@@ -130,6 +130,17 @@ namespace Soleil {
 
     const glm::vec3& getMax(void) const noexcept { return max; }
 
+    void transform(const glm::mat4& transformation)
+    {
+      glm::vec4 Min(min, 1.0f);
+      glm::vec4 Max(max, 1.0f);
+
+      initialized = false;
+
+      expandBy(glm::vec3(transformation * Min));
+      expandBy(glm::vec3(transformation * Max));
+    }
+
   protected:
     glm::vec3 min;
     glm::vec3 max;

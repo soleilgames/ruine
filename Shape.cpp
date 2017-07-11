@@ -60,4 +60,16 @@ namespace Soleil {
     return this->subShapes;
   }
 
+  BoundingBox Shape::makeBoundingBox(void) const noexcept
+  {
+    BoundingBox box;
+
+    for (const auto& sub : subShapes) {
+      for (const auto& vertex : sub.vertices) {
+        box.expandBy(glm::vec3(vertex.position));
+      }
+    }
+    return box;
+  }
+
 } // Soleil

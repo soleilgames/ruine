@@ -105,25 +105,28 @@ namespace Soleil {
       UpdateGhost(world.sentinels, frame.pointLights, frame.delta,
                   world.bounds);
 
+    if (ControllerService::GetPlayerController().option3) {
+
 #if 0
         UpdateTorchColor(frame.pointLights);
 #endif
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+      glEnable(GL_CULL_FACE);
+      glCullFace(GL_BACK);
 #if 0
     RenderPhongShape(world.statics, frame);
 #endif
-    RenderFlatShape(world.statics, frame);
-
-#if 0
-    for (const auto& box : world.hardSurfaces) {
-      DrawBoundingBox(box, frame);
+      RenderFlatShape(world.statics, frame);
     }
 
-    for (const auto& t : world.coinTriggers) {
-      DrawBoundingBox(t.aoe, frame, glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
+    if (ControllerService::GetPlayerController().option4) {
+      for (const auto& box : world.hardSurfaces) {
+        DrawBoundingBox(box, frame);
+      }
+
+      for (const auto& t : world.coinTriggers) {
+        DrawBoundingBox(t.aoe, frame, glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
+      }
     }
-#endif
 
     if (ControllerService::GetPlayerController().locked == false) DrawPad();
   }

@@ -75,6 +75,7 @@ namespace Soleil {
     ShapePtr gateShape;
     ShapePtr purseShape;
     ShapePtr keyShape;
+    ShapePtr barrelShape;
 
     std::vector<Door> doors;
 

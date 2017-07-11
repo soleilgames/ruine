@@ -35,12 +35,16 @@ namespace Soleil {
 
     bool option1;
     bool option2;
+    bool option3;
+    bool option4;
 
     Controller()
       : locked(false)
       , dpad()
       , option1(true)
       , option2(true)
+      , option3(true)
+      , option4(false)
     {
     }
   };

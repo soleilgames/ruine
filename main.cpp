@@ -106,6 +106,12 @@ keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action,
         case GLFW_KEY_2:
           controllerService.player.option2 = !controllerService.player.option2;
           break;
+        case GLFW_KEY_3:
+          controllerService.player.option3 = !controllerService.player.option3;
+          break;
+        case GLFW_KEY_4:
+          controllerService.player.option4 = !controllerService.player.option4;
+          break;
       }
       break;
   }

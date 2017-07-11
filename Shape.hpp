@@ -22,6 +22,7 @@
 #ifndef SOLEIL__SHAPE_HPP_
 #define SOLEIL__SHAPE_HPP_
 
+#include "BoundingBox.hpp"
 #include "Object.hpp"
 #include "OpenGLInclude.hpp"
 
@@ -106,6 +107,7 @@ namespace Soleil {
   public:
     const std::vector<SubShape>& getSubShapes(void) const noexcept;
     GLuint                       getBuffer() const noexcept;
+    BoundingBox                  makeBoundingBox(void) const noexcept;
 
   private:
     std::vector<SubShape> subShapes;
