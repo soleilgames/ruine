@@ -189,9 +189,7 @@ namespace Soleil {
   }
 
   // TODO: Refactor this method as it has too much parameters
-  static void UpdateTriggers(Camera& camera, Frame& frame, World& world,
-                             Timer& timeToReset, PopUp& caption, int& goldScore,
-                             TextCommand& goldLabel)
+  void Ruine::updateTriggers(World& world, Frame& frame)
   {
     BoundingBox playerbox;
     playerbox.expandBy(camera.position);
@@ -229,6 +227,9 @@ namespace Soleil {
         timeToReset = frame.time + Timer(5000);
         return;
       }
+
+      // if ()
+      // BoundingBox sound;
     }
 
     for (auto coinTrigger = world.coinTriggers.begin();
@@ -381,8 +382,7 @@ namespace Soleil {
 #endif
 
     if (playerPad.locked == false)
-      UpdateTriggers(camera, frame, world, timeToReset, caption, goldScore,
-                     goldLabel);
+      updateTriggers(world, frame);
     else if (time >= timeToReset) {
       // TODO: Use different function for each scene or camera
       playerPad.locked = false;

@@ -26,6 +26,7 @@
 #include "Draw.hpp"
 #include "OpenGLInclude.hpp"
 #include "SoundService.hpp"
+#include "World.hpp"
 #include "types.hpp"
 
 #include <glm/vec3.hpp>
@@ -42,6 +43,9 @@ namespace Soleil {
     void render(Timer time);
 
   private:
+    void updateTriggers(World& world, Frame& frame);
+
+  private:
     AssetService* assetService;
     SoundService* soundService;
     int           viewportWidth;
@@ -55,6 +59,8 @@ namespace Soleil {
     TextCommand goldLabel;
     glm::mat4   goldLabelTransformation;
     int         goldScore;
+
+    Timer nextGhostSound;
   };
 
 } // Soleil
