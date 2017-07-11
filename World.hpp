@@ -36,6 +36,7 @@ namespace Soleil {
     size_t      lightPosition;
     glm::vec3   direction;
     BoundingBox bounds;
+    BoundingBox stressBounds;
 
     GhostData(glm::mat4* transformation, size_t lightPosition,
               const glm::vec3& direction);
@@ -76,6 +77,7 @@ namespace Soleil {
     ShapePtr purseShape;
     ShapePtr keyShape;
     ShapePtr barrelShape;
+    ShapePtr barrel2Shape;
 
     std::vector<Door> doors;
 

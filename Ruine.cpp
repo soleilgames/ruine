@@ -126,6 +126,13 @@ namespace Soleil {
       for (const auto& t : world.coinTriggers) {
         DrawBoundingBox(t.aoe, frame, glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
       }
+
+      for (const auto& g : world.sentinels) {
+        DrawBoundingBox(g.bounds, frame, glm::vec4(0.0f, 0.1f, 0.3f, 0.5f));
+
+        DrawBoundingBox(g.stressBounds, frame,
+                        glm::vec4(0.1f, 0.1f, 0.3f, 0.5f));
+      }
     }
 
     if (ControllerService::GetPlayerController().locked == false) DrawPad();
@@ -227,9 +234,16 @@ namespace Soleil {
         timeToReset = frame.time + Timer(5000);
         return;
       }
+    }
 
-      // if ()
-      // BoundingBox sound;
+    if (nextGhostSound.count() <= 0) {
+      for (const auto& ghost : world.sentinels) {
+        if (playerbox.intersect(ghost.stressBounds)) {
+          SoundService::FireSound("ghost.wav", SoundProperties(100));
+	  nextGhostSound = gval::timeBeforeWhisper;
+	  break;
+        }
+      }
     }
 
     for (auto coinTrigger = world.coinTriggers.begin();
@@ -293,6 +307,7 @@ namespace Soleil {
     , viewportWidth(viewportWidth)
     , viewportHeight(viewportHeight)
     , goldScore(0)
+    , nextGhostSound(0)
   {
     warnOnGlError();
     OpenGLDataInstance::Initialize();
@@ -343,7 +358,10 @@ namespace Soleil {
 
     frame.delta = time - frame.time;
     frame.time  = time;
-
+    if (nextGhostSound > Timer(0)) {
+      nextGhostSound -= frame.delta;
+    }
+    
     Controller& playerPad = ControllerService::GetPlayerController();
 
     if (playerPad.locked == false) {

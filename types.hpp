@@ -123,6 +123,7 @@ namespace Soleil {
     static const Timer     timeToFadeText(3500);
     static const float     textLabelSize = 0.35f;
     static const Color     textLabelColor(0.8f);
+    static const Timer     timeBeforeWhisper(2000);
 
 #if 0 // Temp
     static GLuint bezierTex;
