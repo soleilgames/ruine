@@ -59,11 +59,12 @@ namespace Soleil {
       WavefrontLoader::fromContent(AssetService::LoadAsString("key.obj"));
 
     world.barrelShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel.obj"));
+      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj"));
 
-
+#if 0
         world.barrel2Shape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj")); 
+      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj"));
+#endif
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -193,21 +194,21 @@ namespace Soleil {
             world.theKey = transformation;
           } else if (c == 'b' || c == 'B') {
             const glm::vec3 barrelPosition =
-              glm::vec3(position.x, -0.7f, position.z);
+              glm::vec3(position.x, -1.0f, position.z);
             const glm::mat4 transformation =
               glm::translate(scale, barrelPosition);
 
             BoundingBox box = world.barrelShape->makeBoundingBox();
             box.transform(transformation);
             world.hardSurfaces.push_back(box);
-
+#if 0
 	    if (c == 'b')
             world.statics.push_back(
-              DrawCommand(*world.barrelShape, transformation));
-	    else
-	      world.statics.push_back(
               DrawCommand(*world.barrel2Shape, transformation));
-
+	    else
+#endif
+            world.statics.push_back(
+              DrawCommand(*world.barrelShape, transformation));
           }
 
           glm::mat4 groundTransformation =
