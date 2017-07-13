@@ -118,7 +118,10 @@ namespace Soleil {
       RenderFlatShape(world.statics, frame);
     }
 
+#ifndef NDEBUG
     if (ControllerService::GetPlayerController().option4) {
+      glDisable(GL_DEPTH_TEST);
+
       for (const auto& box : world.hardSurfaces) {
         DrawBoundingBox(box, frame);
       }
@@ -134,7 +137,7 @@ namespace Soleil {
                         glm::vec4(0.1f, 0.1f, 0.3f, 0.5f));
       }
     }
-
+#endif
     if (ControllerService::GetPlayerController().locked == false) DrawPad();
   }
 
@@ -240,8 +243,8 @@ namespace Soleil {
       for (const auto& ghost : world.sentinels) {
         if (playerbox.intersect(ghost.stressBounds)) {
           SoundService::FireSound("ghost.wav", SoundProperties(100));
-	  nextGhostSound = gval::timeBeforeWhisper;
-	  break;
+          nextGhostSound = gval::timeBeforeWhisper;
+          break;
         }
       }
     }
@@ -308,6 +311,7 @@ namespace Soleil {
     , viewportHeight(viewportHeight)
     , goldScore(0)
     , nextGhostSound(0)
+    , state(State::StateMenu)
   {
     warnOnGlError();
     OpenGLDataInstance::Initialize();
@@ -317,32 +321,106 @@ namespace Soleil {
 
     camera.yaw      = 0.0f;
     camera.position = glm::vec3(0.0f);
+
+#ifndef NDEBUG
+    console.transformation =
+      glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.7f, 0.0f));
+#endif
   }
 
   Ruine::~Ruine() {}
 
   void Ruine::render(Timer time)
   {
-    static Frame    frame;
-    static World    world;
-    static Pristine FirstLoop;
-
 #ifndef NDEBUG
     // TODO: Use CPU clock
     auto workBegin = std::chrono::high_resolution_clock::now();
 #endif
 
-    if (FirstLoop) {
-      InitializeWorld(world, frame, camera, caption);
-      frame.time = time;
-      caption.transformation =
-        glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
-      goldLabelTransformation =
-        glm::translate(glm::mat4(), glm::vec3(+0.35f, +0.75f, 0.0f));
-      Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
-                       OpenGLDataInstance::Instance().textAtlas,
-                       gval::textLabelSize);
+    frame.delta = time - frame.time;
+    frame.time  = time;
+
+    if (state & State::StateInitializing) initializeGame(time);
+    if (state & State::StateGame) renderGame(time);
+    if (state & State::StateMenu) renderMenu(time);
+    if (state & State::StateFadingIn) {
+      Fade(fading.ratio(time));
+
+#if 1
+      if (fading.ratio(time) >= 1.0f) {
+        state = State::StateInitializing;
+      }
+#endif
     }
+    if (state & State::StateFadingOut) {
+      Fade(1.0f - fading.ratio(time));
+      if (fading.ratio(time) >= 1.0f) state &= ~State::StateFadingOut;
+    }
+
+#ifndef NDEBUG
+    {
+      /* --- Peformance log --- */
+      static Timer       firstTime = time;
+      static unsigned    frames    = 0;
+      static const auto  oneSec    = std::chrono::milliseconds(1000);
+      static TextCommand textCommand;
+
+      frames++;
+      auto         workEnd = std::chrono::high_resolution_clock::now();
+      static Timer TotalDuration(0);
+
+      TotalDuration += std::chrono::duration_cast<std::chrono::milliseconds>(
+        workEnd - workBegin);
+
+      if (time - firstTime > oneSec) {
+#if 0
+        const auto duration = (time - firstTime) / frames;
+#else
+        const auto duration = TotalDuration / frames;
+#endif
+        SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
+                             " (FPS=", frames, ")");
+        FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
+                             " (FPS=", frames, ")"),
+                   textCommand, OpenGLDataInstance::Instance().textAtlas, 0.4f);
+        firstTime     = time;
+        frames        = 0;
+        TotalDuration = Timer(0);
+      }
+      DrawText(
+        textCommand,
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.9f, 0.0f)),
+                   glm::vec3(0.3f)),
+        Color(0.8f));
+
+      SOLEIL__CONSOLE_DRAW();
+#if 0 // TextAtlas
+      glm::mat4 transformation =
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
+                   glm::vec3(2.0f));
+      DrawImage(*OpenGLDataInstance::Instance().textDefaultFontAtlas,
+                transformation);
+#endif
+    }
+#endif
+  }
+
+  void Ruine::initializeGame(const Timer& /*time*/)
+  {
+    InitializeWorld(world, frame, camera, caption);
+    caption.transformation =
+      glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
+    goldLabelTransformation =
+      glm::translate(glm::mat4(), glm::vec3(+0.35f, +0.75f, 0.0f));
+    Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
+                     OpenGLDataInstance::Instance().textAtlas,
+                     gval::textLabelSize);
+
+    state = State::StateFadingOut | State::StateGame;
+  }
+
+  void Ruine::renderGame(const Timer& time)
+  {
 
 #if 0
     glClearColor(0.0f, 0.3f, 0.7f, 1.0f);
@@ -356,12 +434,10 @@ namespace Soleil {
       glm::radians(50.0f), (float)viewportWidth / (float)viewportHeight, 0.1f,
       50.0f);
 
-    frame.delta = time - frame.time;
-    frame.time  = time;
     if (nextGhostSound > Timer(0)) {
       nextGhostSound -= frame.delta;
     }
-    
+
     Controller& playerPad = ControllerService::GetPlayerController();
 
     if (playerPad.locked == false) {
@@ -409,51 +485,58 @@ namespace Soleil {
       camera.yaw = 0.0f;
       InitializeLevel(world, gval::firstLevel, frame, camera, caption);
     }
+  }
 
-#ifndef NDEBUG
-    {
-      /* --- Peformance log --- */
-      static Timer       firstTime = time;
-      static unsigned    frames    = 0;
-      static const auto  oneSec    = std::chrono::milliseconds(1000);
-      static TextCommand textCommand;
+  void Ruine::renderMenu(const Timer& time)
+  {
+    // TODO: If no change, no need to update
 
-      frames++;
-      auto         workEnd = std::chrono::high_resolution_clock::now();
-      static Timer TotalDuration(0);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      TotalDuration += std::chrono::duration_cast<std::chrono::milliseconds>(
-        workEnd - workBegin);
+    // TODO: Do not use static for that:
+    static Menu     menu;
+    static Pristine firstFrame;
+    static Frame    frame;
 
-      if (time - firstTime > oneSec) {
-#if 0
-        const auto duration = (time - firstTime) / frames;
-#else
-        const auto duration = TotalDuration / frames;
-#endif
-        SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
-                             " (FPS=", frames, ")");
-        FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
-                             " (FPS=", frames, ")"),
-                   textCommand, OpenGLDataInstance::Instance().textAtlas, 0.4f);
-        firstTime     = time;
-        frames        = 0;
-        TotalDuration = Timer(0);
-      }
-      DrawText(
-        textCommand,
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, 0.9f, 0.0f)),
-                   glm::vec3(0.3f)),
-        Color(0.8f));
-#if 0
-      glm::mat4 transformation =
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
-                   glm::vec3(2.0f));
-      DrawImage(*OpenGLDataInstance::Instance().textDefaultFontAtlas,
-                transformation);
-#endif
+    if (firstFrame) {
+      AssetService::LoadTextureLow(*menu.door, "menu.png");
+      Text::FillBuffer(L"R U I N E", menu.title,
+                       OpenGLDataInstance::Instance().textAtlas, 1.0f);
+      Text::FillBuffer(L"NEW GAME", menu.newGame,
+                       OpenGLDataInstance::Instance().textAtlas, 0.4f,
+                       &menu.newGameBounds);
+
+      const glm::vec2 scale =
+        glm::vec2(2.0f) / glm::vec2(viewportWidth, viewportHeight);
+      menu.doorTransformation =
+        glm::scale(glm::translate(glm::mat4(), glm::vec3(-0.6f, -1.0f, 0.0f)),
+                   glm::vec3(1024.0f * scale.x, 1024.0f * scale.y, 0.0f));
+
+      menu.titleTransformation =
+        glm::translate(glm::mat4(), glm::vec3(-0.5f, 0.8f, 0.0f));
+      menu.newGameTransformation =
+        glm::translate(glm::mat4(), glm::vec3(-0.9f, 0.4f, 0.0f));
+      menu.newGameBounds.transform(menu.newGameTransformation);
+
+      frame.updateViewProjectionMatrices(
+        glm::mat4(),
+        glm::ortho(0.0f, (float)viewportWidth, 0.0f, (float)viewportHeight));
     }
-#endif
+
+    DrawImage(*menu.door, menu.doorTransformation);
+    DrawText(menu.title, menu.titleTransformation, gval::textLabelColor);
+    DrawText(menu.newGame, menu.newGameTransformation, gval::textLabelColor);
+
+    const Push& push = ControllerService::GetPush();
+    if (push.active) {
+      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));
+      if (menu.newGameBounds.containsFlat(push.position)) {
+        state  = State::StateFadingIn;
+        fading = FadeTimer(time, Timer(1000));
+      } else
+        SOLEIL__CONSOLE_APPEND(StringToWstring(toString(menu.newGameBounds)));
+    }
   }
 
 } // Soleil

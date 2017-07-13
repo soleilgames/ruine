@@ -50,7 +50,7 @@ namespace Soleil {
     {
     }
 
-    BoundingBox(const glm::mat4 &transformation, const float volume)
+    BoundingBox(const glm::mat4& transformation, const float volume)
       : initialized(false)
     {
       const glm::vec3 point = glm::vec3(transformation[3]);
@@ -58,7 +58,6 @@ namespace Soleil {
       expandBy(point);
       expandBy(point - volume);
       expandBy(point + volume);
-      
     }
 
     virtual ~BoundingBox() {}
@@ -99,6 +98,12 @@ namespace Soleil {
       return !(max.x <= other.min.x || other.max.x <= min.x ||
                max.y <= other.min.y || other.max.y <= min.y ||
                max.z <= other.min.z || other.max.z <= min.z);
+    }
+
+    inline bool containsFlat(const glm::vec2& point) const noexcept
+    {
+      return point.x >= min.x && point.x <= max.x && point.y >= min.y &&
+             point.y <= max.y;
     }
 
     void expandBy(const glm::vec3& point) noexcept

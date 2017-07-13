@@ -24,9 +24,16 @@
 
 #include <memory>
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace Soleil {
+
+  struct Push
+  {
+    glm::vec2 position;
+    bool      active;
+  };
 
   struct Controller
   {
@@ -37,6 +44,8 @@ namespace Soleil {
     bool option2;
     bool option3;
     bool option4;
+
+    Push push;
 
     Controller()
       : locked(false)
@@ -54,6 +63,7 @@ namespace Soleil {
   public:
     static Controller& GetPlayerController(void) noexcept;
     static glm::vec2&  GetPadPosition(void) noexcept;
+    static Push&       GetPush(void) noexcept;
   };
 
 } // Soleil

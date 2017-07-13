@@ -40,6 +40,8 @@ namespace glm {
   std::ostream& operator<<(std::ostream& os, const glm::vec3& vec);
   std::ostream& operator<<(std::ostream& os, const glm::vec2& vec);
 
+  std::wostream& operator<<(std::wostream& os, const glm::vec2& vec);
+
 } // glm
 
 namespace std {

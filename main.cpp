@@ -52,9 +52,15 @@ ControllerService::GetPlayerController() noexcept
 }
 
 glm::vec2&
-GetPadPosition(void) noexcept
+ControllerService::GetPadPosition(void) noexcept
 {
   return controllerService.padPosition;
+}
+
+Push&
+ControllerService::GetPush(void) noexcept
+{
+  return controllerService.player.push;
 }
 
 static void
@@ -117,6 +123,31 @@ keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action,
   }
 }
 
+static void
+cursor_positionCallback(GLFWwindow* window, double xpos, double ypos)
+{
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height); // TODO: Can use a static
+                                                   // viewport instead of
+                                                   // calling this each frames
+
+  SOLEIL__LOGGER_DEBUG((float)width, "/", xpos, ",", (float)height, "/", ypos);
+
+  controllerService.player.push.position =
+    (glm::vec2(xpos / (float)width, -ypos / (float)height) +
+     glm::vec2(-0.5f, 0.5f)) *
+    2.0f;
+}
+
+void
+mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
+                     int /*mods*/)
+{
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    controllerService.player.push.active = action == GLFW_PRESS;
+  }
+}
+
 int
 main(int /*argc*/
      ,
@@ -140,6 +171,8 @@ main(int /*argc*/
   }
 
   glfwSetKeyCallback(window, keyCallback);
+  glfwSetCursorPosCallback(window, cursor_positionCallback);
+  glfwSetMouseButtonCallback(window, mouse_buttonCallback);
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
 
@@ -153,6 +186,7 @@ main(int /*argc*/
   AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
   SoundService::Instance = std::make_unique<DesktopSoundService>();
 
+  // TODO: Use correct method to retrieve viewport size
   Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get(),
                   width, height);
   render(window, r);

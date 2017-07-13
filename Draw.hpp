@@ -101,11 +101,13 @@ namespace Soleil {
 
   typedef std::vector<DrawCommand> RenderInstances;
 
-  void DrawImage(GLuint texture, const glm::mat4& transformation);
+  void DrawImage(GLuint texture, const glm::mat4& transformation,
+                 const glm::vec4& color = glm::vec4(1.0f));
   void RenderPhongShape(const RenderInstances& instances, const Frame& frame);
   void RenderFlatShape(const RenderInstances& instances, const Frame& frame);
   void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
                 const glm::vec4& color);
+  void Fade(const float ratio);
 #ifndef NDEBUG
   void DrawBoundingBox(const BoundingBox& box, const Frame& frame,
                        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f,

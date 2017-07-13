@@ -61,6 +61,11 @@ namespace Soleil {
     return controllerService.padPosition;
   }
 
+  Push& ControllerService::GetPush(void) noexcept
+  {
+    return controllerService.player.push;
+  }
+
   AndroidEngine::AndroidEngine()
     : inProgress(true)
     , focus(false)
@@ -182,7 +187,8 @@ namespace Soleil {
 
       switch (flags) {
         case AMOTION_EVENT_ACTION_UP:
-          controllerService.player.dpad = glm::vec3(0.0f);
+          controllerService.player.dpad        = glm::vec3(0.0f);
+          controllerService.player.push.active = false;
           break;
         case AMOTION_EVENT_ACTION_DOWN:
         case AMOTION_EVENT_ACTION_MOVE: {
@@ -192,6 +198,12 @@ namespace Soleil {
           const glm::vec2& point = controllerService.padPosition;
           const glm::vec2  touch(x / (float)This->glContext->getScreenWidth(),
                                 y / (float)This->glContext->getScreenHeight());
+
+          SOLEIL__LOGGER_DEBUG(toString("touch:", touch));
+
+          controllerService.player.push.position =
+            (glm::vec2(touch.x, -touch.y) - glm::vec2(0.5, -0.5f)) * 2.0f;
+          controllerService.player.push.active = true;
 
           const glm::vec2 distance = point - touch;
           const float     length   = glm::length(distance);

@@ -242,9 +242,10 @@ namespace Soleil {
 #else
     const char* font = "juju.ttf";
 #endif
-    instance.textAtlas = Text::InitializeAtlasMap(
-      L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789 !.():ms=\",'", font,
-      *instance.textDefaultFontAtlas);
+    instance.textAtlas =
+      Text::InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789abcdefghi"
+                               L"jklmnopqrstuvwxyz +-!.():=\",'",
+                               font, *instance.textDefaultFontAtlas);
   }
 
   static inline void initializePad(void)
@@ -284,16 +285,26 @@ namespace Soleil {
       instance.imageModelMatrix =
         instance.imageProgram.getUniform("ModelMatrix");
       instance.imageImage = instance.imageProgram.getUniform("image");
+      instance.imageColor = instance.imageProgram.getUniform("color");
     }
+
+    // And the Black texture:
+    const GLuint black[] = {0xFF000000};
+
+    {
+      gl::BindTexture bindTexture(GL_TEXTURE_2D, *instance.textureBlack);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, black);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
+
     throwOnGlError();
   }
 
   void OpenGLDataInstance::Initialize(void)
   {
-    {
-      // // TODO: An initialize Image that init a buffer and a DrawImage that
-      // can draw any image on the screen
-    }
     OpenGLDataInstance::instance = std::make_unique<OpenGLDataInstance>();
     initializeDrawable();
     initializeFlatShape();

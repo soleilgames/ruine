@@ -51,7 +51,7 @@ namespace Soleil {
     FontAtlas InitializeAtlasMap(const std::wstring& charMap,
                                  const std::string& assetFont, GLuint texture);
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
-                    const FontAtlas& atlas, float em);
+                    const FontAtlas& atlas, float em, BoundingBox* bounds = nullptr);
   } // Text
 
 } // Soleil

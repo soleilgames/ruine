@@ -74,4 +74,27 @@ namespace Soleil {
     return Instance->asDataVector(assetName);
   }
 
+  void AssetService::LoadTextureHigh(GLuint             texture,
+                                     const std::string& assetName)
+  {
+    const ImageAsset image(assetName);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+
+  void AssetService::LoadTextureLow(GLuint             texture,
+                                    const std::string& assetName)
+  {
+    const ImageAsset image(assetName);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  }
+
 } // Soleil

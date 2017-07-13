@@ -178,7 +178,7 @@ namespace Soleil {
     }
 
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
-                    const FontAtlas& atlas, float em)
+                    const FontAtlas& atlas, float em, BoundingBox* bounds)
     {
       // 200 = 2.0 (OpenGL unit) * 100 (% of the em)
       const glm::vec2& viewport = OpenGLDataInstance::Instance().viewport;
@@ -191,17 +191,28 @@ namespace Soleil {
       textCommand.elements.clear();
 
       for (wchar_t c : text) {
-        const glm::vec2 size(offset.x + sx, offset.y + sy);
+        if (c == '\n') {
+          offset.x = 0;
+          offset.y -= sy * 1.25f;
+          continue;
+        }
 
+        const glm::vec2 size(offset.x + sx, offset.y - sy);
+
+#ifndef NDEBUG
+        if (atlas.glyphs.find(c) == atlas.glyphs.end())
+          throw std::runtime_error(
+            toString("cannot find char: ", WstringToString(std::wstring({c}))));
+#endif
         const GlyphSlot& g        = atlas.glyphs.at(c);
         const glm::vec2  uvOffset = g.uvOffset;
         const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
                                uvOffset.y + g.uvSize.y);
 
-        vertices.push_back({glm::vec3(offset.x, -size.y, 0.0f),
-                            glm::vec2(uvOffset.x, uvSize.y)});
         vertices.push_back(
-          {glm::vec3(size.x, -size.y, 0.0f), glm::vec2(uvSize.x, uvSize.y)});
+          {glm::vec3(offset.x, size.y, 0.0f), glm::vec2(uvOffset.x, uvSize.y)});
+        vertices.push_back(
+          {glm::vec3(size.x, size.y, 0.0f), glm::vec2(uvSize.x, uvSize.y)});
         vertices.push_back(
           {glm::vec3(size.x, offset.y, 0.0f), glm::vec2(uvSize.x, uvOffset.y)});
         vertices.push_back({glm::vec3(offset.x, offset.y, 0.0f),
@@ -215,6 +226,12 @@ namespace Soleil {
         textCommand.elements.push_back(3 + elemId);
         textCommand.elements.push_back(0 + elemId);
         elemId += 4;
+      }
+
+      if (bounds) {
+        for (const auto& v : vertices) {
+          bounds->expandBy(v.position);
+        }
       }
 
       glBindBuffer(GL_ARRAY_BUFFER, *textCommand.buffer);

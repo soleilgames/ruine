@@ -29,7 +29,8 @@
 
 namespace Soleil {
 
-  void DrawImage(GLuint texture, const glm::mat4& transformation)
+  void DrawImage(GLuint texture, const glm::mat4& transformation,
+                 const glm::vec4& color)
   {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -55,6 +56,7 @@ namespace Soleil {
 
     glUniformMatrix4fv(ogl.imageModelMatrix, 1, GL_FALSE,
                        glm::value_ptr(transformation));
+    glUniform4fv(ogl.imageColor, 1, glm::value_ptr(color));
     throwOnGlError();
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -321,6 +323,20 @@ namespace Soleil {
       }
     }
   }
+
+  void Fade(const float ratio)
+  {
+
+    glm::vec4 color(0.0f, 0.0f, 0.0f, ratio);
+
+    DrawImage(
+      *OpenGLDataInstance::Instance().textureBlack,
+      glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
+                 glm::vec3(2.0f, 2.0f, 1.0f))
+      , color);
+  }
+
+  // ------ Popup ------
 
   void PopUp::fillText(const std::wstring& text, const float em)
   {

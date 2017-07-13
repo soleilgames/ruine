@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+#include "OpenGLInclude.hpp"
+
 namespace Soleil {
 
   class AssetDescriptor
@@ -91,6 +93,8 @@ namespace Soleil {
     static std::shared_ptr<AssetService> Instance;
     static std::string LoadAsString(const std::string& assetName);
     static std::vector<uint8_t> LoadAsDataVector(const std::string& assetName);
+    static void LoadTextureHigh(GLuint texture, const std::string& assetName);
+    static void LoadTextureLow(GLuint texture, const std::string& assetName);
   };
 
 } // Soleil

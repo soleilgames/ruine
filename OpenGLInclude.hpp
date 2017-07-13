@@ -114,6 +114,7 @@ namespace Soleil {
     {
     public:
       Generator()
+        : toClean(true)
       {
         GenFunction(1, &name);
         throwOnGlError();
@@ -121,8 +122,10 @@ namespace Soleil {
 
       virtual ~Generator()
       {
-        SOLEIL__LOGGER_DEBUG(toString("~GL Resource destructed"));
-        DeleteFunction(1, &name);
+        if (toClean) {
+          SOLEIL__LOGGER_DEBUG(toString("~GL Resource destructed"));
+          DeleteFunction(1, &name);
+        }
       }
 
       GLuint operator*(void)const { return name; }
@@ -130,13 +133,15 @@ namespace Soleil {
       Generator(const Generator&) = delete;
       Generator& operator=(const Generator&) = delete;
 
-      Generator(const Generator&& other)
+      Generator(Generator&& other)
         : name(other.name)
       {
+        other.toClean = false;
       }
 
     private:
       GLuint name;
+      bool   toClean;
     };
 
     template <void BindFunction(GLenum, GLuint), GLuint defValue>

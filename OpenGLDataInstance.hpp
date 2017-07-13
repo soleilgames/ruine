@@ -102,6 +102,7 @@ namespace Soleil {
     gl::Buffer imageBuffer;
     Program    imageProgram;
     GLint      imageModelMatrix;
+    GLint      imageColor;
     GLint      imageImage;
 
     // Text
@@ -114,6 +115,7 @@ namespace Soleil {
 
     // Textures
     gl::Texture              textureTest;
+    gl::Texture              textureBlack;
     gl::Texture              texturePad;
     std::vector<gl::Texture> textures; // TODO: Do not let the container extend.
 

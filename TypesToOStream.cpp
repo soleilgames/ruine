@@ -20,6 +20,7 @@
  */
 
 #include "TypesToOStream.hpp"
+#include "stringutils.hpp"
 
 namespace glm {
 
@@ -46,6 +47,13 @@ namespace glm {
   std::ostream& operator<<(std::ostream& os, const glm::vec2& vec)
   {
     os << glm::to_string(vec);
+
+    return os;
+  }
+
+  std::wostream& operator<<(std::wostream& os, const glm::vec2& vec)
+  {
+    os << Soleil::StringToWstring(glm::to_string(vec));
 
     return os;
   }

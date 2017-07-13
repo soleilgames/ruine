@@ -29,9 +29,89 @@
 #include "World.hpp"
 #include "types.hpp"
 
+#include "OpenGLDataInstance.hpp"
+#include "Text.hpp"
+
 #include <glm/vec3.hpp>
 
+#ifndef NDEBUG
+#define SOLEIL__CONSOLE_DRAW console.draw()
+#define SOLEIL__CONSOLE_TEXT(str) console.text = str
+#define SOLEIL__CONSOLE_APPEND(str) console.text += str
+#else
+#define SOLEIL__CONSOLE_DRAW (void)
+#define SOLEIL__CONSOLE_TEXT(str) (void)str
+#define SOLEIL__CONSOLE_APPEND(str) (void)str
+#endif
+
 namespace Soleil {
+
+  struct Menu
+  {
+    gl::Texture door;
+    TextCommand title;
+    TextCommand newGame;
+
+    glm::mat4 doorTransformation;
+    glm::mat4 titleTransformation;
+    glm::mat4 newGameTransformation;
+
+    BoundingBox newGameBounds;
+  };
+
+  class FadeTimer
+  {
+  public:
+    FadeTimer(const Timer& start, const Timer& length)
+      : start(start.count())
+      , length(length.count())
+    {
+    }
+
+    FadeTimer()
+      : start(0)
+      , length(1)
+    {
+    }
+
+    float ratio(const Timer& time) const noexcept
+    {
+      return glm::clamp((time.count() - start) / length, 0.0f, 1.0f);
+    }
+
+  private:
+    float start;
+    float length;
+  };
+
+#ifndef NDEBUG
+  struct Console
+  {
+    glm::mat4    transformation;
+    std::wstring text;
+
+    Console()
+      : dirty(true)
+    {
+    }
+
+    void draw()
+    {
+      if (text.size() > 0) {
+        if (dirty) {
+          Text::FillBuffer(text, display,
+                           OpenGLDataInstance::Instance().textAtlas, 0.1f);
+        }
+        DrawText(display, transformation, Color(0.8f));
+      }
+    }
+
+  private:
+    TextCommand display;
+    bool        dirty;
+  };
+#endif
+
   class Ruine
   {
   public:
@@ -43,7 +123,10 @@ namespace Soleil {
     void render(Timer time);
 
   private:
+    void initializeGame(const Timer& time);
     void updateTriggers(World& world, Frame& frame);
+    void renderMenu(const Timer& time);
+    void renderGame(const Timer& time);
 
   private:
     AssetService* assetService;
@@ -54,13 +137,31 @@ namespace Soleil {
     glm::mat4     view;
 
     Timer timeToReset;
+    Frame frame;
 
+    World       world;
     PopUp       caption;
     TextCommand goldLabel;
     glm::mat4   goldLabelTransformation;
     int         goldScore;
 
     Timer nextGhostSound;
+
+  private:
+    enum State
+    {
+      StateMenu         = 0x01,
+      StateFadingIn     = 0x02,
+      StateFadingOut    = 0x04,
+      StateGame         = 0x08,
+      StateInitializing = 0x10
+    };
+    int       state;
+    FadeTimer fading;
+
+#ifndef NDEBUG
+    Console console;
+#endif
   };
 
 } // Soleil
