@@ -35,11 +35,13 @@ namespace Soleil {
   namespace Text {
 
     GlyphSlot::GlyphSlot(const glm::vec2& uvOffset, const glm::vec2& uvSize,
-                         const glm::vec2& pointMin, const glm::vec2& pointMax)
+                         const glm::vec2& pointMin, const glm::vec2& pointMax,
+                         const float advance)
       : uvOffset(uvOffset)
       , uvSize(uvSize)
       , pointMin(pointMin)
       , pointMax(pointMax)
+      , advance(advance)
     {
     }
 
@@ -61,11 +63,12 @@ namespace Soleil {
         int leftSideBearing;
 
         int x0, x1, y0, y1;
+        int lsb, iadvance;
 
         stbtt_GetCodepointHMetrics(font, codePoint, &advanceWidth,
                                    &leftSideBearing);
         stbtt_GetCodepointBox(font, codePoint, &x0, &y0, &x1, &y1);
-
+        stbtt_GetCodepointHMetrics(font, codePoint, &iadvance, &lsb);
         int viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
         SOLEIL__LOGGER_DEBUG(
@@ -78,6 +81,7 @@ namespace Soleil {
         pointMin.y     = (float)y0 * scaleY * sy;
         pointMax.x     = (float)x1 * scaleY * sx - pointMin.x;
         pointMax.y     = (float)y1 * scaleY * sy - pointMin.y;
+        advance        = (float)iadvance * scaleY * sx;
 
         SOLEIL__LOGGER_DEBUG(
           "Metrics for `", WstringToString(std::wstring({(wchar_t)codePoint})),
@@ -127,6 +131,7 @@ namespace Soleil {
     public:
       glm::vec2 pointMin;
       glm::vec2 pointMax;
+      float     advance;
     };
 
     FontAtlas InitializeAtlasMap(const std::wstring& charMap,
@@ -142,9 +147,9 @@ namespace Soleil {
       // TODO: Throw exception
       assert(resultInitFont && "Failed to init the font");
 
-      int                     fontSize      = 64;  // TODO: in parameter
-      int                     textureWidth  = 512; // TODO: in parameter
-      int                     textureHeight = 512; // TODO: in parameter
+      int                     fontSize      = 64;   // TODO: in parameter
+      int                     textureWidth  = 1024; // TODO: in parameter
+      int                     textureHeight = 1024; // TODO: in parameter
       std::vector<CharBitmap> bitmaps;
       bitmaps.reserve(charMap.size());
       std::vector<stbrp_rect> rects;
@@ -214,7 +219,8 @@ namespace Soleil {
 
         const auto& g = bitmaps[rect.id];
         atlas.glyphs.emplace(
-          g.codePoint, GlyphSlot(uvOffset, uvSize, g.pointMin, g.pointMax));
+          g.codePoint,
+          GlyphSlot(uvOffset, uvSize, g.pointMin, g.pointMax, g.advance));
       }
       throwOnGlError();
 
@@ -231,6 +237,8 @@ namespace Soleil {
       int              elemId   = 0;
       glm::vec2        offset(0.0f);
       std::vector<CharVertex> vertices;
+
+      // em = em * 10.0f;
 
       textCommand.elements.clear();
 
@@ -253,20 +261,21 @@ namespace Soleil {
         const glm::vec2 size(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
 
         vertices.push_back(
-          {glm::vec3(offset.x + g.pointMin.x, offset.y + g.pointMin.y, 0.0f),
+          {glm::vec3(offset.x + g.pointMin.x, offset.y + g.pointMin.y, 0.0f) *
+             em,
            glm::vec2(uvOffset.x, uvSize.y)});
         vertices.push_back(
-          {glm::vec3(size.x + g.pointMax.x, offset.y + g.pointMin.y, 0.0f),
+          {glm::vec3(size.x + g.pointMax.x, offset.y + g.pointMin.y, 0.0f) * em,
            glm::vec2(uvSize.x, uvSize.y)});
         vertices.push_back(
-          {glm::vec3(size.x + g.pointMax.x, size.y + g.pointMax.y, 0.0f),
+          {glm::vec3(size.x + g.pointMax.x, size.y + g.pointMax.y, 0.0f) * em,
            glm::vec2(uvSize.x, uvOffset.y)});
         vertices.push_back(
-          {glm::vec3(offset.x + g.pointMin.x, size.y + g.pointMax.y, 0.0f),
+          {glm::vec3(offset.x + g.pointMin.x, size.y + g.pointMax.y, 0.0f) * em,
            glm::vec2(uvOffset.x, uvOffset.y)});
 
-        // offset = glm::vec2(size.x, offset.y);
-        offset.x += g.pointMax.x;
+        offset.x += g.advance;
+	
         textCommand.elements.push_back(0 + elemId);
         textCommand.elements.push_back(1 + elemId);
         textCommand.elements.push_back(2 + elemId);

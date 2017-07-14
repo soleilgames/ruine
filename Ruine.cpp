@@ -343,6 +343,9 @@ namespace Soleil {
     if (state & State::StateInitializing) initializeGame(time);
     if (state & State::StateGame) renderGame(time);
     if (state & State::StateMenu) renderMenu(time);
+    if (state & State::StateDialogue) {
+      renderDialogue(time);
+    }
     if (state & State::StateFadingIn) {
       Fade(fading.ratio(time));
 
@@ -355,6 +358,11 @@ namespace Soleil {
     if (state & State::StateFadingOut) {
       Fade(1.0f - fading.ratio(time));
       if (fading.ratio(time) >= 1.0f) state &= ~State::StateFadingOut;
+    }
+
+    // Reset the release state
+    if (ControllerService::GetPush().active == PushState::Release) {
+      ControllerService::GetPush().active = PushState::Inactive;
     }
 
 #ifndef NDEBUG
@@ -416,7 +424,12 @@ namespace Soleil {
                      OpenGLDataInstance::Instance().textAtlas,
                      gval::textLabelSize);
 
-    state = State::StateFadingOut | State::StateGame;
+    dialogueTransformation =
+      glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
+
+    state    = State::StateFadingOut | State::StateGame | State::StateDialogue;
+    sentence = 0;
+    dirty    = true;
   }
 
   void Ruine::renderGame(const Timer& time)
@@ -502,9 +515,9 @@ namespace Soleil {
     if (firstFrame) {
       AssetService::LoadTextureLow(*menu.door, "menu.png");
       Text::FillBuffer(L"R U I N E", menu.title,
-                       OpenGLDataInstance::Instance().textAtlas, 1.0f);
+                       OpenGLDataInstance::Instance().textAtlas, 3.0f);
       Text::FillBuffer(L"NEW GAME", menu.newGame,
-                       OpenGLDataInstance::Instance().textAtlas, 0.4f,
+                       OpenGLDataInstance::Instance().textAtlas, 1.0f,
                        &menu.newGameBounds);
 
       const glm::vec2 scale =
@@ -514,7 +527,7 @@ namespace Soleil {
                    glm::vec3(1024.0f * scale.x, 1024.0f * scale.y, 0.0f));
 
       menu.titleTransformation =
-        glm::translate(glm::mat4(), glm::vec3(-0.5f, 0.8f, 0.0f));
+        glm::translate(glm::mat4(), glm::vec3(-0.5f, 0.6f, 0.0f));
       menu.newGameTransformation =
         glm::translate(glm::mat4(), glm::vec3(-0.9f, 0.4f, 0.0f));
       menu.newGameBounds.transform(menu.newGameTransformation);
@@ -529,21 +542,44 @@ namespace Soleil {
     DrawText(menu.newGame, menu.newGameTransformation, gval::textLabelColor);
 
     const Push& push = ControllerService::GetPush();
-    if (push.active) {
-      SOLEIL__CONSOLE_TEXT(toWString(
-        L"Push: ", push.position,
-        L" Rendering tiles (part 6)It's finally time to step it up a \n"
-        L"little and start drawing something usable. As I mentioned \n"
-        L"in my previous part I want to stick with 2D techniques for \n"
-        L"awhile.The first technique I want to look at is two \n"
-        L"different ways of drawing a 2D tiled map. 2D tiled maps \n"
-        L"are used in many games to render our background or floor \n"
-        L"with and are cornerstone to many 2D platformers."));
+    if (push.active == PushState::Release) {
+      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));
       if (menu.newGameBounds.containsFlat(push.position)) {
         state  = State::StateFadingIn;
         fading = FadeTimer(time, Timer(1000));
       } else
         SOLEIL__CONSOLE_APPEND(StringToWstring(toString(menu.newGameBounds)));
+    }
+  }
+
+  void Ruine::renderDialogue(const Timer&)
+  {
+    static BoundingBox bounds;
+
+    static const std::wstring text[] = {
+      L"ATTENDS ! AIDE-MOI",
+      L"J'AI CONSTRUIT CE SOUTERRAIN.\nMAIS NOTRE SIR NOUS Y A ENFERME",
+      L"LIBERES-MOI ET JE T'AIDERAI A SORTIR",
+      L"VA DANS LA PRISON. IL Y A UN SCEAU QUI ME RETIENT", L"DETRUIT-LE"};
+
+    if (dirty) {
+      bounds = BoundingBox();
+      Text::FillBuffer(text[sentence], dialogueLabel,
+                       OpenGLDataInstance::Instance().textAtlas, 1.0f, &bounds);
+      dirty = false;
+      bounds.transform(dialogueTransformation);
+    }
+    DrawText(dialogueLabel, dialogueTransformation, gval::textLabelColor);
+    const Push& push = ControllerService::GetPush();
+
+    if (push.active == PushState::Release &&
+        bounds.containsFlat(ControllerService::GetPush().position)) {
+      sentence++;
+      dirty = true;
+      if (sentence > 4) // TODO: No hard code
+      {
+        state ^= State::StateDialogue;
+      }
     }
   }
 

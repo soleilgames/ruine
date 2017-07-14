@@ -130,9 +130,6 @@ cursor_positionCallback(GLFWwindow* window, double xpos, double ypos)
   glfwGetFramebufferSize(window, &width, &height); // TODO: Can use a static
                                                    // viewport instead of
                                                    // calling this each frames
-
-  SOLEIL__LOGGER_DEBUG((float)width, "/", xpos, ",", (float)height, "/", ypos);
-
   controllerService.player.push.position =
     (glm::vec2(xpos / (float)width, -ypos / (float)height) +
      glm::vec2(-0.5f, 0.5f)) *
@@ -144,7 +141,8 @@ mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
                      int /*mods*/)
 {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    controllerService.player.push.active = action == GLFW_PRESS;
+    controllerService.player.push.active =
+      (action == GLFW_RELEASE) ? PushState::Release : PushState::Active;
   }
 }
 

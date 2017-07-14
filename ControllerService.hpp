@@ -29,10 +29,17 @@
 
 namespace Soleil {
 
+  enum class PushState : int
+  {
+    Inactive = 0,
+    Active   = 0x01,
+    Release   = 0x02
+  };
+
   struct Push
   {
     glm::vec2 position;
-    bool      active;
+    PushState active;
   };
 
   struct Controller

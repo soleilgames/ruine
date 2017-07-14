@@ -41,9 +41,11 @@ namespace Soleil {
 
       glm::vec2 pointMin;
       glm::vec2 pointMax;
+      float     advance;
 
       GlyphSlot(const glm::vec2& uvOffset, const glm::vec2& uvSize,
-                const glm::vec2& pointMin, const glm::vec2& pointMax);
+                const glm::vec2& pointMin, const glm::vec2& pointMax
+		, const float advance);
       ~GlyphSlot(void);
     };
 

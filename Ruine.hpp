@@ -100,7 +100,7 @@ namespace Soleil {
       if (text.size() > 0) {
         if (dirty) {
           Text::FillBuffer(text, display,
-                           OpenGLDataInstance::Instance().textAtlas, 0.1f);
+                           OpenGLDataInstance::Instance().textAtlas, 0.5f);
         }
         DrawText(display, transformation, Color(0.8f));
       }
@@ -127,6 +127,7 @@ namespace Soleil {
     void updateTriggers(World& world, Frame& frame);
     void renderMenu(const Timer& time);
     void renderGame(const Timer& time);
+    void renderDialogue(const Timer& time);
 
   private:
     AssetService* assetService;
@@ -154,10 +155,16 @@ namespace Soleil {
       StateFadingIn     = 0x02,
       StateFadingOut    = 0x04,
       StateGame         = 0x08,
-      StateInitializing = 0x10
+      StateInitializing = 0x10,
+      StateDialogue     = 0x20
     };
     int       state;
     FadeTimer fading;
+
+    TextCommand dialogueLabel;
+    glm::mat4   dialogueTransformation;
+    int         sentence;
+    bool        dirty;
 
 #ifndef NDEBUG
     Console console;

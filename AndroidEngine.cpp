@@ -171,7 +171,7 @@ namespace Soleil {
         1; // TODO: Use message window and exit gracefully
     } catch (...) {
       assert(false && "Someone raised a non runtime_error exception");
-      Logger::error("Unknown error while handling command: ");
+      Logger::error("Unknown error while handling command");
     }
   }
 
@@ -188,7 +188,7 @@ namespace Soleil {
       switch (flags) {
         case AMOTION_EVENT_ACTION_UP:
           controllerService.player.dpad        = glm::vec3(0.0f);
-          controllerService.player.push.active = false;
+          controllerService.player.push.active = PushState::Release;
           break;
         case AMOTION_EVENT_ACTION_DOWN:
         case AMOTION_EVENT_ACTION_MOVE: {
@@ -203,7 +203,7 @@ namespace Soleil {
 
           controllerService.player.push.position =
             (glm::vec2(touch.x, -touch.y) - glm::vec2(0.5, -0.5f)) * 2.0f;
-          controllerService.player.push.active = true;
+          controllerService.player.push.active = PushState::Active;
 
           const glm::vec2 distance = point - touch;
           const float     length   = glm::length(distance);
