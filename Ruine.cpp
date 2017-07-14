@@ -254,7 +254,7 @@ namespace Soleil {
       if (playerbox.intersect(coinTrigger->aoe)) {
         SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
         goldScore += 5; // TODO: Constant
-        Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
+        Text::FillBuffer(toWString("BUTIN: ", goldScore), goldLabel,
                          OpenGLDataInstance::Instance().textAtlas,
                          gval::textLabelSize);
 
@@ -295,7 +295,7 @@ namespace Soleil {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
       if (world.keyPickedUp) {
-        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRES À FAIRE...", 0.25f);
+        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRE À FAIRE...", 0.25f);
       } else {
         caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
       }
@@ -530,7 +530,15 @@ namespace Soleil {
 
     const Push& push = ControllerService::GetPush();
     if (push.active) {
-      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));
+      SOLEIL__CONSOLE_TEXT(toWString(
+        L"Push: ", push.position,
+        L" Rendering tiles (part 6)It's finally time to step it up a \n"
+        L"little and start drawing something usable. As I mentioned \n"
+        L"in my previous part I want to stick with 2D techniques for \n"
+        L"awhile.The first technique I want to look at is two \n"
+        L"different ways of drawing a 2D tiled map. 2D tiled maps \n"
+        L"are used in many games to render our background or floor \n"
+        L"with and are cornerstone to many 2D platformers."));
       if (menu.newGameBounds.containsFlat(push.position)) {
         state  = State::StateFadingIn;
         fading = FadeTimer(time, Timer(1000));

@@ -35,7 +35,7 @@
 #include <glm/vec3.hpp>
 
 #ifndef NDEBUG
-#define SOLEIL__CONSOLE_DRAW console.draw()
+#define SOLEIL__CONSOLE_DRAW() console.draw()
 #define SOLEIL__CONSOLE_TEXT(str) console.text = str
 #define SOLEIL__CONSOLE_APPEND(str) console.text += str
 #else

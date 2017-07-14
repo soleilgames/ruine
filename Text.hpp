@@ -39,19 +39,25 @@ namespace Soleil {
       glm::vec2 uvOffset;
       glm::vec2 uvSize;
 
-      GlyphSlot(glm::vec2 uvOffset, glm::vec2 uvSize);
+      glm::vec2 pointMin;
+      glm::vec2 pointMax;
+
+      GlyphSlot(const glm::vec2& uvOffset, const glm::vec2& uvSize,
+                const glm::vec2& pointMin, const glm::vec2& pointMax);
       ~GlyphSlot(void);
     };
 
     struct FontAtlas
     {
       std::map<wchar_t, GlyphSlot> glyphs;
+      float verticalAdvance;
     };
 
     FontAtlas InitializeAtlasMap(const std::wstring& charMap,
                                  const std::string& assetFont, GLuint texture);
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
-                    const FontAtlas& atlas, float em, BoundingBox* bounds = nullptr);
+                    const FontAtlas& atlas, float em,
+                    BoundingBox* bounds = nullptr);
   } // Text
 
 } // Soleil
