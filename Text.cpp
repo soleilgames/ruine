@@ -230,15 +230,9 @@ namespace Soleil {
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
                     const FontAtlas& atlas, float em, BoundingBox* bounds)
     {
-      // 200 = 2.0 (OpenGL unit) * 100 (% of the em)
-      const glm::vec2& viewport = OpenGLDataInstance::Instance().viewport;
-      const float      sx       = em * 2.0f / viewport.x;
-      const float      sy       = em * 2.0f / viewport.y;
-      int              elemId   = 0;
-      glm::vec2        offset(0.0f);
+      int                     elemId = 0;
+      glm::vec2               offset(0.0f);
       std::vector<CharVertex> vertices;
-
-      // em = em * 10.0f;
 
       textCommand.elements.clear();
 
@@ -297,13 +291,75 @@ namespace Soleil {
 
       throwOnGlError();
     }
+
+    void FillBufferWithDimensions(const std::wstring& text,
+                                  TextCommand&        textCommand,
+                                  const FontAtlas& atlas, float em,
+                                  const glm::vec2& dimensions)
+    {
+      int                     elemId = 0;
+      glm::vec2               offset(0.0f);
+      std::vector<CharVertex> vertices;
+
+      textCommand.elements.clear();
+
+      for (wchar_t c : text) {
+        if (c == '\n') {
+          offset.x = 0;
+          offset.y -= atlas.verticalAdvance;
+          continue;
+        }
+
+#ifndef NDEBUG
+        if (atlas.glyphs.find(c) == atlas.glyphs.end())
+          throw std::runtime_error(
+            toString("cannot find char: ", WstringToString(std::wstring({c}))));
+#endif
+        const GlyphSlot& g        = atlas.glyphs.at(c);
+        const glm::vec2  uvOffset = g.uvOffset;
+        const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
+                               uvOffset.y + g.uvSize.y);
+        glm::vec2 size(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
+
+        if (size.x > dimensions.x) {
+          offset.x = 0;
+          offset.y -= atlas.verticalAdvance;
+
+          // TODO: Same as above: put it in a function
+          size = glm::vec2(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
+        }
+
+        vertices.push_back(
+          {glm::vec3(offset.x + g.pointMin.x, offset.y + g.pointMin.y, 0.0f) *
+             em,
+           glm::vec2(uvOffset.x, uvSize.y)});
+        vertices.push_back(
+          {glm::vec3(size.x + g.pointMax.x, offset.y + g.pointMin.y, 0.0f) * em,
+           glm::vec2(uvSize.x, uvSize.y)});
+        vertices.push_back(
+          {glm::vec3(size.x + g.pointMax.x, size.y + g.pointMax.y, 0.0f) * em,
+           glm::vec2(uvSize.x, uvOffset.y)});
+        vertices.push_back(
+          {glm::vec3(offset.x + g.pointMin.x, size.y + g.pointMax.y, 0.0f) * em,
+           glm::vec2(uvOffset.x, uvOffset.y)});
+
+        offset.x += g.advance;
+
+        textCommand.elements.push_back(0 + elemId);
+        textCommand.elements.push_back(1 + elemId);
+        textCommand.elements.push_back(2 + elemId);
+        textCommand.elements.push_back(2 + elemId);
+        textCommand.elements.push_back(3 + elemId);
+        textCommand.elements.push_back(0 + elemId);
+        elemId += 4;
+      }
+
+      glBindBuffer(GL_ARRAY_BUFFER, *textCommand.buffer);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(),
+                   vertices.data(), GL_DYNAMIC_DRAW);
+
+      throwOnGlError();
+    }
+
   } // Text
-
-  void Text::FillBufferWithDimensions(const std::wstring& text,
-                                TextCommand&        textCommand,
-                                const FontAtlas& atlas, float em,
-                                const glm::vec2& dimensions)
-  {
-  }
-
 } // Soleil

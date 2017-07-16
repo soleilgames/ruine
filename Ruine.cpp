@@ -578,15 +578,15 @@ namespace Soleil {
     static BoundingBox bounds;
 
     static const std::wstring text[] = {
-      L"ATTENDS ! AIDE-MOI",
-      L"J'AI CONSTRUIT CE SOUTERRAIN.\nMAIS NOTRE SIR NOUS\nY A ENFERME",
+      L"ATTENDS ! AIDE-MOI, J'AI CONSTRUIT CE SOUTERRAIN. MAIS NOTRE SIR NOUS Y A ENFERME",
+      L"J'AI CONSTRUIT CE SOUTERRAIN. MAIS NOTRE SIR NOUS Y A ENFERME",
       L"LIBERES-MOI ET JE\nT'AIDERAI A SORTIR",
       L"VA DANS LA PRISON.\nIL Y A UN SCEAU\nQUI ME RETIENT", L"DETRUIT-LE"};
 
     if (dirty) {
       bounds = BoundingBox();
-      Text::FillBuffer(text[sentence], dialogueLabel,
-                       OpenGLDataInstance::Instance().textAtlas, 1.0f, &bounds);
+      Text::FillBufferWithDimensions(text[sentence], dialogueLabel,
+				     OpenGLDataInstance::Instance().textAtlas, 1.0f, glm::vec2(1.00f, 1.0f));
       dirty = false;
       bounds.transform(dialogueTransformation);
     }
