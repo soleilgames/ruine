@@ -288,18 +288,34 @@ namespace Soleil {
         SoundService::FireSound("key.wav", SoundProperties(100));
       }
     }
-    // Quick hack before a better implementation:
+    // Quick hack before a better implementation: ------------
     const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
                             glm::vec3(7.1f, 0.0f, 1.1f));
     if (caption.isActive() == false && playerbox.intersect(start)) {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
       if (world.keyPickedUp) {
+#if 0
         caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRE À FAIRE...", 0.25f);
+#else
+        state = State::StateCredits;
+#endif
       } else {
         caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
       }
       caption.activate(gval::timeToFadeText, frame.time);
+    }
+#if 0
+    const BoundingBox dbox(
+      glm::translate(glm::mat4(), glm::vec3(5.0f * 2.0f, 16.0f * 2.0f, 0)), 5.0f);
+#else
+    const BoundingBox dbox(
+      glm::translate(glm::mat4(), glm::vec3(2.0f, 2.0f, 0)), 2.0f);
+#endif
+    if (playerbox.intersect(dbox)) {
+      state |= State::StateDialogue;
+    } else if (state & State::StateDialogue) {
+      state &= ~State::StateDialogue;
     }
   }
 
@@ -342,6 +358,7 @@ namespace Soleil {
 
     if (state & State::StateInitializing) initializeGame(time);
     if (state & State::StateGame) renderGame(time);
+    if (state & State::StateCredits) renderCredits(time);
     if (state & State::StateMenu) renderMenu(time);
     if (state & State::StateDialogue) {
       renderDialogue(time);
@@ -424,10 +441,14 @@ namespace Soleil {
                      OpenGLDataInstance::Instance().textAtlas,
                      gval::textLabelSize);
 
+    
     dialogueTransformation =
       glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
+    dialogueBackgroundTransformation =
+      glm::scale(glm::translate(glm::mat4(), glm::vec3(-0.4f, -0.8f, 0.0f))
+		 , glm::vec3(1.2f, .8f, 1.0f));
 
-    state    = State::StateFadingOut | State::StateGame | State::StateDialogue;
+    state    = State::StateFadingOut | State::StateGame;
     sentence = 0;
     dirty    = true;
   }
@@ -558,9 +579,9 @@ namespace Soleil {
 
     static const std::wstring text[] = {
       L"ATTENDS ! AIDE-MOI",
-      L"J'AI CONSTRUIT CE SOUTERRAIN.\nMAIS NOTRE SIR NOUS Y A ENFERME",
-      L"LIBERES-MOI ET JE T'AIDERAI A SORTIR",
-      L"VA DANS LA PRISON. IL Y A UN SCEAU QUI ME RETIENT", L"DETRUIT-LE"};
+      L"J'AI CONSTRUIT CE SOUTERRAIN.\nMAIS NOTRE SIR NOUS\nY A ENFERME",
+      L"LIBERES-MOI ET JE\nT'AIDERAI A SORTIR",
+      L"VA DANS LA PRISON.\nIL Y A UN SCEAU\nQUI ME RETIENT", L"DETRUIT-LE"};
 
     if (dirty) {
       bounds = BoundingBox();
@@ -569,6 +590,8 @@ namespace Soleil {
       dirty = false;
       bounds.transform(dialogueTransformation);
     }
+    DrawImage(*OpenGLDataInstance::Instance().textureBlack,
+              dialogueBackgroundTransformation);
     DrawText(dialogueLabel, dialogueTransformation, gval::textLabelColor);
     const Push& push = ControllerService::GetPush();
 
@@ -578,8 +601,36 @@ namespace Soleil {
       dirty = true;
       if (sentence > 4) // TODO: No hard code
       {
-        state ^= State::StateDialogue;
+        sentence = 4;
       }
+    }
+  }
+
+  void Ruine::renderCredits(const Timer& time)
+  {
+    static Pristine first;
+
+    if (first) {
+      // TODO: Replace this by an image, it will be better
+      Text::FillBuffer(L"      RUINE\n       -----\n\n\nPar Florian "
+                       L"GOLESTIN\n\n\n   REMERCIEMENTS\n    "
+                       L"---------------\nAntoine TALLON\nJuju\nHoracio "
+                       L"GOLDBERG",
+                       credits, OpenGLDataInstance::Instance().textAtlas, 1.0f);
+      creditsTransformation =
+        glm::translate(glm::mat4(), glm::vec3(-0.30f, 0.0f, 0.0f));
+    }
+
+    glClearColor(0.0f, 0.05f, 0.15f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // TODO: Delta time
+    creditsTransformation =
+      glm::translate(creditsTransformation, glm::vec3(0.0f, 0.001f, 0.0f));
+    DrawText(credits, creditsTransformation, gval::textLabelColor);
+
+    if (ControllerService::GetPush().active == PushState::Release) {
+      state = State::StateMenu;
     }
   }
 

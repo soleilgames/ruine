@@ -209,6 +209,16 @@ namespace Soleil {
 #endif
             world.statics.push_back(
               DrawCommand(*world.barrelShape, transformation));
+          } else if (c == 'A') {
+            glm::mat4 transformation =
+              glm::rotate(
+                glm::translate(glm::mat4(),
+                               glm::vec3(position.x, -0.60f, position.z)),
+                glm::half_pi<float>(), glm::vec3(0, 1, 0)) *
+              glm::scale(glm::mat4(), glm::vec3(.3f));
+
+            world.statics.push_back(
+              DrawCommand(*world.ghostShape, transformation));
           }
 
           glm::mat4 groundTransformation =

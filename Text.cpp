@@ -275,7 +275,7 @@ namespace Soleil {
            glm::vec2(uvOffset.x, uvOffset.y)});
 
         offset.x += g.advance;
-	
+
         textCommand.elements.push_back(0 + elemId);
         textCommand.elements.push_back(1 + elemId);
         textCommand.elements.push_back(2 + elemId);
@@ -298,4 +298,12 @@ namespace Soleil {
       throwOnGlError();
     }
   } // Text
+
+  void Text::FillBufferWithDimensions(const std::wstring& text,
+                                TextCommand&        textCommand,
+                                const FontAtlas& atlas, float em,
+                                const glm::vec2& dimensions)
+  {
+  }
+
 } // Soleil

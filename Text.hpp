@@ -44,8 +44,8 @@ namespace Soleil {
       float     advance;
 
       GlyphSlot(const glm::vec2& uvOffset, const glm::vec2& uvSize,
-                const glm::vec2& pointMin, const glm::vec2& pointMax
-		, const float advance);
+                const glm::vec2& pointMin, const glm::vec2& pointMax,
+                const float advance);
       ~GlyphSlot(void);
     };
 
@@ -60,6 +60,10 @@ namespace Soleil {
     void FillBuffer(const std::wstring& text, TextCommand& textCommand,
                     const FontAtlas& atlas, float em,
                     BoundingBox* bounds = nullptr);
+    void FillBufferWithDimensions(const std::wstring& text,
+                                  TextCommand&        textCommand,
+                                  const FontAtlas& atlas, float em,
+                                  const glm::vec2& dimensions);
   } // Text
 
 } // Soleil

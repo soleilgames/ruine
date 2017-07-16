@@ -128,6 +128,7 @@ namespace Soleil {
     void renderMenu(const Timer& time);
     void renderGame(const Timer& time);
     void renderDialogue(const Timer& time);
+    void renderCredits(const Timer& time);
 
   private:
     AssetService* assetService;
@@ -156,15 +157,20 @@ namespace Soleil {
       StateFadingOut    = 0x04,
       StateGame         = 0x08,
       StateInitializing = 0x10,
-      StateDialogue     = 0x20
+      StateDialogue     = 0x20,
+      StateCredits      = 0x40
     };
     int       state;
     FadeTimer fading;
 
     TextCommand dialogueLabel;
     glm::mat4   dialogueTransformation;
+    glm::mat4   dialogueBackgroundTransformation;
     int         sentence;
     bool        dirty;
+
+    TextCommand credits;
+    glm::mat4   creditsTransformation;
 
 #ifndef NDEBUG
     Console console;
