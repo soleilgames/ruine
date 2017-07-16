@@ -302,12 +302,22 @@ namespace Soleil {
       std::vector<CharVertex> vertices;
 
       textCommand.elements.clear();
+      std::wstring::const_iterator lastBreak    = text.begin();
+      auto                         charToUnwind = vertices.end();
 
-      for (wchar_t c : text) {
-        if (c == '\n') {
+      for (auto it = text.begin(); it != text.end(); ++it) {
+        wchar_t c = *it;
+
+        if (c == L'\n') {
           offset.x = 0;
           offset.y -= atlas.verticalAdvance;
+
+          lastBreak    = it;
+          charToUnwind = vertices.end();
           continue;
+        } else if (c == L' ') {
+          lastBreak    = it;
+          charToUnwind = vertices.end();
         }
 
 #ifndef NDEBUG
@@ -319,14 +329,24 @@ namespace Soleil {
         const glm::vec2  uvOffset = g.uvOffset;
         const glm::vec2  uvSize(uvOffset.x + g.uvSize.x,
                                uvOffset.y + g.uvSize.y);
+        // TODO: Add a current offset with these value and add point max to size
         glm::vec2 size(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
 
         if (size.x > dimensions.x) {
           offset.x = 0;
           offset.y -= atlas.verticalAdvance;
 
-          // TODO: Same as above: put it in a function
-          size = glm::vec2(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
+          if (lastBreak != text.begin()) {
+            // Unwind till last space
+	    vertices.erase(charToUnwind, vertices.end());
+
+            // return to previous space
+            it = lastBreak;
+            continue;
+          } else {
+            // TODO: Same as above: put it in a function
+            size = glm::vec2(offset.x + g.pointMin.x, offset.y + g.pointMin.y);
+          }
         }
 
         vertices.push_back(
