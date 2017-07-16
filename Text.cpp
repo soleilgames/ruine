@@ -338,10 +338,14 @@ namespace Soleil {
 
           if (lastBreak != text.begin()) {
             // Unwind till last space
-	    vertices.erase(charToUnwind, vertices.end());
+            vertices.erase(charToUnwind, vertices.end());
 
             // return to previous space
             it = lastBreak;
+
+            // Avoid infinite loop if the word is too large
+            lastBreak = text.begin();
+
             continue;
           } else {
             // TODO: Same as above: put it in a function
