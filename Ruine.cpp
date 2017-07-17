@@ -309,7 +309,7 @@ namespace Soleil {
     if (caption.isActive() == false && playerbox.intersect(start)) {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
-      if (!world.keyPickedUp) {
+      if (world.keyPickedUp) {
 #if 0
         caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRE À FAIRE...", 0.25f);
 #else

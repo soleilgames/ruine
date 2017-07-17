@@ -67,6 +67,7 @@ main()
        pointLight[i].quadraticAttenuation * lightDistance * lightDistance);
     vec3 halfVector = normalize(lightDirection + EyeDirection);
 
+    // if (numberOfLights > 0) {
     float diffuse  = max(0.0, dot(normal, lightDirection));
     float specular = max(0.0, dot(normal, halfVector));
 
@@ -80,6 +81,10 @@ main()
     scatteredLight += material.emissiveColor;
     reflectedLight +=
       material.specularColor * pointLight[i].color * specular * attenuation;
+    // }
+    // else
+    //   scatteredLight +=
+    //   material.diffuseColor * pointLight[i].color  * attenuation;
   }
 
   uv          = uvAttribute;
