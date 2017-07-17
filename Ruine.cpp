@@ -59,6 +59,21 @@ namespace Soleil {
   static void InitializeWorld(World& world, Frame& frame, Camera& camera,
                               PopUp& caption)
   {
+    // TODO: A method for that:
+    world.doors.clear();
+    world.bounds = glm::vec3(0.0f);
+    world.statics.clear();
+    world.sentinels.clear();
+    world.hardSurfaces.clear();
+    world.coinTriggers.clear();
+    world.theKey = glm::mat4();
+    world.coinPickedUp.clear();
+    world.keyPickedUp = false;
+    // ---
+    frame.pointLights.clear();
+    camera.yaw = 0.0f;
+    // TODO:  goldScore  = 0;
+
     InitializeWorldModels(world);
     InitializeWorldDoors(world, "doors.ini");
     InitializeLevel(world, gval::firstLevel, frame, camera, caption);
@@ -294,7 +309,7 @@ namespace Soleil {
     if (caption.isActive() == false && playerbox.intersect(start)) {
       SoundService::FireSound("locked.wav", SoundProperties(100));
 
-      if (world.keyPickedUp) {
+      if (!world.keyPickedUp) {
 #if 0
         caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRE À FAIRE...", 0.25f);
 #else
@@ -356,28 +371,35 @@ namespace Soleil {
     frame.delta = time - frame.time;
     frame.time  = time;
 
-    if (state & State::StateInitializing) initializeGame(time);
-    if (state & State::StateGame) renderGame(time);
-    if (state & State::StateCredits) renderCredits(time);
-    if (state & State::StateMenu) renderMenu(time);
-    if (state & State::StateDialogue) {
+    int currentState = state;
+    if (currentState & State::StateInitializing) initializeGame(time);
+    if (currentState & State::StateGame) renderGame(time);
+    if (currentState & State::StateCredits) renderCredits(time);
+    if (currentState & State::StateMenu) renderMenu(time);
+    if (currentState & State::StateDialogue) {
       renderDialogue(time);
     }
-    if (state & State::StateFadingIn) {
+    if (currentState & State::StateFadingIn) {
       Fade(fading.ratio(time));
 
 #if 1
       if (fading.ratio(time) >= 1.0f) {
-        state = State::StateInitializing;
+        state  = State::StateInitializing;
+        fading = FadeTimer(time, Timer(2000));
       }
 #endif
     }
-    if (state & State::StateFadingOut) {
+    if (currentState & State::StateFadingOut) {
       Fade(1.0f - fading.ratio(time));
+      SOLEIL__LOGGER_DEBUG("1.0f - ", fading.ratio(time), " = ",
+                           1.0f - fading.ratio(time));
+
       if (fading.ratio(time) >= 1.0f) state &= ~State::StateFadingOut;
     }
 
+    // TODO: Should be in a parent method
     // Reset the release state
+    ControllerService::GetPush().active &= ~PushState::Fresh;
     if (ControllerService::GetPush().active == PushState::Release) {
       ControllerService::GetPush().active = PushState::Inactive;
     }
@@ -441,12 +463,11 @@ namespace Soleil {
                      OpenGLDataInstance::Instance().textAtlas,
                      gval::textLabelSize);
 
-    
     dialogueTransformation =
       glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
     dialogueBackgroundTransformation =
-      glm::scale(glm::translate(glm::mat4(), glm::vec3(-0.4f, -0.8f, 0.0f))
-		 , glm::vec3(1.2f, .8f, 1.0f));
+      glm::scale(glm::translate(glm::mat4(), glm::vec3(-0.45f, -0.8f, 0.0f)),
+                 glm::vec3(1.55f, .8f, 1.0f));
 
     state    = State::StateFadingOut | State::StateGame;
     sentence = 0;
@@ -537,7 +558,7 @@ namespace Soleil {
       AssetService::LoadTextureLow(*menu.door, "menu.png");
       Text::FillBuffer(L"R U I N E", menu.title,
                        OpenGLDataInstance::Instance().textAtlas, 3.0f);
-      Text::FillBuffer(L"NEW GAME", menu.newGame,
+      Text::FillBuffer(L"APPUYEZ POUR COMMENCER", menu.newGame,
                        OpenGLDataInstance::Instance().textAtlas, 1.0f,
                        &menu.newGameBounds);
 
@@ -550,7 +571,7 @@ namespace Soleil {
       menu.titleTransformation =
         glm::translate(glm::mat4(), glm::vec3(-0.5f, 0.6f, 0.0f));
       menu.newGameTransformation =
-        glm::translate(glm::mat4(), glm::vec3(-0.9f, 0.4f, 0.0f));
+        glm::translate(glm::mat4(), glm::vec3(-0.45f, -0.8f, 0.0f));
       menu.newGameBounds.transform(menu.newGameTransformation);
 
       frame.updateViewProjectionMatrices(
@@ -562,40 +583,48 @@ namespace Soleil {
     DrawText(menu.title, menu.titleTransformation, gval::textLabelColor);
     DrawText(menu.newGame, menu.newGameTransformation, gval::textLabelColor);
 
-    const Push& push = ControllerService::GetPush();
-    if (push.active == PushState::Release) {
-      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));
+    if (ControllerService::GetPush().active & PushState::Down &&
+        ControllerService::GetPush().active & PushState::Fresh) {
+#if 0      
+      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));      
       if (menu.newGameBounds.containsFlat(push.position)) {
         state  = State::StateFadingIn;
         fading = FadeTimer(time, Timer(1000));
       } else
         SOLEIL__CONSOLE_APPEND(StringToWstring(toString(menu.newGameBounds)));
+#else
+      state  = State::StateFadingIn;
+      fading = FadeTimer(time, Timer(1000));
+
+#endif
     }
   }
 
   void Ruine::renderDialogue(const Timer&)
   {
-    static BoundingBox bounds;
+    const BoundingBox bounds(glm::vec3(-0.45f, -0.8f, 0.0f),
+                             glm::vec3(1.0f, 1.0f, 0.0f));
 
     static const std::wstring text[] = {
-      L"ATTENDS ! AIDE-MOI, J'AI CONSTRUIT CE SOUTERRAIN. MAIS NOTRE SIR NOUS Y A ENFERME",
+      L"ATTENDS ! AIDE-MOI",
       L"J'AI CONSTRUIT CE SOUTERRAIN. MAIS NOTRE SIR NOUS Y A ENFERME",
-      L"LIBERES-MOI ET JE\nT'AIDERAI A SORTIR",
-      L"VA DANS LA PRISON.\nIL Y A UN SCEAU\nQUI ME RETIENT", L"DETRUIT-LE"};
+      L"LIBERES-MOI ET JE T'AIDERAI A SORTIR",
+      L"VA DANS LA PRISON. IL Y A UN SCEAU QUI ME RETIENT",
+      L"DETRUIT-LE",
+      L"VA DANS LA PRISON DETRUIR LE SCEAU !"};
 
     if (dirty) {
-      bounds = BoundingBox();
       Text::FillBufferWithDimensions(text[sentence], dialogueLabel,
-				     OpenGLDataInstance::Instance().textAtlas, 1.0f, glm::vec2(1.00f, 1.0f));
+                                     OpenGLDataInstance::Instance().textAtlas,
+                                     1.0f, glm::vec2(1.00f, 1.0f));
       dirty = false;
-      bounds.transform(dialogueTransformation);
     }
     DrawImage(*OpenGLDataInstance::Instance().textureBlack,
               dialogueBackgroundTransformation);
     DrawText(dialogueLabel, dialogueTransformation, gval::textLabelColor);
     const Push& push = ControllerService::GetPush();
 
-    if (push.active == PushState::Release &&
+    if (push.active & PushState::Release &&
         bounds.containsFlat(ControllerService::GetPush().position)) {
       sentence++;
       dirty = true;
@@ -629,8 +658,10 @@ namespace Soleil {
       glm::translate(creditsTransformation, glm::vec3(0.0f, 0.001f, 0.0f));
     DrawText(credits, creditsTransformation, gval::textLabelColor);
 
-    if (ControllerService::GetPush().active == PushState::Release) {
-      state = State::StateMenu;
+    if (ControllerService::GetPush().active & PushState::Down &&
+        ControllerService::GetPush().active & PushState::Fresh) {
+      ControllerService::GetPush().active = PushState::Inactive;
+      state                               = State::StateMenu;
     }
   }
 

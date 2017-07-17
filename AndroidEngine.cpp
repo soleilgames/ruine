@@ -188,7 +188,7 @@ namespace Soleil {
       switch (flags) {
         case AMOTION_EVENT_ACTION_UP:
           controllerService.player.dpad        = glm::vec3(0.0f);
-          controllerService.player.push.active = PushState::Release;
+          controllerService.player.push.active = PushState::Release | PushState::Fresh;
           break;
         case AMOTION_EVENT_ACTION_DOWN:
         case AMOTION_EVENT_ACTION_MOVE: {
@@ -203,7 +203,11 @@ namespace Soleil {
 
           controllerService.player.push.position =
             (glm::vec2(touch.x, -touch.y) - glm::vec2(0.5, -0.5f)) * 2.0f;
-          controllerService.player.push.active = PushState::Active;
+
+          if (flags == AMOTION_EVENT_ACTION_DOWN)
+            controllerService.player.push.active = PushState::Down | PushState::Fresh;
+          else
+            controllerService.player.push.active = PushState::Active;
 
           const glm::vec2 distance = point - touch;
           const float     length   = glm::length(distance);

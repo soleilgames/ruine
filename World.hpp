@@ -98,7 +98,7 @@ namespace Soleil {
     World() {}
     World(const World&) = delete;
     World& operator=(const World&) = delete;
-    void   resetLevel(void);
+    void resetLevel(void);
   };
 
   void InitializeWorldModels(World& world);

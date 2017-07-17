@@ -29,17 +29,22 @@
 
 namespace Soleil {
 
-  enum class PushState : int
+  // TODO: Enum class
+  enum PushState
   {
+    // Actually Inactive, Moving, Up, Down
     Inactive = 0,
     Active   = 0x01,
-    Release   = 0x02
+    Release  = 0x02,
+    Down     = 0x04,
+
+    Fresh = 0x08
   };
 
   struct Push
   {
     glm::vec2 position;
-    PushState active;
+    int active;
   };
 
   struct Controller

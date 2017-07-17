@@ -134,6 +134,9 @@ cursor_positionCallback(GLFWwindow* window, double xpos, double ypos)
     (glm::vec2(xpos / (float)width, -ypos / (float)height) +
      glm::vec2(-0.5f, 0.5f)) *
     2.0f;
+
+  if (controllerService.player.push.active == PushState::Down)
+    controllerService.player.push.active = PushState::Active;
 }
 
 void
@@ -142,7 +145,8 @@ mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
 {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     controllerService.player.push.active =
-      (action == GLFW_RELEASE) ? PushState::Release : PushState::Active;
+      ((action == GLFW_RELEASE) ? PushState::Release : PushState::Down) |
+      PushState::Fresh;
   }
 }
 

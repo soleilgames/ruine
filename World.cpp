@@ -111,6 +111,8 @@ namespace Soleil {
     coinTriggers.clear();
   }
 
+
+
   static void parseMaze(World& world, std::istringstream& s, Frame& frame)
   {
     std::string            line;
