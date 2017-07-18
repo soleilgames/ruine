@@ -73,7 +73,24 @@ errorCallback(int error, const char* description)
   std::cerr << "GLFW failed with error N." << error << ": " << description;
 }
 
-static std::string lineDebug;
+struct EditorResources
+{
+  Program gridProgram;
+  GLuint  gridMVP;
+
+  EditorResources()
+  {
+    gridProgram.attachShader(Shader(GL_VERTEX_SHADER, "grid.vert"));
+    gridProgram.attachShader(Shader(GL_FRAGMENT_SHADER, "grid.frag"));
+    glBindAttribLocation(gridProgram.program, 0, "position");
+    gridProgram.compile();
+
+    gridMVP = gridProgram.getUniform("MVP");
+  }
+};
+
+static std::string                      lineDebug;
+static std::unique_ptr<EditorResources> editorResources;
 
 namespace Soleil {
 
@@ -131,10 +148,11 @@ namespace Soleil {
           lineDebug += toString("\n>worldPosition=", worldPosition);
 
           glm::vec3 clipped = (frame.cameraPosition) + dir * dist;
-          clipped.x         = (int)clipped.x;
-          clipped.z         = (int)clipped.z;
-          lineDebug += toString("\n>clipped=", clipped);
-
+          if (io.KeyCtrl) {
+            clipped.x = (int)clipped.x;
+            clipped.z = (int)clipped.z;
+            lineDebug += toString("\n>clipped=", clipped);
+          }
           glm::mat4 transformation = glm::translate(glm::mat4(), clipped);
 
 #endif
@@ -162,6 +180,73 @@ namespace Soleil {
     private:
       bool        isSet;
       DrawCommand object;
+    };
+
+    struct Grid
+    {
+      gl::Buffer            buffer;
+      glm::mat4             transformation;
+      std::vector<GLushort> indices;
+
+      Grid(const int width, const int height, const float unitSize = 1.0f)
+      {
+        std::vector<glm::vec3> points;
+
+        const glm::vec3 square[] = {{0.0f, 0.0f, 0.0f},
+                                    {1.0f, 0.0f, 0.0f},
+                                    {1.0f, 0.0f, 1.0f},
+                                    {0.0f, 0.0f, 1.0f}};
+
+        int ids = 0;
+        int y   = 0.0f;
+        while (y < height) {
+
+          int x = 0.0f;
+          while (x < width) {
+            glm::vec3 pos = glm::vec3(x, 0, y) * unitSize;
+            points.push_back(unitSize * square[0] + pos);
+            points.push_back(unitSize * square[1] + pos);
+            points.push_back(unitSize * square[2] + pos);
+            points.push_back(unitSize * square[3] + pos);
+
+            indices.push_back(0 + ids);
+            indices.push_back(1 + ids);
+            indices.push_back(1 + ids);
+            indices.push_back(2 + ids);
+            indices.push_back(2 + ids);
+            indices.push_back(3 + ids);
+            indices.push_back(3 + ids);
+            indices.push_back(0 + ids);
+
+            ids += 4;
+            x++;
+          }
+          y++;
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points[0]) * points.size(),
+                     points.data(), GL_STATIC_DRAW);
+        throwOnGlError();
+      }
+
+      void draw(const Frame& frame)
+      {
+        const GLsizei stride = sizeof(glm::vec3);
+        glUseProgram(editorResources->gridProgram.program);
+        glBindBuffer(GL_ARRAY_BUFFER, *buffer);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride,
+                              (const GLvoid*)0);
+        glEnableVertexAttribArray(0);
+
+        glUniformMatrix4fv(
+          editorResources->gridMVP, 1, GL_FALSE,
+          glm::value_ptr(frame.ViewProjection * transformation));
+
+        glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_SHORT,
+                       indices.data());
+        throwOnGlError();
+      }
     };
 
   } // gui
@@ -209,6 +294,7 @@ render(GLFWwindow* window)
   AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
   SoundService::Instance = std::make_unique<DesktopSoundService>();
   OpenGLDataInstance::Initialize(); // TODO: Required by MTL - Should not be?
+  editorResources                         = std::make_unique<EditorResources>();
   OpenGLDataInstance::Instance().viewport = glm::vec2(width, height);
 
   glm::mat4 projection = glm::perspective(
@@ -248,8 +334,14 @@ render(GLFWwindow* window)
   statics.emplace_back(*grid, glm::scale(glm::mat4(), glm::vec3(8.0f)));
 #endif
 
+  gui::Grid grid(5, 5);
+  gui::Grid grid2(5, 5);
+  gui::Grid grid3(5, 5);
+  grid2.transformation =
+    glm::rotate(glm::mat4(), -glm::half_pi<float>(), glm::vec3(1, 0, 0));
+  grid3.transformation =
+    glm::rotate(glm::mat4(), glm::half_pi<float>(), glm::vec3(0, 0, 1));
 
-  
   Frame frame;
 
 #if 0
@@ -335,6 +427,9 @@ render(GLFWwindow* window)
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
       cursorSelection.draw(frame);
+      grid.draw(frame);
+      grid2.draw(frame);
+      grid3.draw(frame);
       RenderFlatShape(statics, frame);
     }
 
@@ -383,7 +478,8 @@ render(GLFWwindow* window)
       ImVec2(pos.x + w, pos.y + h), ImVec2(0, 1), ImVec2(1, 0));
 
     // Check if we have to add an entity
-    if (cursorSelection.isActive() && ImGui::IsMouseClicked(0)) {
+    if (cursorSelection.isActive() && ImGui::IsMouseClicked(0) &&
+        ImGui::IsWindowHovered()) {
       statics.push_back(cursorSelection.getDrawCommand());
     }
     ImGui::End();

@@ -89,6 +89,9 @@ add_executable(reditor
   imgui_draw.cpp
   )
 
+add_custom_command(TARGET reditor PRE_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/media" "$<TARGET_FILE_DIR:ruine>/media"
+  )
 
 
 target_link_libraries(reditor
