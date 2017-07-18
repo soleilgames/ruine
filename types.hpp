@@ -93,12 +93,20 @@ namespace Soleil {
     glm::mat4 View;
 
     /**
+     * the Projection without the view
+     * @see updateViewProjectionMatrices(const glm::mat4& view, const glm::mat4
+     * projection)
+     */
+    glm::mat4 Projection;
+
+    /**
      * Update related matrices and set the MVP one.
      */
     inline void updateViewProjectionMatrices(const glm::mat4& view,
                                              const glm::mat4  projection)
     {
       this->View           = view;
+      this->Projection     = projection;
       this->ViewProjection = projection * view;
     }
 
@@ -113,7 +121,8 @@ namespace Soleil {
   };
 
   namespace gval {
-    static const glm::vec3 ambiantLight(0.01f);
+    // static const glm::vec3 ambiantLight(0.01f);
+    static const glm::vec3 ambiantLight(1.0f);
     static const glm::vec3 cameraLight(0.35f);
     static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
     static const float     ghostSpeed     = 0.01f;

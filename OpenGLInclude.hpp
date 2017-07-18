@@ -161,7 +161,7 @@ namespace Soleil {
     };
 
     typedef Generator<GlGenTextures, GlDeleteTextures>           Texture;
-    typedef Generator<GlGenFramebuffers, GlDeleteFramebuffers>   rameBuffer;
+    typedef Generator<GlGenFramebuffers, GlDeleteFramebuffers>   FrameBuffer;
     typedef Generator<GlGenRenderbuffers, GlDeleteRenderbuffers> RenderBuffer;
     typedef Generator<GlGenBuffers, GlDeleteBuffers>             Buffer;
     typedef BindGuard<GlBindFramebuffer, 0>  BindFrameBuffer;

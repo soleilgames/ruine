@@ -56,19 +56,18 @@ add_subdirectory(tests)
 add_test(SceneGraphTest tests/sceneGraphTest)
 add_test(WavefrontTest tests/wavefrontTest)
 
-
-
-add_executable(ruine
-  main.cpp
-  )
-
-
 set(RUINELIBS
   ruinelib
   ${GLFW}
   ${OPENGL_LIBRARIES}
   ${GLEW_LIB}
   )
+
+add_executable(ruine
+  main.cpp
+  )
+
+
 
 target_link_libraries(ruine
   ${RUINELIBS}
@@ -82,3 +81,16 @@ add_custom_command(TARGET ruine PRE_BUILD
 add_custom_command(TARGET ruine POST_BUILD
   COMMAND ctest -V -C $<CONFIGURATION> --output-on-failure)
 
+
+add_executable(reditor
+  editor.cpp
+  imgui_impl_glfw_gl3.cpp
+  imgui.cpp
+  imgui_draw.cpp
+  )
+
+
+
+target_link_libraries(reditor
+  ${RUINELIBS}
+  )

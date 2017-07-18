@@ -32,9 +32,11 @@ namespace Soleil {
   void DrawImage(GLuint texture, const glm::mat4& transformation,
                  const glm::vec4& color)
   {
+    throwOnGlError();
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    throwOnGlError();
 
     const OpenGLDataInstance& ogl = OpenGLDataInstance::Instance();
     throwOnGlError();
@@ -313,6 +315,7 @@ namespace Soleil {
 
         auto NormalMatrix =
           glm::transpose(glm::inverse(glm::mat3(drawCommand.transformation)));
+	// TODO: Allow Draw command to have its transpose to save this computaiton
 
         glUniformMatrix3fv(instance.flat.NormalMatrix, 1, GL_FALSE,
                            glm::value_ptr(NormalMatrix));
@@ -332,8 +335,8 @@ namespace Soleil {
     DrawImage(
       *OpenGLDataInstance::Instance().textureBlack,
       glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
-                 glm::vec3(2.0f, 2.0f, 1.0f))
-      , color);
+                 glm::vec3(2.0f, 2.0f, 1.0f)),
+      color);
   }
 
   // ------ Popup ------
@@ -398,6 +401,10 @@ namespace Soleil {
 
     const std::vector<GLushort>& indices = shape.indices;
     assert(indices.size() == 36);
+#if 0
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
                    indices.data());
     throwOnGlError();

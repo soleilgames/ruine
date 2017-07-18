@@ -48,6 +48,14 @@ namespace Soleil {
     {
     }
 
+    DrawCommand(GLuint buffer, const glm::mat4& transformation,
+                const std::vector<SubShape>* sub)
+      : buffer(buffer)
+      , transformation(transformation)
+      , sub(sub)
+    {
+    }
+
     DrawCommand(const Shape& shape, const glm::mat4& transformation)
       : buffer(shape.getBuffer())
       , transformation(transformation)

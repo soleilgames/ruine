@@ -65,6 +65,7 @@ namespace Soleil {
   {
     const ImageAsset image(argument);
 
+    // TODO: Might be directly in the shape
     OpenGLDataInstance::Instance().textures.emplace_back();
 
     gl::Texture&    texture = OpenGLDataInstance::Instance().textures.back();

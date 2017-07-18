@@ -82,12 +82,6 @@ namespace Soleil {
         pointMax.x     = (float)x1 * scaleY * sx - pointMin.x;
         pointMax.y     = (float)y1 * scaleY * sy - pointMin.y;
         advance        = (float)iadvance * scaleY * sx;
-
-        SOLEIL__LOGGER_DEBUG(
-          "Metrics for `", WstringToString(std::wstring({(wchar_t)codePoint})),
-          "`: Scale=", scaleY, ". advanceWidth=", advanceWidth,
-          ", leftSideBearing=", leftSideBearing, ". Box=[", x0, ",", y0,
-          "]\t- [", x1, ",", y1, "],\tPoint: ", pointMin, ", ", pointMax);
       }
 
       virtual ~CharBitmap()
