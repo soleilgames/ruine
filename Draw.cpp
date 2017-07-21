@@ -315,7 +315,8 @@ namespace Soleil {
 
         auto NormalMatrix =
           glm::transpose(glm::inverse(glm::mat3(drawCommand.transformation)));
-	// TODO: Allow Draw command to have its transpose to save this computaiton
+        // TODO: Allow Draw command to have its transpose to save this
+        // computaiton
 
         glUniformMatrix3fv(instance.flat.NormalMatrix, 1, GL_FALSE,
                            glm::value_ptr(NormalMatrix));
@@ -324,6 +325,119 @@ namespace Soleil {
                        indices.data());
         throwOnGlError();
       }
+    }
+  }
+
+  void RenderFlatShape(const glm::mat4& transformation, const Shape& shape,
+                       const Frame& frame)
+  {
+    // TODO: Merge the code with method above
+    throwOnGlError();
+    constexpr GLsizei         stride    = sizeof(Vertex);
+    const OpenGLDataInstance& instance  = OpenGLDataInstance::Instance();
+    const Program&            rendering = instance.flat.program;
+    glUseProgram(rendering.program);
+
+    // Setting Lights
+    // ----------------------------------------------------------
+    glUniform3fv(instance.flat.AmbiantLight, 1,
+                 glm::value_ptr(gval::ambiantLight));
+
+    glUniform3fv(instance.flat.EyeDirection, 1,
+                 glm::value_ptr(frame.cameraPosition));
+    glUniform1i(instance.flat.NumberOfLights, frame.pointLights.size());
+    throwOnGlError();
+
+    int i = 0;
+    assert(frame.pointLights.size() < DefinedMaxLights &&
+           "Max number of light exceeded");
+    for (const auto& pointLight : frame.pointLights) {
+      // TODO: Protect to avoid array verflow
+
+      glUniform3fv(instance.flat.PointLights[i].position, 1,
+                   glm::value_ptr(pointLight.position));
+      glUniform3fv(instance.flat.PointLights[i].color, 1,
+                   glm::value_ptr(pointLight.color));
+      glUniform1f(instance.flat.PointLights[i].linearAttenuation,
+                  pointLight.linear);
+      glUniform1f(instance.flat.PointLights[i].quadraticAttenuation,
+                  pointLight.quadratic);
+
+      ++i;
+    }
+    throwOnGlError();
+
+    gl::BindBuffer bindBuffer(
+      GL_ARRAY_BUFFER, shape.getBuffer()); // TODO: use glBind (check perf)
+    throwOnGlError();
+
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
+                          (const GLvoid*)offsetof(Vertex, normal));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride,
+                          (const GLvoid*)offsetof(Vertex, color));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride,
+                          (const GLvoid*)offsetof(Vertex, uv));
+    throwOnGlError();
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    throwOnGlError();
+
+    if (ControllerService::GetPlayerController().option1)
+      glEnable(GL_BLEND);
+    else
+      glDisable(GL_BLEND);
+    for (const auto& sub : shape.getSubShapes()) {
+      // Setting Materials
+      // -------------------------------------------------------
+      glUniform3fv(instance.flat.Material.ambiantColor, 1,
+                   glm::value_ptr(sub.material.ambiantColor));
+      glUniform1f(instance.flat.Material.shininess, sub.material.shininess);
+      glUniform3fv(instance.flat.Material.emissiveColor, 1,
+                   glm::value_ptr(sub.material.emissiveColor));
+      glUniform3fv(instance.flat.Material.diffuseColor, 1,
+                   glm::value_ptr(sub.material.diffuseColor));
+      glUniform3fv(instance.flat.Material.specularColor, 1,
+                   glm::value_ptr(sub.material.specularColor));
+      throwOnGlError();
+
+      // Setting Textures
+      // --------------------------------------------------------
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, sub.material.diffuseMap);
+      glUniform1i(instance.flat.Material.diffuseMap, 0);
+      throwOnGlError();
+
+      auto ViewProjectionModel = frame.ViewProjection * transformation;
+      glUniformMatrix4fv(instance.flat.MVPMatrix, 1, GL_FALSE,
+                         glm::value_ptr(ViewProjectionModel));
+
+/* The book has a mistake, it says using a MVMatrix while only using the Model
+ * Matrix*/
+#if 0
+    auto ModelView = frame.View * drawCommand.transformation;
+#endif
+      glUniformMatrix4fv(instance.flat.MVMatrix, 1, GL_FALSE,
+                         glm::value_ptr(transformation)); // ModelView
+
+/* TODO: If only rotation and isometric (nonshape changing) scaling was
+ * performed, the Mat3 is should be fine: */
+#if 0
+    auto NormalMatrix = glm::mat3(ModelView);
+#endif
+
+      auto NormalMatrix =
+        glm::transpose(glm::inverse(glm::mat3(transformation)));
+      // TODO: Allow Draw command to have its transpose to save this computaiton
+
+      glUniformMatrix3fv(instance.flat.NormalMatrix, 1, GL_FALSE,
+                         glm::value_ptr(NormalMatrix));
+      const std::vector<GLushort>& indices = sub.indices;
+      glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT,
+                     indices.data());
+      throwOnGlError();
     }
   }
 

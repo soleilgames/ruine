@@ -113,6 +113,8 @@ namespace Soleil {
                  const glm::vec4& color = glm::vec4(1.0f));
   void RenderPhongShape(const RenderInstances& instances, const Frame& frame);
   void RenderFlatShape(const RenderInstances& instances, const Frame& frame);
+  void RenderFlatShape(const glm::mat4& transformation, const Shape& shape,
+                       const Frame& frame);
   void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
                 const glm::vec4& color);
   void Fade(const float ratio);

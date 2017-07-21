@@ -98,13 +98,57 @@ namespace Soleil {
     World() {}
     World(const World&) = delete;
     World& operator=(const World&) = delete;
-    void resetLevel(void);
+    void   resetLevel(void);
   };
 
   void InitializeWorldModels(World& world);
   void InitializeWorldDoors(World& world, const std::string& assetName);
   void InitializeLevel(World& world, const std::string& level, Frame& frame,
                        Camera& camera, PopUp& caption);
+
+  ////////////////////////////
+  // Future WORLD Structure //
+  // vvvvvvvvvvvvvvvvvvvvvv //
+  ////////////////////////////
+
+  enum ShapeType
+  {
+    WallCube,
+    Barrel,
+    Floor,
+    GateHeavy,
+    Key,
+    Coin,
+    Ghost,
+
+    Size
+  };
+  // Position in shapes vector
+
+  enum class TriggerState
+  {
+    NeverTriggered,
+    CurrentlyActive,
+    AlreadyTriggered
+  };
+
+  enum class TriggerType
+  {
+    Coin,
+    Ghost
+  };
+
+  struct Trigger
+  {
+    BoundingBox  aoe;
+    TriggerState state;
+    TriggerType  type;
+  };
+
+  ////////////////////////////
+  // ^^^^^^^^^^^^^^^^^^^^^^ //
+  // Future WORLD Structure //
+  ////////////////////////////
 
 } // Soleil
 

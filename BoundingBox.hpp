@@ -68,36 +68,35 @@ namespace Soleil {
              point.y <= max.y && point.z >= min.z && point.z <= max.z;
     }
 
-    inline bool contains(const glm::vec3& point, const glm::vec3& direction,
-                         glm::vec3& intersection) const noexcept
-    {
-      float tmin = 0.0f;
-      float tmax = std::numeric_limits<float>::max();
-
-      for (int i = 0; i < 3; i++) {
-        if (std::abs(direction[i]) < glm::epsilon<float>()) {
-          if (point[i] < min[i] || point[i] > max[i]) return false;
-        } else {
-          const float ood = 1.0f / direction[i];
-          float       t1  = (min[i] - point[i]) * ood;
-          float       t2  = (max[i] - point[i]) * ood;
-
-          if (t1 > t2) std::swap(t1, t2);
-          if (t1 > tmin) tmin = t1;
-          if (t2 > tmax) tmax = t2;
-
-          if (tmin > tmax) return false;
-        }
-      }
-      intersection = point * direction * tmin;
-      return true;
-    }
-
     bool intersect(const BoundingBox& other) const noexcept
     {
       return !(max.x <= other.min.x || other.max.x <= min.x ||
                max.y <= other.min.y || other.max.y <= min.y ||
                max.z <= other.min.z || other.max.z <= min.z);
+    }
+
+    bool rayIntersect(const glm::vec3& orig, const glm::vec3& dir,
+                      float& tMin) const noexcept
+    {
+      tMin       = 0.0f;
+      float tMax = std::numeric_limits<float>::max();
+
+      for (auto i = 0; i < 3; ++i) {
+        if (glm::abs(dir[i]) <= glm::epsilon<float>()) {
+          if (orig[i] < min[i] || orig[i] > max[i]) return false;
+        } else {
+          float ood = 1.0f / dir[i];
+          float t1  = (min[i] - orig[i]) * ood;
+          float t2  = (max[i] - orig[i]) * ood;
+          if (t1 > t2) std::swap(t1, t2);
+
+          if (t1 > tMin) tMin = t1;
+          if (t2 < tMax) tMax = t2;
+
+          if (tMin > tMax) return false;
+        }
+      }
+      return true;
     }
 
     inline bool containsFlat(const glm::vec2& point) const noexcept
