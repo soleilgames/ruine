@@ -85,6 +85,7 @@ namespace Soleil {
 
     glm::vec3                    bounds;
     RenderInstances              statics;
+    RenderInstances              objects;
     std::vector<GhostData>       sentinels;
     std::vector<BoundingBox>     hardSurfaces;
     std::vector<NextZoneTrigger> nextZoneTriggers;

@@ -56,7 +56,8 @@ namespace Soleil {
     glm::mat4 titleTransformation;
     glm::mat4 newGameTransformation;
 
-    BoundingBox newGameBounds;
+
+    Menu() {}
   };
 
   class FadeTimer

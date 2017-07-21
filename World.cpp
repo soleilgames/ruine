@@ -104,6 +104,7 @@ namespace Soleil {
   void World::resetLevel()
   {
     bounds = glm::vec3(0.0f);
+    objects.clear();
     statics.clear();
     sentinels.clear();
     hardSurfaces.clear();
@@ -179,7 +180,7 @@ namespace Soleil {
                                  std::end(world.coinPickedUp), transformation);
             if (pos == std::end(world.coinPickedUp)) {
               // TODO: Do put in a specific vector;
-              world.statics.push_back(
+              world.objects.push_back(
                 DrawCommand(*world.purseShape, transformation));
 
               BoundingBox bbox(transformation, 0.3f);
@@ -191,7 +192,7 @@ namespace Soleil {
             const glm::mat4 transformation =
               glm::scale(glm::translate(scale, keyPosition), glm::vec3(2.0f));
 
-            world.statics.push_back(
+            world.objects.push_back(
               DrawCommand(*world.keyShape, transformation));
             world.theKey = transformation;
           } else if (c == 'b' || c == 'B') {
