@@ -136,6 +136,14 @@ namespace Soleil {
   {
     size_t    shapeIndex;
     glm::mat4 transformation;
+    int       id;
+
+    static int getNextId(void)
+    {
+      static int next = -1;
+      next++;
+      return next;
+    }
   };
 
   static void pushCoin(DrawElement& draw, std::vector<DrawElement>& objects,
@@ -227,34 +235,8 @@ namespace Soleil {
   struct Selectable
   {
     BoundingBox boundingBox;
-    void*       ptr;
+    int         id;
   };
-
-  static void worldAsSelectable(std::vector<Selectable>&        selectables,
-                                const std::vector<ShapePtr>&    shapes,
-                                const std::vector<DrawElement>& elements,
-                                const std::vector<DrawElement>& objects,
-                                const std::vector<DrawElement>& ghosts)
-  {
-    std::map<int, BoundingBox> prepared;
-    selectables.clear();
-    
-    const auto items = {elements, objects, ghosts};
-
-    for (const auto& item : items) {
-      for (const auto& element : item) {
-        if (prepared.find(element.shapeIndex) == prepared.end()) {
-          prepared[element.shapeIndex] =
-            shapes[element.shapeIndex]->makeBoundingBox();
-        }
-
-        BoundingBox b = prepared[element.shapeIndex];
-        b.transform(element.transformation);
-
-        selectables.push_back({b, (void*)&element});
-      }
-    }
-  }
 
   namespace gui {
 
@@ -483,7 +465,7 @@ namespace Soleil {
           if (c == 'x') {
             const glm::mat4 transformation = glm::translate(scale, position);
 
-            elements.push_back({0, transformation});
+            elements.push_back({0, transformation, DrawElement::getNextId()});
             world.statics.push_back(
               DrawCommand(*world.wallShape, transformation));
 
@@ -496,7 +478,7 @@ namespace Soleil {
           } else if (c == 'G') {
             const glm::mat4 transformation = glm::translate(scale, position);
 
-            elements.push_back({3, transformation});
+            elements.push_back({3, transformation, DrawElement::getNextId()});
             world.statics.push_back(
               DrawCommand(*world.gateShape, transformation));
 
@@ -589,7 +571,8 @@ namespace Soleil {
               glm::rotate(glm::mat4(), glm::pi<float>(),
                           glm::vec3(0.0f, 0.0f, 1.0f));
 
-            elements.push_back({2, groundTransformation});
+            elements.push_back(
+              {2, groundTransformation, DrawElement::getNextId()});
             world.statics.push_back(
               DrawCommand(*world.floorShape, groundTransformation));
             world.statics.push_back(
@@ -633,6 +616,7 @@ static float                    TranslationSpeed = -1.0f;
 static gui::CursorSelection     cursorSelection;
 static gui::Console             console;
 static std::vector<BoundingBox> debugBox;
+static int                      selection = -1;
 
 // TODO: regroup functions
 static void
@@ -640,16 +624,78 @@ pick(const glm::vec3& orig, const glm::vec3& dir,
      std::vector<Selectable>& selectables)
 {
   debugBox.clear();
+  BoundingBox bbox;
+  float       distance = std::numeric_limits<float>::max();
 
   for (const auto s : selectables) {
     float     t;
     glm::vec3 point;
     if (s.boundingBox.rayIntersect(orig, dir, t)) {
       console.push(
-        toString("Intersection with ptr=", s.ptr, " at distance:", t));
-      debugBox.push_back(s.boundingBox);
+        toString("Intersection with ptr=", s.id, " at distance:", t));
+
+      if (t < distance) {
+        distance  = t;
+        selection = s.id;
+        bbox      = s.boundingBox;
+      }
     }
   }
+
+  bbox.expandBy(bbox.getMin() - 0.1f);
+  bbox.expandBy(bbox.getMax() + 0.1f);
+  debugBox.push_back(bbox);
+}
+
+static void
+worldAsSelectable(std::vector<Selectable>&        selectables,
+                  const std::vector<ShapePtr>&    shapes,
+                  const std::vector<DrawElement>& elements,
+                  const std::vector<DrawElement>& objects,
+                  const std::vector<DrawElement>& ghosts)
+{
+  std::map<int, BoundingBox> prepared;
+  selectables.clear();
+
+  const auto items = {elements, objects, ghosts};
+
+  for (const auto& item : items) {
+    for (auto it = item.begin(); it != item.end(); ++it) {
+      auto& element = *it;
+      if (prepared.find(element.shapeIndex) == prepared.end()) {
+        prepared[element.shapeIndex] =
+          shapes[element.shapeIndex]->makeBoundingBox();
+      }
+
+      BoundingBox b = prepared[element.shapeIndex];
+      b.transform(element.transformation);
+
+      console.push(toString("> ", (void*)&element));
+      selectables.push_back({b, element.id});
+    }
+  }
+}
+
+static void
+worldBuilderDelete(int ptr, const std::vector<ShapePtr>& shapes,
+                   std::vector<DrawElement>& elements,
+                   std::vector<DrawElement>& objects,
+                   std::vector<DrawElement>& ghosts)
+{
+  const auto items = {elements, objects, ghosts};
+
+  for (const auto& item : items) {
+    for (auto it = item.begin(); it != item.end(); ++it) {
+      auto& element = *it;
+
+      console.push(toString("+ ", (void*)&element));
+      if (element.id == ptr) {
+        elements.erase(it);
+        return;
+      }
+    }
+  }
+  console.push(toString("No item found!! ", ptr));
 }
 
 static void
@@ -807,7 +853,11 @@ render(GLFWwindow* window)
     // TODO: ! Warning ! Also add any new objects
 
     InitializeWorldModels(world);
+#if 0
     std::istringstream is(AssetService::LoadAsString("corpsdegarde.level.new"));
+#else
+    std::istringstream is(AssetService::LoadAsString("empty.new"));
+#endif
     loadMap(elements, objects, ghosts, triggers, shapes, is);
   }
 
@@ -926,7 +976,8 @@ render(GLFWwindow* window)
       // Check if we have to add an entity
       if (cursorSelection.isActive()) {
         DrawElement draw{cursorSelection.getShape(),
-                         cursorSelection.getTransformation()};
+                         cursorSelection.getTransformation(),
+                         DrawElement::getNextId()};
         switch (cursorSelection.getShape()) {
           case ShapeType::WallCube:
           case ShapeType::Barrel:
@@ -1052,6 +1103,14 @@ Here I've multiple choices: What I save into the map ?
     }
 
     ImGui::End();
+
+    if (selection >= 0) {
+      ImGui::Begin("Selection");
+      if (ImGui::Button("Delete")) {
+        worldBuilderDelete(selection, shapes, elements, objects, ghosts);
+      }
+      ImGui::End();
+    }
 
     // 1. Show a simple window
     // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in
