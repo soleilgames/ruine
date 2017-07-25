@@ -19,11 +19,12 @@
  * THE SOFTWARE.
  */
 
+#include "editor.hpp"
+
 #include <chrono>
 #include <memory>
 #include <stdexcept>
 
-#include "OpenGLInclude.hpp"
 #include "stringutils.hpp"
 #include "types.hpp"
 
@@ -38,7 +39,6 @@
 #include <functional>
 
 #define IMGUI_API
-//#include "imgui_impl_glfw.h"
 #include "imgui_impl_glfw_gl3.h"
 #include <imgui.h>
 #include <stdio.h>
@@ -48,12 +48,17 @@
 #include "DesktopAssetService.hpp"
 #include "DesktopSoundService.hpp"
 #include "Draw.hpp"
+#include "EventService.hpp"
 #include "OpenGLDataInstance.hpp"
 #include "Pristine.hpp"
 #include "SoundService.hpp"
 #include "WavefrontLoader.hpp"
 
 using namespace Soleil;
+
+static std::string                           lineDebug;
+static std::unique_ptr<gui::EditorResources> editorResources;
+static World                                 world;
 
 // TODO: Required by Draw command 'for debug' - Should not be.
 Push&
@@ -78,225 +83,143 @@ errorCallback(int error, const char* description)
   std::cerr << "GLFW failed with error N." << error << ": " << description;
 }
 
-// TODO: Should be in gui:: package
-struct EditorResources
+gui::EditorResources::EditorResources()
 {
-  Program gridProgram;
-  GLuint  gridMVP;
+  gridProgram.attachShader(Shader(GL_VERTEX_SHADER, "grid.vert"));
+  gridProgram.attachShader(Shader(GL_FRAGMENT_SHADER, "grid.frag"));
+  glBindAttribLocation(gridProgram.program, 0, "position");
+  gridProgram.compile();
 
-  EditorResources()
-  {
-    gridProgram.attachShader(Shader(GL_VERTEX_SHADER, "grid.vert"));
-    gridProgram.attachShader(Shader(GL_FRAGMENT_SHADER, "grid.frag"));
-    glBindAttribLocation(gridProgram.program, 0, "position");
-    gridProgram.compile();
-
-    gridMVP = gridProgram.getUniform("MVP");
-  }
-};
-
-static std::string                      lineDebug;
-static std::unique_ptr<EditorResources> editorResources;
-static World                            world;
+  gridMVP = gridProgram.getUniform("MVP");
+}
 
 namespace Soleil {
 
-  class EventService
-  {
-  public:
-    typedef std::function<void(void)> Callback;
-    typedef int                       Event;
-
-  public:
-    EventService() {}
-    virtual ~EventService() {}
-
-  public:
-    static void Push(Event event, Callback c) { callbacks[event].push_back(c); }
-
-    static void Trigger(Event event)
-    {
-      for (const auto& c : callbacks[event]) {
-        c();
-      }
-    }
-
-  private:
-    static std::map<Event, std::vector<Callback>> callbacks;
-  };
   std::map<EventService::Event, std::vector<EventService::Callback>>
     EventService::callbacks;
 
-  enum Events
-  {
-    event_map_loaded
-  };
-
-  struct DrawElement
-  {
-    size_t    shapeIndex;
-    glm::mat4 transformation;
-    int       id;
-
-    static int getNextId(void)
-    {
-      static int next = -1;
-      next++;
-      return next;
-    }
-  };
-
-  static void pushCoin(DrawElement& draw, std::vector<DrawElement>& objects,
-                       std::vector<Trigger>& triggers)
-  {
-    objects.push_back(draw);
-    triggers.push_back(
-      {BoundingBox(draw.transformation, 0.25f), // TODO: use gval
-       TriggerState::NeverTriggered, TriggerType::Coin});
-  }
-
-  static void pushGhost(DrawElement& draw, std::vector<DrawElement>& objects,
-                        std::vector<Trigger>&        triggers,
-                        const std::vector<ShapePtr>& shapes)
-  {
-    BoundingBox box = shapes[ShapeType::Ghost]->makeBoundingBox();
-    box.transform(draw.transformation);
-    objects.push_back(draw);
-    triggers.push_back({box, // TODO: use gval
-                        TriggerState::NeverTriggered, TriggerType::Coin});
-  }
-
-  static void newMap(std::vector<DrawElement>& elements,
-                     std::vector<DrawElement>& objects,
-                     std::vector<DrawElement>& ghosts,
-                     std::vector<Trigger>&     triggers)
-  {
-    std::string line;
-
-    elements.clear();
-    objects.clear();
-    ghosts.clear();
-    triggers.clear();
-
-    EventService::Trigger(Events::event_map_loaded);
-  }
-
-  static void loadMap(std::vector<DrawElement>&    elements,
-                      std::vector<DrawElement>&    objects,
-                      std::vector<DrawElement>&    ghosts,
-                      std::vector<Trigger>&        triggers,
-                      const std::vector<ShapePtr>& shapes,
-                      std::istringstream&          s)
-  {
-    std::string line;
-
-    elements.clear();
-    objects.clear();
-    ghosts.clear();
-    triggers.clear();
-    enum Step
-    {
-      Statics,
-      Coins,
-      Ghosts,
-    };
-    int step = Step::Statics;
-    while (std::getline(s, line)) {
-      if (line[0] == '#') continue; // Skip comments
-      if (line.size() < 1) {
-        step++;
-        continue;
-      }
-
-      std::istringstream drawStr(line);
-      DrawElement        draw;
-
-      drawStr >> draw.shapeIndex;
-
-      glm::mat4& t = draw.transformation;
-      for (int y = 0; y < 4; ++y) {
-        for (int x = 0; x < 4; ++x) {
-          drawStr >> t[x][y];
-        }
-      }
-      switch (step) {
-        case Step::Statics:
-          elements.push_back(draw);
-          // TODO: World bounds and bounding boxes
-          break;
-        case Step::Coins: pushCoin(draw, objects, triggers); break;
-        case Step::Ghosts: pushGhost(draw, ghosts, triggers, shapes); break;
-      }
-    }
-
-    EventService::Trigger(Events::event_map_loaded);
-  }
-
-  struct Selectable
-  {
-    BoundingBox boundingBox;
-    int         id;
-  };
-
   namespace gui {
 
-    class Console
+    void pushCoin(DrawElement& draw, std::vector<DrawElement>& objects,
+                  std::vector<Trigger>& triggers)
     {
-    public:
-      Console()
-        : lines(255)
-        , start(0)
-        , end(0)
+      objects.push_back(draw);
+      triggers.push_back(
+        {BoundingBox(draw.transformation, 0.25f), // TODO: use gval
+         TriggerState::NeverTriggered, TriggerType::Coin});
+    }
+
+    void pushGhost(DrawElement& draw, std::vector<DrawElement>& objects,
+                   std::vector<Trigger>&        triggers,
+                   const std::vector<ShapePtr>& shapes)
+    {
+      BoundingBox box = shapes[ShapeType::Ghost]->makeBoundingBox();
+      box.transform(draw.transformation);
+      objects.push_back(draw);
+      triggers.push_back({box, // TODO: use gval
+                          TriggerState::NeverTriggered, TriggerType::Coin});
+    }
+
+    void newMap(std::vector<DrawElement>& elements,
+                std::vector<DrawElement>& objects,
+                std::vector<DrawElement>& ghosts,
+                std::vector<Trigger>&     triggers)
+    {
+      std::string line;
+
+      elements.clear();
+      objects.clear();
+      ghosts.clear();
+      triggers.clear();
+
+      EventService::Trigger(Events::event_map_loaded);
+    }
+
+    void loadMap(std::vector<DrawElement>&    elements,
+                 std::vector<DrawElement>&    objects,
+                 std::vector<DrawElement>&    ghosts,
+                 std::vector<Trigger>&        triggers,
+                 const std::vector<ShapePtr>& shapes, std::istringstream& s)
+    {
+      std::string line;
+
+      elements.clear();
+      objects.clear();
+      ghosts.clear();
+      triggers.clear();
+      enum Step
       {
-      }
+        Statics,
+        Coins,
+        Ghosts,
+      };
+      int step = Step::Statics;
+      while (std::getline(s, line)) {
+        if (line[0] == '#') continue; // Skip comments
+        if (line.size() < 1) {
+          step++;
+          continue;
+        }
 
-      virtual ~Console() {}
+        std::istringstream drawStr(line);
+        DrawElement        draw;
 
-      void push(const std::string& text)
-      {
-        if (end >= lines.capacity()) end = 0;
+        drawStr >> draw.shapeIndex;
 
-        lines[end] = text;
-        end++;
-        if (end <= start) {
-          start++;
-          if (start >= lines.capacity()) start = 0;
+        glm::mat4& t = draw.transformation;
+        for (int y = 0; y < 4; ++y) {
+          for (int x = 0; x < 4; ++x) {
+            drawStr >> t[x][y];
+          }
+        }
+        switch (step) {
+          case Step::Statics:
+            elements.push_back(draw);
+            // TODO: World bounds and bounding boxes
+            break;
+          case Step::Coins: pushCoin(draw, objects, triggers); break;
+          case Step::Ghosts: pushGhost(draw, ghosts, triggers, shapes); break;
         }
       }
 
-      void render(void)
-      {
-        int size = lines.capacity();
+      EventService::Trigger(Events::event_map_loaded);
+    }
 
-        size_t current = start;
-        while (size > 0) {
-          if (current >= lines.capacity()) current = 0;
-          if (current == end) return;
+    Console::Console()
+      : lines(255)
+      , start(0)
+      , end(0)
+    {
+    }
 
-          ImGui::Text("> %s", lines[current].c_str());
-          current++;
-          size--;
-        }
+    Console::~Console() {}
+
+    void Console::push(const std::string& text)
+    {
+      if (end >= lines.capacity()) end = 0;
+
+      lines[end] = text;
+      end++;
+      if (end <= start) {
+        start++;
+        if (start >= lines.capacity()) start = 0;
       }
+    }
 
-    private:
-      std::vector<std::string> lines;
-      size_t                   start;
-      size_t                   end;
-    };
-
-    struct ShapeElement
+    void Console::render(void)
     {
-      size_t      shapeIndex;
-      std::string name;
-    };
+      int size = lines.capacity();
 
-    enum class ObjectType
-    {
-      Static,
-      Coin,
-      Ghost
-    };
+      size_t current = start;
+      while (size > 0) {
+        if (current >= lines.capacity()) current = 0;
+        if (current == end) return;
+
+        ImGui::Text("> %s", lines[current].c_str());
+        current++;
+        size--;
+      }
+    }
 
     class CursorSelection
     {
@@ -448,8 +371,8 @@ namespace Soleil {
       }
     };
 
-    static void parseMaze(World& world, std::vector<DrawElement>& elements,
-                          std::istringstream& s, Frame& frame)
+    void parseMaze(World& world, std::vector<DrawElement>& elements,
+                   std::istringstream& s, Frame& frame)
     {
       std::string            line;
       float                  x     = 0.0f;
@@ -608,327 +531,307 @@ namespace Soleil {
       }
     }
 
-  } // gui
+    static float                    TranslationSpeed = -1.0f;
+    static gui::CursorSelection     cursorSelection;
+    static gui::Console             console;
+    static std::vector<BoundingBox> debugBox;
+    static int                      selection = -1;
 
-} // Soleil
-
-static float                    TranslationSpeed = -1.0f;
-static gui::CursorSelection     cursorSelection;
-static gui::Console             console;
-static std::vector<BoundingBox> debugBox;
-static int                      selection = -1;
-
-// TODO: regroup functions
-static void
-pick(const glm::vec3& orig, const glm::vec3& dir,
-     std::vector<Selectable>& selectables)
-{
-  debugBox.clear();
-  BoundingBox bbox;
-  float       distance = std::numeric_limits<float>::max();
-
-  for (const auto s : selectables) {
-    float     t;
-    glm::vec3 point;
-    if (s.boundingBox.rayIntersect(orig, dir, t)) {
-      console.push(
-        toString("Intersection with ptr=", s.id, " at distance:", t));
-
-      if (t < distance) {
-        distance  = t;
-        selection = s.id;
-        bbox      = s.boundingBox;
-      }
-    }
-  }
-
-  bbox.expandBy(bbox.getMin() - 0.1f);
-  bbox.expandBy(bbox.getMax() + 0.1f);
-  debugBox.push_back(bbox);
-}
-
-static void
-worldAsSelectable(std::vector<Selectable>&        selectables,
-                  const std::vector<ShapePtr>&    shapes,
-                  const std::vector<DrawElement>& elements,
-                  const std::vector<DrawElement>& objects,
-                  const std::vector<DrawElement>& ghosts)
-{
-  std::map<int, BoundingBox> prepared;
-  selectables.clear();
-
-  const auto items = {elements, objects, ghosts};
-
-  for (const auto& item : items) {
-    for (auto it = item.begin(); it != item.end(); ++it) {
-      auto& element = *it;
-      if (prepared.find(element.shapeIndex) == prepared.end()) {
-        prepared[element.shapeIndex] =
-          shapes[element.shapeIndex]->makeBoundingBox();
-      }
-
-      BoundingBox b = prepared[element.shapeIndex];
-      b.transform(element.transformation);
-
-      console.push(toString("> ", (void*)&element));
-      selectables.push_back({b, element.id});
-    }
-  }
-}
-
-static void
-worldBuilderDelete(int ptr, const std::vector<ShapePtr>& shapes,
-                   std::vector<DrawElement>& elements,
-                   std::vector<DrawElement>& objects,
-                   std::vector<DrawElement>& ghosts)
-{
-  const auto items = {elements, objects, ghosts};
-
-  for (const auto& item : items) {
-    for (auto it = item.begin(); it != item.end(); ++it) {
-      auto& element = *it;
-
-      console.push(toString("+ ", (void*)&element));
-      if (element.id == ptr) {
-        elements.erase(it);
-        return;
-      }
-    }
-  }
-  console.push(toString("No item found!! ", ptr));
-}
-
-static void
-updateTranslation(glm::vec3& position, glm::vec3& center)
-{
-  ImGuiIO& io = ImGui::GetIO();
-
-  static bool dirty = true;
-  if (io.MouseDown[1]) {
-    static ImVec2 Prev = io.MousePos;
-    if (dirty) {
-      Prev  = io.MousePos;
-      dirty = false;
-    }
-
-    glm::vec3 translation =
-      glm::vec3(Prev.x - io.MousePos.x, 0.0f, Prev.y - io.MousePos.y) *
-      io.DeltaTime * TranslationSpeed;
-    SOLEIL__LOGGER_DEBUG(
-      toString("-----------------Translation:", translation));
-
-    position += translation;
-    center += translation;
-    Prev = io.MousePos;
-  } else {
-    dirty = true;
-  }
-}
-
-static void
-render(GLFWwindow* window)
-{
-
-  static bool doRenderStatics  = true;
-  static bool doRenderTriggers = false;
-
-  ImVec4 clear_color = ImColor(114, 144, 154);
-  int    width, height;
-  glfwGetFramebufferSize(window, &width, &height);
-
-  AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
-  SoundService::Instance = std::make_unique<DesktopSoundService>();
-  OpenGLDataInstance::Initialize(); // TODO: Required by MTL - Should not be?
-  editorResources                         = std::make_unique<EditorResources>();
-  OpenGLDataInstance::Instance().viewport = glm::vec2(width, height);
-
-  glm::mat4 projection = glm::perspective(
-    glm::radians(50.0f), (float)width / (float)height, 0.1f, 50.0f);
-  glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 8.0f, -8.0f), glm::vec3(0.0f),
-                               glm::vec3(0, 1, 0));
-
-  gui::Grid grid(20, 20);
-  gui::Grid grid2(5, 5);
-  gui::Grid grid3(5, 5);
-  grid2.transformation =
-    glm::rotate(glm::mat4(), -glm::half_pi<float>(), glm::vec3(1, 0, 0));
-  grid3.transformation =
-    glm::rotate(glm::mat4(), glm::half_pi<float>(), glm::vec3(0, 0, 1));
-
-  std::vector<ShapePtr> shapes = {
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("wallcube.obj")),
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("barrel.obj")),
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("floor.obj")),
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("gate.obj")),
-    Soleil::WavefrontLoader::fromContent(AssetService::LoadAsString("key.obj")),
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("coin.obj")),
-    Soleil::WavefrontLoader::fromContent(
-      AssetService::LoadAsString("ghost.obj"))};
-  // All the shape that can be used in game. In a future release it could be
-  // configured per level?
-
-  std::vector<DrawElement> elements;
-  // TODO: Should be named statics. Will have a fixed size
-
-  std::vector<DrawElement> objects;
-  // Coins, keys, ... size will varry
-
-  std::vector<Trigger> triggers;
-
-  std::vector<DrawElement> ghosts;
-
-  std::vector<gui::ShapeElement> guiStaticsShapes = {
-    {ShapeType::WallCube, "Wall cube"},
-    {ShapeType::Barrel, "Barrel"},
-    {ShapeType::Floor, "Floor"},
-    {ShapeType::GateHeavy, "Gate heavy"},
-  };
-
-  std::vector<gui::ShapeElement> guiObjectsShapes = {
-    {ShapeType::Coin, "Coin"}, {ShapeType::Ghost, "Ghost"},
-  };
-
-  Frame                          frame;
-  static std::vector<Selectable> selectables;
-
-#if 0
-  frame.pointLights.push_back(
-    {glm::vec3(0.0f, 1.0f, -5.0f), glm::vec3(1.0f), 0.014f, 0.0007f});
-  frame.pointLights.push_back(
-    {glm::vec3(0.0f, 8.0f, -8.0f), glm::vec3(1.0f), 0.014f, 0.0007f});
-  frame.pointLights.push_back(
-    {glm::vec3(0.0f, 8.0f, 8.0f), glm::vec3(1.0f), 0.014f, 0.0007f});
-  frame.pointLights.push_back(
-    {glm::vec3(-8.0f, 8.0f, 0.0f), glm::vec3(1.0f), 0.014f, 0.0007f});
-  frame.pointLights.push_back(
-    {glm::vec3(8.0f, 8.0f, 0.0f), glm::vec3(1.0f), 0.014f, 0.0007f});
-#endif
-
-  frame.cameraPosition = glm::vec3(2.0f, 8.0f, -8.0f);
-  // frame.ambiant = glm::vec4(1.0f);
-
-  gl::FrameBuffer  frameBuffer;
-  gl::Texture      fbTexture;
-  gl::RenderBuffer renderBuffer;
-
-  {
-    glEnable(GL_DEPTH_TEST);
-    gl::BindFrameBuffer bindFb(GL_FRAMEBUFFER, *frameBuffer);
+    void pick(const glm::vec3& orig, const glm::vec3& dir,
+              std::vector<Selectable>& selectables)
     {
-      gl::BindTexture BindTex(GL_TEXTURE_2D, *fbTexture);
+      debugBox.clear();
+      BoundingBox bbox;
+      float       distance = std::numeric_limits<float>::max();
 
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                   GL_UNSIGNED_BYTE, NULL);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      for (const auto s : selectables) {
+        float     t;
+        glm::vec3 point;
+        if (s.boundingBox.rayIntersect(orig, dir, t)) {
+          console.push(
+            toString("Intersection with ptr=", s.id, " at distance:", t));
+
+          if (t < distance) {
+            distance  = t;
+            selection = s.id;
+            bbox      = s.boundingBox;
+          }
+        }
+      }
+
+      bbox.expandBy(bbox.getMin() - 0.1f);
+      bbox.expandBy(bbox.getMax() + 0.1f);
+      debugBox.push_back(bbox);
     }
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           *fbTexture, 0);
 
+    void worldAsSelectable(std::vector<Selectable>&        selectables,
+                           const std::vector<ShapePtr>&    shapes,
+                           const std::vector<DrawElement>& elements,
+                           const std::vector<DrawElement>& objects,
+                           const std::vector<DrawElement>& ghosts)
     {
-      gl::BindRenderBuffer bindRB(GL_RENDERBUFFER, *renderBuffer);
-      glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width,
-                            height);
+      std::map<int, BoundingBox> prepared;
+      selectables.clear();
+
+      const auto items = {elements, objects, ghosts};
+
+      for (const auto& item : items) {
+        for (auto it = item.begin(); it != item.end(); ++it) {
+          auto& element = *it;
+          if (prepared.find(element.shapeIndex) == prepared.end()) {
+            prepared[element.shapeIndex] =
+              shapes[element.shapeIndex]->makeBoundingBox();
+          }
+
+          BoundingBox b = prepared[element.shapeIndex];
+          b.transform(element.transformation);
+
+          console.push(toString("> ", (void*)&element));
+          selectables.push_back({b, element.id});
+        }
+      }
     }
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                              GL_RENDERBUFFER, *renderBuffer);
 
-    throwOnGlError();
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-      throw std::runtime_error("Framebuffer is not complete!");
-  }
+    void worldBuilderDelete(int ptr, const std::vector<ShapePtr>& shapes,
+                            std::vector<DrawElement>& elements,
+                            std::vector<DrawElement>& objects,
+                            std::vector<DrawElement>& ghosts)
+    {
+      const auto items = {elements, objects, ghosts};
 
-  {
-    Frame dummyFrame;
+      for (const auto& item : items) {
+        for (auto it = item.begin(); it != item.end(); ++it) {
+          auto& element = *it;
 
-    EventService::Push(Events::event_map_loaded, [&]() {
-      worldAsSelectable(selectables, shapes, elements, objects, ghosts);
-      console.push(toString("selectable size: ", selectables.size()));
-    });
-    // TODO: ! Warning ! Also add any new objects
+          console.push(toString("+ ", (void*)&element));
+          if (element.id == ptr) {
+            elements.erase(it);
+            return;
+          }
+        }
+      }
+      console.push(toString("No item found!! ", ptr));
+    }
 
-    InitializeWorldModels(world);
+    void updateTranslation(glm::vec3& position, glm::vec3& center)
+    {
+      ImGuiIO& io = ImGui::GetIO();
+
+      static bool dirty = true;
+      if (io.MouseDown[1]) {
+        static ImVec2 Prev = io.MousePos;
+        if (dirty) {
+          Prev  = io.MousePos;
+          dirty = false;
+        }
+
+        glm::vec3 translation =
+          glm::vec3(Prev.x - io.MousePos.x, 0.0f, Prev.y - io.MousePos.y) *
+          io.DeltaTime * TranslationSpeed;
+
+        position += translation;
+        center += translation;
+        Prev = io.MousePos;
+      } else {
+        dirty = true;
+      }
+    }
+
+    static void render(GLFWwindow* window)
+    {
+
+      // Any options the gui may temporary customize
+      bool   doRenderStatics  = true;
+      bool   doRenderTriggers = false;
+      ImVec4 clear_color      = ImColor(114, 144, 154);
+      int    width, height;
+      glfwGetFramebufferSize(window, &width, &height);
+
+      // GL resources initialization
+      AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
+      SoundService::Instance = std::make_unique<DesktopSoundService>();
+      OpenGLDataInstance::Initialize();
+      editorResources = std::make_unique<EditorResources>();
+      OpenGLDataInstance::Instance().viewport = glm::vec2(width, height);
+
+      glm::mat4 projection = glm::perspective(
+        glm::radians(50.0f), (float)width / (float)height, 0.1f, 50.0f);
+      glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 8.0f, -8.0f),
+                                   glm::vec3(0.0f), glm::vec3(0, 1, 0));
+
+      gui::Grid grid(20, 20);
+      gui::Grid grid2(5, 5);
+      gui::Grid grid3(5, 5);
+      grid2.transformation =
+        glm::rotate(glm::mat4(), -glm::half_pi<float>(), glm::vec3(1, 0, 0));
+      grid3.transformation =
+        glm::rotate(glm::mat4(), glm::half_pi<float>(), glm::vec3(0, 0, 1));
+
+      std::vector<ShapePtr> shapes = {
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("wallcube.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("barrel.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("floor.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("gate.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("key.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("coin.obj")),
+        Soleil::WavefrontLoader::fromContent(
+          AssetService::LoadAsString("ghost.obj"))};
+      // All the shape that can be used in game. In a future release it could be
+      // configured per level?
+
+      std::vector<DrawElement> elements;
+      // TODO: Should be named statics. Will have a fixed size
+
+      std::vector<DrawElement> objects;
+      // Coins, keys, ... size will varry
+
+      std::vector<Trigger> triggers;
+
+      std::vector<DrawElement> ghosts;
+
+      std::vector<gui::ShapeElement> guiStaticsShapes = {
+        {ShapeType::WallCube, "Wall cube"},
+        {ShapeType::Barrel, "Barrel"},
+        {ShapeType::Floor, "Floor"},
+        {ShapeType::GateHeavy, "Gate heavy"},
+      };
+
+      std::vector<gui::ShapeElement> guiObjectsShapes = {
+        {ShapeType::Coin, "Coin"}, {ShapeType::Ghost, "Ghost"},
+      };
+
+      Frame                          frame;
+      static std::vector<Selectable> selectables;
+
+      frame.cameraPosition = glm::vec3(2.0f, 8.0f, -8.0f);
+      // frame.ambiant = glm::vec4(1.0f);
+
+      gl::FrameBuffer  frameBuffer;
+      gl::Texture      fbTexture;
+      gl::RenderBuffer renderBuffer;
+
+      {
+        glEnable(GL_DEPTH_TEST);
+        gl::BindFrameBuffer bindFb(GL_FRAMEBUFFER, *frameBuffer);
+        {
+          gl::BindTexture BindTex(GL_TEXTURE_2D, *fbTexture);
+
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                       GL_UNSIGNED_BYTE, NULL);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, *fbTexture, 0);
+
+        {
+          gl::BindRenderBuffer bindRB(GL_RENDERBUFFER, *renderBuffer);
+          glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width,
+                                height);
+        }
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                  GL_RENDERBUFFER, *renderBuffer);
+
+        throwOnGlError();
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+          throw std::runtime_error("Framebuffer is not complete!");
+      }
+
+      {
+        Frame dummyFrame;
+
+        EventService::Push(Events::event_map_loaded, [&]() {
+          worldAsSelectable(selectables, shapes, elements, objects, ghosts);
+          console.push(toString("selectable size: ", selectables.size()));
+        });
+        // TODO: ! Warning ! Also add any new objects
+
+        InitializeWorldModels(world);
 #if 0
     std::istringstream is(AssetService::LoadAsString("corpsdegarde.level.new"));
 #else
-    std::istringstream is(AssetService::LoadAsString("empty.new"));
+        std::istringstream is(AssetService::LoadAsString("empty.new"));
 #endif
-    loadMap(elements, objects, ghosts, triggers, shapes, is);
-  }
+        loadMap(elements, objects, ghosts, triggers, shapes, is);
+      }
 
-  while (!glfwWindowShouldClose(window)) {
-    Soleil::Timer time((int)(glfwGetTime() * 1000));
-    glfwPollEvents();
+      while (!glfwWindowShouldClose(window)) {
+        Soleil::Timer time((int)(glfwGetTime() * 1000));
+        glfwPollEvents();
 
 #if 0    
     view = glm::rotate(view, 0.01f, glm::vec3(0, 1, 0));
 #endif
-    static glm::vec3 eye    = glm::vec3(0.0f, 8.0f, -.0f);
-    static glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
-    updateTranslation(eye, center);
-    view = glm::lookAt(eye, center, glm::vec3(0, 0, 1));
-    frame.updateViewProjectionMatrices(view, projection);
-    frame.cameraPosition = eye;
-    frame.delta          = time - frame.time;
-    frame.time           = time;
+        static glm::vec3 eye    = glm::vec3(0.0f, 8.0f, -.0f);
+        static glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
+        updateTranslation(eye, center);
+        view = glm::lookAt(eye, center, glm::vec3(0, 0, 1));
+        frame.updateViewProjectionMatrices(view, projection);
+        frame.cameraPosition = eye;
+        frame.delta          = time - frame.time;
+        frame.time           = time;
 
-    {
-      gl::BindFrameBuffer bindFB(GL_FRAMEBUFFER, *frameBuffer);
-      glEnable(GL_DEPTH_TEST);
-      glViewport(0, 0, width, height);
-      glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-      glEnable(GL_DEPTH_TEST);
-      glDepthFunc(GL_LESS);
+        {
+          gl::BindFrameBuffer bindFB(GL_FRAMEBUFFER, *frameBuffer);
+          glEnable(GL_DEPTH_TEST);
+          glViewport(0, 0, width, height);
+          glClearColor(clear_color.x, clear_color.y, clear_color.z,
+                       clear_color.w);
+          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+          glEnable(GL_DEPTH_TEST);
+          glDepthFunc(GL_LESS);
 
 #if 1
-      // TODO: FIXME: Actually It does not work without due to the FrameBuffer
-      // depth that does not work.
-      glEnable(GL_CULL_FACE);
-      glCullFace(GL_BACK);
+          // TODO: FIXME: Actually It does not work without due to the
+          // FrameBuffer
+          // depth that does not work.
+          glEnable(GL_CULL_FACE);
+          glCullFace(GL_BACK);
 #endif
-      // DrawImage(*OpenGLDataInstance::Instance().textures[0], glm::mat4());
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          // DrawImage(*OpenGLDataInstance::Instance().textures[0],
+          // glm::mat4());
+          glEnable(GL_BLEND);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-      cursorSelection.draw(shapes, frame);
-      grid.draw(frame);
-      grid2.draw(frame);
-      grid3.draw(frame);
-      // RenderFlatShape(statics, frame);
-      // RenderFlatShape(world.statics, frame);
-      if (doRenderStatics) {
-        for (const auto& e : elements) {
-          RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
-        }
-        for (const auto& e : objects) {
-          RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
-        }
-        for (const auto& e : ghosts) {
-          RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
-        }
-      }
-      if (doRenderTriggers) {
-        for (const auto& t : triggers) {
-          DrawBoundingBox(t.aoe, frame);
-        }
-      }
+          cursorSelection.draw(shapes, frame);
+          grid.draw(frame);
+          grid2.draw(frame);
+          grid3.draw(frame);
+          // RenderFlatShape(statics, frame);
+          // RenderFlatShape(world.statics, frame);
+          if (doRenderStatics) {
+            for (const auto& e : elements) {
+              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            }
+            for (const auto& e : objects) {
+              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            }
+            for (const auto& e : ghosts) {
+              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            }
+          }
+          if (doRenderTriggers) {
+            for (const auto& t : triggers) {
+              DrawBoundingBox(t.aoe, frame);
+            }
+          }
 
-      for (const auto b : debugBox) {
-        DrawBoundingBox(b, frame);
-      }
-    }
+          for (const auto b : debugBox) {
+            DrawBoundingBox(b, frame);
+          }
+        }
 
-    ImGui_ImplGlfwGL3_NewFrame();
+        ImGui_ImplGlfwGL3_NewFrame();
 
-    // Update Eye z;
-    const ImGuiIO& io = ImGui::GetIO();
-    eye.y -= io.MouseWheel;
+        // Update Eye z;
+        const ImGuiIO& io = ImGui::GetIO();
+        eye.y -= io.MouseWheel;
 
 #if 0
     ImGui::Begin("Another Window");
@@ -948,200 +851,204 @@ render(GLFWwindow* window)
       ImVec2(pos.x + w / 2, pos.y + h / 2), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
 #else
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-    ImGui::Begin("foobar", NULL, ImVec2(0, 0), 0.0f,
-                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                   ImGuiWindowFlags_NoScrollWithMouse |
-                   ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+        ImGui::Begin("foobar", NULL, ImVec2(0, 0), 0.0f,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                       ImGuiWindowFlags_NoScrollWithMouse |
+                       ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    // Get the current cursor position (where your window is)
-    ImVec2 pos = ImGui::GetCursorScreenPos();
+        // Get the current cursor position (where your window is)
+        ImVec2 pos = ImGui::GetCursorScreenPos();
 
-    // GLuint tex = *OpenGLDataInstance::Instance().textures[0];
-    GLuint tex = *fbTexture;
+        // GLuint tex = *OpenGLDataInstance::Instance().textures[0];
+        GLuint tex = *fbTexture;
 
-    float w = 1920;
-    float h = 1080;
-    // Ask ImGui to draw it as an image:
-    // Under OpenGL the ImGUI image type is GLuint
-    // So make sure to use "(void *)tex" but not "&tex"
-    ImGui::GetWindowDrawList()->AddImage(
-      (void*)tex, ImVec2(ImGui::GetItemRectMin().x + pos.x,
-                         ImGui::GetItemRectMin().y + pos.y),
-      ImVec2(pos.x + w, pos.y + h), ImVec2(0, 1), ImVec2(1, 0));
+        float w = 1920;
+        float h = 1080;
+        // Ask ImGui to draw it as an image:
+        // Under OpenGL the ImGUI image type is GLuint
+        // So make sure to use "(void *)tex" but not "&tex"
+        ImGui::GetWindowDrawList()->AddImage(
+          (void*)tex, ImVec2(ImGui::GetItemRectMin().x + pos.x,
+                             ImGui::GetItemRectMin().y + pos.y),
+          ImVec2(pos.x + w, pos.y + h), ImVec2(0, 1), ImVec2(1, 0));
 
-    if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
-      // Check if we have to add an entity
-      if (cursorSelection.isActive()) {
-        DrawElement draw{cursorSelection.getShape(),
-                         cursorSelection.getTransformation(),
-                         DrawElement::getNextId()};
-        switch (cursorSelection.getShape()) {
-          case ShapeType::WallCube:
-          case ShapeType::Barrel:
-          case ShapeType::Floor:
-          case ShapeType::GateHeavy: elements.push_back(draw); break;
-          case ShapeType::Coin: pushCoin(draw, objects, triggers); break;
-          case ShapeType::Ghost:
-            pushGhost(draw, ghosts, triggers, shapes);
-            break;
+        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+          // Check if we have to add an entity
+          if (cursorSelection.isActive()) {
+            DrawElement draw{cursorSelection.getShape(),
+                             cursorSelection.getTransformation(),
+                             DrawElement::getNextId()};
+            switch (cursorSelection.getShape()) {
+              case ShapeType::WallCube:
+              case ShapeType::Barrel:
+              case ShapeType::Floor:
+              case ShapeType::GateHeavy: elements.push_back(draw); break;
+              case ShapeType::Coin: pushCoin(draw, objects, triggers); break;
+              case ShapeType::Ghost:
+                pushGhost(draw, ghosts, triggers, shapes);
+                break;
+            }
+          } else {
+            glm::vec3 orig;
+            glm::vec3 dir;
+            cursorSelection.getRay(orig, dir, frame);
+
+            pick(orig, dir, selectables);
+          }
         }
-      } else {
-        glm::vec3 orig;
-        glm::vec3 dir;
-        cursorSelection.getRay(orig, dir, frame);
-
-        pick(orig, dir, selectables);
-      }
-    }
-    ImGui::End();
+        ImGui::End();
 
 #endif
 
-    ImGui::Begin("Statics");
-    ImGui::BeginChild("shape list", ImVec2(150, 150), true);
-    for (size_t i = 0; i < guiStaticsShapes.size(); i++) {
-      if (ImGui::Selectable(guiStaticsShapes[i].name.c_str(),
-                            cursorSelection.isActive() &&
-                              cursorSelection.getShape() ==
-                                guiStaticsShapes[i].shapeIndex))
-        cursorSelection.set(guiStaticsShapes[i].shapeIndex);
-    }
-    ImGui::EndChild();
+        ImGui::Begin("Statics");
+        ImGui::BeginChild("shape list", ImVec2(150, 150), true);
+        for (size_t i = 0; i < guiStaticsShapes.size(); i++) {
+          if (ImGui::Selectable(guiStaticsShapes[i].name.c_str(),
+                                cursorSelection.isActive() &&
+                                  cursorSelection.getShape() ==
+                                    guiStaticsShapes[i].shapeIndex))
+            cursorSelection.set(guiStaticsShapes[i].shapeIndex);
+        }
+        ImGui::EndChild();
 
-    ImGui::SameLine();
+        ImGui::SameLine();
 
-    ImGui::BeginChild("Objects list", ImVec2(150, 0), true);
-    for (size_t i = 0; i < guiObjectsShapes.size(); i++) {
-      if (ImGui::Selectable(guiObjectsShapes[i].name.c_str(),
-                            cursorSelection.isActive() &&
-                              cursorSelection.getShape() ==
-                                guiObjectsShapes[i].shapeIndex))
-        cursorSelection.set(guiObjectsShapes[i].shapeIndex);
-    }
-    ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild("buttons");
-    if (ImGui::Button("Clear selection")) {
-      cursorSelection.clear();
-    }
-    ImGui::EndChild();
-    ImGui::End();
+        ImGui::BeginChild("Objects list", ImVec2(150, 0), true);
+        for (size_t i = 0; i < guiObjectsShapes.size(); i++) {
+          if (ImGui::Selectable(guiObjectsShapes[i].name.c_str(),
+                                cursorSelection.isActive() &&
+                                  cursorSelection.getShape() ==
+                                    guiObjectsShapes[i].shapeIndex))
+            cursorSelection.set(guiObjectsShapes[i].shapeIndex);
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("buttons");
+        if (ImGui::Button("Clear selection")) {
+          cursorSelection.clear();
+        }
+        ImGui::EndChild();
+        ImGui::End();
 
-    ImGui::Begin("Game");
-    ImGui::Checkbox("Render statics", &doRenderStatics);
-    ImGui::Checkbox("Render triggers", &doRenderTriggers);
-    ImGui::End();
+        ImGui::Begin("Game");
+        ImGui::Checkbox("Render statics", &doRenderStatics);
+        ImGui::Checkbox("Render triggers", &doRenderTriggers);
+        ImGui::End();
 
-    ImGui::Begin("Export");
-    static char fileName[255] = "corpsdegarde.level";
-    ImGui::InputText("input text", fileName, 255);
-    if (ImGui::Button("Save")) {
-      std::ofstream outfile("media/" + std::string(fileName) + ".new");
+        ImGui::Begin("Export");
+        static char fileName[255] = "corpsdegarde.level";
+        ImGui::InputText("input text", fileName, 255);
+        if (ImGui::Button("Save")) {
+          std::ofstream outfile("media/" + std::string(fileName) + ".new");
 
-      // I. MAP
-      // # Statics:
-      // 0 0.000 0.000 0.000 ...
-      // ...
-      //
-      // # objects:
-      // 0 0.000 0.000 0.000 ...
-      // ...
+          // I. MAP
+          // # Statics:
+          // 0 0.000 0.000 0.000 ...
+          // ...
+          //
+          // # objects:
+          // 0 0.000 0.000 0.000 ...
+          // ...
 
-      // II. Save
-      // key true
-      // dialogue 3
+          // II. Save
+          // key true
+          // dialogue 3
 
-      const auto view = {elements, objects, ghosts};
+          const auto view = {elements, objects, ghosts};
 
-      for (const auto& current : view) {
-        for (const auto& e : current) {
-          outfile << e.shapeIndex << " ";
+          for (const auto& current : view) {
+            for (const auto& e : current) {
+              outfile << e.shapeIndex << " ";
 
-          const glm::mat4& t = e.transformation;
-          for (int y = 0; y < 4; ++y) {
-            for (int x = 0; x < 4; ++x) {
-              outfile << t[x][y] << " ";
+              const glm::mat4& t = e.transformation;
+              for (int y = 0; y < 4; ++y) {
+                for (int x = 0; x < 4; ++x) {
+                  outfile << t[x][y] << " ";
+                }
+              }
+              outfile << "\n";
             }
+
+            outfile << "\n";
           }
-          outfile << "\n";
+
+          /*
+    Here I've multiple choices: What I save into the map ?
+    - indices of Shape?
+    - Directly vertices as world?
+           */
         }
 
-        outfile << "\n";
+        if (ImGui::Button("Load Old")) {
+          Frame dummyFrame;
+
+          InitializeWorldModels(world);
+          std::istringstream is(AssetService::LoadAsString(fileName));
+          gui::parseMaze(world, elements, is, dummyFrame);
+        }
+
+        if (ImGui::Button("Load New")) {
+          Frame dummyFrame;
+
+          InitializeWorldModels(world);
+          std::istringstream is(AssetService::LoadAsString(fileName));
+          loadMap(elements, objects, ghosts, triggers, shapes, is);
+        }
+
+        if (ImGui::Button("New")) {
+          Frame dummyFrame;
+
+          InitializeWorldModels(world);
+          newMap(elements, objects, ghosts, triggers);
+        }
+
+        ImGui::End();
+
+        if (selection >= 0) {
+          ImGui::Begin("Selection");
+          if (ImGui::Button("Delete")) {
+            worldBuilderDelete(selection, shapes, elements, objects, ghosts);
+          }
+          ImGui::End();
+        }
+
+        // 1. Show a simple window
+        // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears
+        // in
+        // a window automatically called "Debug"
+        {
+          ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                      1000.0f / ImGui::GetIO().Framerate,
+                      ImGui::GetIO().Framerate);
+          ImGui::Text(">%s", lineDebug.c_str());
+          console.render();
+        }
+
+        // Rendering
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z,
+                     clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui::Render();
+        glfwSwapBuffers(window);
       }
 
-      /*
-Here I've multiple choices: What I save into the map ?
-- indices of Shape?
-- Directly vertices as world?
-       */
+      // Cleanup
+      ImGui_ImplGlfwGL3_Shutdown();
+      glfwTerminate();
     }
 
-    if (ImGui::Button("Load Old")) {
-      Frame dummyFrame;
+  } // gui
 
-      InitializeWorldModels(world);
-      std::istringstream is(AssetService::LoadAsString(fileName));
-      gui::parseMaze(world, elements, is, dummyFrame);
-    }
-
-    if (ImGui::Button("Load New")) {
-      Frame dummyFrame;
-
-      InitializeWorldModels(world);
-      std::istringstream is(AssetService::LoadAsString(fileName));
-      loadMap(elements, objects, ghosts, triggers, shapes, is);
-    }
-
-    if (ImGui::Button("New")) {
-      Frame dummyFrame;
-
-      InitializeWorldModels(world);
-      newMap(elements, objects, ghosts, triggers);
-    }
-
-    ImGui::End();
-
-    if (selection >= 0) {
-      ImGui::Begin("Selection");
-      if (ImGui::Button("Delete")) {
-        worldBuilderDelete(selection, shapes, elements, objects, ghosts);
-      }
-      ImGui::End();
-    }
-
-    // 1. Show a simple window
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in
-    // a window automatically called "Debug"
-    {
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::Text(">%s", lineDebug.c_str());
-      console.render();
-    }
-
-    // Rendering
-    int display_w, display_h;
-    glfwGetFramebufferSize(window, &display_w, &display_h);
-    glViewport(0, 0, display_w, display_h);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui::Render();
-    glfwSwapBuffers(window);
-  }
-
-  // Cleanup
-  ImGui_ImplGlfwGL3_Shutdown();
-  glfwTerminate();
-}
+} // Soleil
 
 int
-main(int /*argc*/
-     ,
-     char* /*argv*/
-     [])
+main(int argc, char* argv[])
 {
   GLFWwindow* window;
   int         width  = 1920;
@@ -1185,7 +1092,7 @@ main(int /*argc*/
 
   ImGui_ImplGlfwGL3_Init(window, true);
 
-  render(window);
+  Soleil::gui::render(window);
 
   glfwTerminate();
 
