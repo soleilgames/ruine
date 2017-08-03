@@ -95,11 +95,12 @@ namespace Soleil {
     // Player's progression
     std::vector<glm::mat4> coinPickedUp;
     bool                   keyPickedUp = false;
+    std::string            lastDoor;
 
     World() {}
     World(const World&) = delete;
     World& operator=(const World&) = delete;
-    void resetLevel(void);
+    void   resetLevel(void);
   };
 
   void InitializeWorldModels(World& world);

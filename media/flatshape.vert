@@ -78,7 +78,6 @@ main()
 
     scatteredLight +=
       material.diffuseColor * pointLight[i].color * diffuse * attenuation;
-    scatteredLight += material.emissiveColor;
     reflectedLight +=
       material.specularColor * pointLight[i].color * specular * attenuation;
     // }
@@ -86,6 +85,7 @@ main()
     //   scatteredLight +=
     //   material.diffuseColor * pointLight[i].color  * attenuation;
   }
+  scatteredLight += material.emissiveColor;
 
   uv          = uvAttribute;
   gl_Position = MVPMatrix * positionAttribute;

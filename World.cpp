@@ -190,7 +190,7 @@ namespace Soleil {
             const glm::vec3 keyPosition =
               glm::vec3(position.x, -1.0f, position.z);
             const glm::mat4 transformation =
-              glm::scale(glm::translate(scale, keyPosition), glm::vec3(2.0f));
+              glm::scale(glm::translate(scale, keyPosition), glm::vec3(4.0f));
 
             world.objects.push_back(
               DrawCommand(*world.keyShape, transformation));
@@ -284,6 +284,8 @@ namespace Soleil {
     world.bounds.y =
       1.0f; // TODO: To change if the world become not flat anymore
 
+    world.lastDoor = doorId;
+    
     const Door         start = getDoor(world.doors, doorId);
     const std::string  level = AssetService::LoadAsString(start.level);
     std::istringstream s(level);

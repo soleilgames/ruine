@@ -34,6 +34,8 @@
 
 #include <glm/vec3.hpp>
 
+#include <queue>
+
 #ifndef NDEBUG
 #define SOLEIL__CONSOLE_DRAW() console.draw()
 #define SOLEIL__CONSOLE_TEXT(str) console.text = str
@@ -150,6 +152,8 @@ namespace Soleil {
 
     Timer nextGhostSound;
 
+    std::queue<std::wstring> dialogueQueue;
+    
   private:
     enum State
     {
