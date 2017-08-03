@@ -244,7 +244,7 @@ namespace Soleil {
 #endif
     instance.textAtlas =
       Text::InitializeAtlasMap(L"ABCDEFGHIJKLMNOPQRSTUVWXYZÀ0123456789abcdefghi"
-                               L"jklmnopqrstuvwxyz +-!.():=\",'",
+                               L"jklmnopqrstuvwxyz +-!.():=\",'/",
                                font, *instance.textDefaultFontAtlas);
   }
 

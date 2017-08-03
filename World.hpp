@@ -85,6 +85,7 @@ namespace Soleil {
 
     glm::vec3                    bounds;
     RenderInstances              statics;
+    RenderInstances              objects;
     std::vector<GhostData>       sentinels;
     std::vector<BoundingBox>     hardSurfaces;
     std::vector<NextZoneTrigger> nextZoneTriggers;
@@ -94,6 +95,7 @@ namespace Soleil {
     // Player's progression
     std::vector<glm::mat4> coinPickedUp;
     bool                   keyPickedUp = false;
+    std::string            lastDoor;
 
     World() {}
     World(const World&) = delete;

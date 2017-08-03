@@ -57,11 +57,12 @@ namespace Soleil {
   }
 
   static void InitializeWorld(World& world, Frame& frame, Camera& camera,
-                              PopUp& caption)
+                              PopUp& caption, int& goldScore)
   {
     // TODO: A method for that:
     world.doors.clear();
     world.bounds = glm::vec3(0.0f);
+    world.objects.clear();
     world.statics.clear();
     world.sentinels.clear();
     world.hardSurfaces.clear();
@@ -72,7 +73,7 @@ namespace Soleil {
     // ---
     frame.pointLights.clear();
     camera.yaw = 0.0f;
-    // TODO:  goldScore  = 0;
+    goldScore  = 0;
 
     InitializeWorldModels(world);
     InitializeWorldDoors(world, "doors.ini");
@@ -101,7 +102,7 @@ namespace Soleil {
         ghost.direction * gval::ghostSpeed * (float)delta.count());
 
       glm::vec3 position = glm::vec3(transformation[3]);
-      if (position.z < 0.0f || position.z > worldSize.z) {
+      if (position.z <= 0.0f || position.z >= worldSize.z) {
         const glm::mat4 rotation = glm::rotate(
           *(ghost.transformation), glm::pi<float>(), glm::vec3(0, 1, 0));
         *(ghost.transformation) = rotation;
@@ -131,6 +132,7 @@ namespace Soleil {
     RenderPhongShape(world.statics, frame);
 #endif
       RenderFlatShape(world.statics, frame);
+      RenderFlatShape(world.objects, frame);
     }
 
 #ifndef NDEBUG
@@ -269,15 +271,15 @@ namespace Soleil {
       if (playerbox.intersect(coinTrigger->aoe)) {
         SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
         goldScore += 5; // TODO: Constant
-        Text::FillBuffer(toWString("BUTIN: ", goldScore), goldLabel,
+        Text::FillBuffer(toWString(L"BUTIN: ", goldScore, L" / 260"), goldLabel,
                          OpenGLDataInstance::Instance().textAtlas,
                          gval::textLabelSize);
 
-        for (auto it = world.statics.begin(); it != world.statics.end(); ++it) {
+        for (auto it = world.objects.begin(); it != world.objects.end(); ++it) {
           const auto& drawCommand = *it;
           if (drawCommand.buffer == world.purseShape->getBuffer() &&
               drawCommand.transformation == coinTrigger->coinTransformation) {
-            world.statics.erase(it);
+            world.objects.erase(it);
             break;
           }
         }
@@ -295,15 +297,20 @@ namespace Soleil {
 
       if (playerbox.intersect(keybox)) {
         world.keyPickedUp = true;
-        auto pos = std::find(std::begin(world.statics), std::end(world.statics),
+        auto pos = std::find(std::begin(world.objects), std::end(world.objects),
                              DrawCommand(*world.keyShape, world.theKey));
-        assert(pos != std::end(world.statics) && "Key was not found");
-        world.statics.erase(pos);
+        assert(pos != std::end(world.objects) && "Key was not found");
+        world.objects.erase(pos);
 
         SoundService::FireSound("key.wav", SoundProperties(100));
       }
     }
+
     // Quick hack before a better implementation: ------------
+    const bool entrance = (world.lastDoor.compare(0, 1, "0") == 0 ||
+                           world.lastDoor.compare(0, 1, "1") == 0);
+    if (!entrance) return;
+
     const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
                             glm::vec3(7.1f, 0.0f, 1.1f));
     if (caption.isActive() == false && playerbox.intersect(start)) {
@@ -316,7 +323,7 @@ namespace Soleil {
         state = State::StateCredits;
 #endif
       } else {
-        caption.fillText(L"J'AI BESOIN D'UNE CLEE", 0.45f);
+        caption.fillText(L"IL FAUT UNE CLEF", 0.45f);
       }
       caption.activate(gval::timeToFadeText, frame.time);
     }
@@ -454,12 +461,12 @@ namespace Soleil {
 
   void Ruine::initializeGame(const Timer& /*time*/)
   {
-    InitializeWorld(world, frame, camera, caption);
+    InitializeWorld(world, frame, camera, caption, goldScore);
     caption.transformation =
       glm::translate(glm::mat4(), glm::vec3(-0.35f, -0.35f, 0.0f));
     goldLabelTransformation =
       glm::translate(glm::mat4(), glm::vec3(+0.35f, +0.75f, 0.0f));
-    Text::FillBuffer(toWString("BUTTIN: ", goldScore), goldLabel,
+    Text::FillBuffer(toWString(L"BUTIN: ", goldScore, " / 260"), goldLabel,
                      OpenGLDataInstance::Instance().textAtlas,
                      gval::textLabelSize);
 
@@ -551,16 +558,15 @@ namespace Soleil {
 
     // TODO: Do not use static for that:
     static Menu     menu;
-    static Pristine firstFrame;
     static Frame    frame;
+    static Pristine firstFrame;
 
     if (firstFrame) {
       AssetService::LoadTextureLow(*menu.door, "menu.png");
       Text::FillBuffer(L"R U I N E", menu.title,
                        OpenGLDataInstance::Instance().textAtlas, 3.0f);
       Text::FillBuffer(L"APPUYEZ POUR COMMENCER", menu.newGame,
-                       OpenGLDataInstance::Instance().textAtlas, 1.0f,
-                       &menu.newGameBounds);
+                       OpenGLDataInstance::Instance().textAtlas, 1.0f);
 
       const glm::vec2 scale =
         glm::vec2(2.0f) / glm::vec2(viewportWidth, viewportHeight);
@@ -572,7 +578,6 @@ namespace Soleil {
         glm::translate(glm::mat4(), glm::vec3(-0.5f, 0.6f, 0.0f));
       menu.newGameTransformation =
         glm::translate(glm::mat4(), glm::vec3(-0.45f, -0.8f, 0.0f));
-      menu.newGameBounds.transform(menu.newGameTransformation);
 
       frame.updateViewProjectionMatrices(
         glm::mat4(),
@@ -605,16 +610,24 @@ namespace Soleil {
     const BoundingBox bounds(glm::vec3(-0.45f, -0.8f, 0.0f),
                              glm::vec3(1.0f, 1.0f, 0.0f));
 
-    static const std::wstring text[] = {
-      L"ATTENDS ! AIDE-MOI",
-      L"J'AI CONSTRUIT CE SOUTERRAIN. MAIS NOTRE SIR NOUS Y A ENFERME",
-      L"LIBERES-MOI ET JE T'AIDERAI A SORTIR",
-      L"VA DANS LA PRISON. IL Y A UN SCEAU QUI ME RETIENT",
-      L"DETRUIT-LE",
-      L"VA DANS LA PRISON DETRUIR LE SCEAU !"};
+    static const std::wstring text[] = {L"SI TU VEUX SORTIR DE CET ENDROIT",
+                                        L"IL TE FAUDRA TROUVER LA CLEF",
+                                        L"CHERCHE!"};
+
+    if (dialogueQueue.size() < 1) {
+      if (sentence == 0) {
+        for (const std::wstring& sentence : text) {
+          dialogueQueue.push(sentence);
+        }
+      } else {
+        dialogueQueue.push(text[2]);
+      }
+      sentence = 1;
+      dirty    = true;
+    }
 
     if (dirty) {
-      Text::FillBufferWithDimensions(text[sentence], dialogueLabel,
+      Text::FillBufferWithDimensions(dialogueQueue.front(), dialogueLabel,
                                      OpenGLDataInstance::Instance().textAtlas,
                                      1.0f, glm::vec2(1.00f, 1.0f));
       dirty = false;
@@ -626,13 +639,16 @@ namespace Soleil {
 
     if (push.active & PushState::Release &&
         bounds.containsFlat(ControllerService::GetPush().position)) {
-      sentence++;
+      dialogueQueue.pop();
       dirty = true;
-      if (sentence > 4) // TODO: No hard code
-      {
-        sentence = 4;
-      }
     }
+
+#if 0 // TODO: require work on triggers
+    if (dialogueQueue.size() < 1) {
+      state ^= StateDialogue;
+    }
+#endif
+      
   }
 
   void Ruine::renderCredits(const Timer& time)
@@ -643,7 +659,7 @@ namespace Soleil {
       // TODO: Replace this by an image, it will be better
       Text::FillBuffer(L"      RUINE\n       -----\n\n\nPar Florian "
                        L"GOLESTIN\n\n\n   REMERCIEMENTS\n    "
-                       L"---------------\nAntoine TALLON\nJuju\nHoracio "
+                       L"---------------\nAntoine TALLON\nJulien GERBIER\nHoracio "
                        L"GOLDBERG",
                        credits, OpenGLDataInstance::Instance().textAtlas, 1.0f);
       creditsTransformation =

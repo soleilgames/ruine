@@ -126,9 +126,9 @@ namespace Soleil {
                    glm::value_ptr(pointLight.position));
       glUniform3fv(instance.drawablePointLights[i].color, 1,
                    glm::value_ptr(pointLight.color));
-      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.007f);
+      glUniform1f(instance.drawablePointLights[i].linearAttenuation, 0.7f);
       glUniform1f(instance.drawablePointLights[i].quadraticAttenuation,
-                  0.0002f);
+                  0.2f);
 
       ++i;
     }
