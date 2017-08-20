@@ -61,7 +61,7 @@ namespace Soleil {
   {
     // TODO: A method for that:
     world.doors.clear();
-    world.bounds = glm::vec3(0.0f);
+    world.bounds = BoundingBox();
     world.objects.clear();
     world.statics.clear();
     world.sentinels.clear();
@@ -94,7 +94,7 @@ namespace Soleil {
 
   static void UpdateGhost(std::vector<GhostData>&  ghosts,
                           std::vector<PointLight>& lights, const Timer& delta,
-                          const glm::vec3& worldSize)
+                          const BoundingBox& worldSize)
   {
     for (GhostData& ghost : ghosts) {
       const glm::mat4 transformation = glm::translate(
@@ -102,7 +102,7 @@ namespace Soleil {
         ghost.direction * gval::ghostSpeed * (float)delta.count());
 
       glm::vec3 position = glm::vec3(transformation[3]);
-      if (position.z <= 0.0f || position.z >= worldSize.z) {
+      if (!worldSize.contains(position)) {
         const glm::mat4 rotation = glm::rotate(
           *(ghost.transformation), glm::pi<float>(), glm::vec3(0, 1, 0));
         *(ghost.transformation) = rotation;
@@ -128,11 +128,16 @@ namespace Soleil {
 #endif
       glEnable(GL_CULL_FACE);
       glCullFace(GL_BACK);
-#if 0
-    RenderPhongShape(world.statics, frame);
-#endif
-      RenderFlatShape(world.statics, frame);
-      RenderFlatShape(world.objects, frame);
+
+      for (const auto& e : world.elements) {
+        RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex], frame);
+      }
+      for (const auto& e : world.items) {
+        RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex], frame);
+      }
+      for (const auto& e : world.ghosts) {
+        RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex], frame);
+      }
     }
 
 #ifndef NDEBUG
@@ -143,6 +148,11 @@ namespace Soleil {
         DrawBoundingBox(box, frame);
       }
 
+      for (const auto& box : world.triggers) {
+        DrawBoundingBox(box.aoe, frame, RGBA(1.0f, 0.3f, 0.3f, 0.5f));
+      }
+
+#if 0      
       for (const auto& t : world.coinTriggers) {
         DrawBoundingBox(t.aoe, frame, glm::vec4(1.0f, 1.0f, 0.0f, 0.5f));
       }
@@ -153,6 +163,7 @@ namespace Soleil {
         DrawBoundingBox(g.stressBounds, frame,
                         glm::vec4(0.1f, 0.1f, 0.3f, 0.5f));
       }
+#endif
     }
 #endif
     if (ControllerService::GetPlayerController().locked == false) DrawPad();
@@ -180,12 +191,12 @@ namespace Soleil {
 #if 1 // TODO: controller Option
     BoundingBox bboxForward;
     bboxForward.expandBy(positionForward);
-    bboxForward.expandBy(positionForward + 0.25f);
-    bboxForward.expandBy(positionForward - 0.25f);
+    bboxForward.expandBy(positionForward + 0.20f);
+    bboxForward.expandBy(positionForward - 0.2f);
     BoundingBox bboxSideward;
     bboxSideward.expandBy(positionSideward);
-    bboxSideward.expandBy(positionSideward + 0.25f);
-    bboxSideward.expandBy(positionSideward - 0.25f);
+    bboxSideward.expandBy(positionSideward + 0.2f);
+    bboxSideward.expandBy(positionSideward - 0.2f);
 
     for (const auto& boundingBox : wallBoundingBox) {
       if (boundingBox.intersect(bboxForward))
@@ -223,6 +234,7 @@ namespace Soleil {
     playerbox.expandBy(camera.position + glm::vec3(0.25f, 1.5f, 0.25f));
     playerbox.expandBy(camera.position - glm::vec3(0.25f, 1.5f, 0.25f));
 
+#if 0
     for (const auto& trigger : world.nextZoneTriggers) {
       if (playerbox.intersect(trigger.aoe)) {
         world.resetLevel();
@@ -234,20 +246,20 @@ namespace Soleil {
         return;
       }
     }
+#endif
 
     for (const auto& ghost : world.sentinels) {
-
       if (playerbox.intersect(ghost.bounds)) {
         glm::mat4 transformation =
-          glm::translate(glm::mat4(), glm::vec3(camera.position.x, -0.60f,
-                                                camera.position.z)) *
-          glm::scale(glm::mat4(), glm::vec3(.3f));
-        // TODO: Use same transformation as for world
+          glm::translate(glm::mat4(), glm::vec3(camera.position.x, 0.0f,
+                                                camera.position.z));
 
-        world.statics.emplace_back(
-          DrawCommand(*world.ghostShape, transformation));
+        DrawElement draw;
+        draw.shapeIndex     = ShapeType::Ghost;
+        draw.transformation = transformation;
+        world.ghosts.emplace_back(draw);
         world.sentinels.push_back(GhostData(
-          &(world.statics.back().transformation), 0, glm::vec3(0, 0, 1)));
+          &(world.ghosts.back().transformation), 0, glm::vec3(0, 0, 1)));
 
         SOLEIL__LOGGER_DEBUG(toString("Perduuuuuuuuuuuuuuuuuuuuuuuu"));
         ControllerService::GetPlayerController().locked = true;
@@ -266,32 +278,99 @@ namespace Soleil {
       }
     }
 
-    for (auto coinTrigger = world.coinTriggers.begin();
-         coinTrigger != world.coinTriggers.end();) {
+    for (auto coinTrigger = world.triggers.begin();
+         coinTrigger != world.triggers.end();) {
+      bool doIncrement = true;
+
       if (playerbox.intersect(coinTrigger->aoe)) {
-        SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
-        goldScore += 5; // TODO: Constant
-        Text::FillBuffer(toWString(L"BUTIN: ", goldScore, L" / 260"), goldLabel,
-                         OpenGLDataInstance::Instance().textAtlas,
-                         gval::textLabelSize);
 
-        for (auto it = world.objects.begin(); it != world.objects.end(); ++it) {
-          const auto& drawCommand = *it;
-          if (drawCommand.buffer == world.purseShape->getBuffer() &&
-              drawCommand.transformation == coinTrigger->coinTransformation) {
-            world.objects.erase(it);
-            break;
-          }
+        if (coinTrigger->state & TriggerState::JustTriggered) {
+          coinTrigger->state &= ~TriggerState::JustTriggered;
+          coinTrigger->state |= TriggerState::CurrentlyActive;
+          coinTrigger->state |= TriggerState::AlreadyTriggered;
+        } else if (!(coinTrigger->state & TriggerState::CurrentlyActive)) {
+          coinTrigger->state |= TriggerState::JustTriggered;
+          coinTrigger->state |= TriggerState::CurrentlyActive;
         }
+        // else
+        assert(coinTrigger->state & TriggerState::CurrentlyActive);
 
-        world.coinPickedUp.push_back(coinTrigger->coinTransformation);
-        world.coinTriggers.erase(coinTrigger);
-        SoundService::FireSound("coins.wav", SoundProperties(100));
+        switch (coinTrigger->type) {
+
+          case TriggerType::Coin: {
+            SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
+            goldScore += 5; // TODO: Constant
+            Text::FillBuffer(
+              toWString(L"BUTIN: ", goldScore, L" / 260"), goldLabel,
+              OpenGLDataInstance::Instance().textAtlas, gval::textLabelSize);
+
+            for (auto it = world.items.begin(); it != world.items.end(); ++it) {
+              const auto& coinItem = *it;
+              if (coinItem.id == coinTrigger->link) {
+                world.items.erase(it);
+                break;
+              }
+            }
+
+            doIncrement = false;
+            world.coinPickedUp.push_back(coinTrigger->link);
+            world.triggers.erase(coinTrigger);
+            SoundService::FireSound("coins.wav", SoundProperties(100));
+          } break;
+          case TriggerType::Door: {
+            if (coinTrigger->state & TriggerState::JustTriggered) {
+              const Door* door = GetDoorByUID(world.doors, coinTrigger->link);
+
+              // Before, check if it's not the final door:
+              if (door->id.compare("0") == 0) {
+                SoundService::FireSound("locked.wav", SoundProperties(100));
+                if (world.keyPickedUp) {
+                  state = State::StateCredits;
+                } else {
+                  caption.fillText(L"IL FAUT UNE CLEF", 0.45f);
+                }
+                caption.activate(gval::timeToFadeText, frame.time);
+              } else {
+
+                world.resetLevel();
+                frame.pointLights.clear();
+
+                SoundService::FireSound("doors.wav", SoundProperties(100));
+
+                const std::string nextZone = door->id;
+                InitializeLevel(world, nextZone, frame, camera, caption);
+              }
+              return;
+            }
+
+          } break;
+          case TriggerType::Ghost: break;
+          case TriggerType::Key: {
+            for (auto it = world.items.begin(); it != world.items.end(); ++it) {
+              const auto& coinItem = *it;
+              if (coinItem.id == coinTrigger->link) {
+                world.items.erase(it);
+                break;
+              }
+            }
+            doIncrement       = false;
+            world.keyPickedUp = true;
+            world.triggers.erase(coinTrigger);
+            SoundService::FireSound("key.wav", SoundProperties(100));
+          } break;
+        }
       } else {
-        ++coinTrigger;
+        coinTrigger->state &= ~TriggerState::JustTriggered;
+        coinTrigger->state &= ~TriggerState::CurrentlyActive;
       }
+
+      // Only increment the iterator if it's not of type coin because iterator
+      // already moved
+      if (doIncrement) ++coinTrigger;
     }
 
+#if 0
+    // TODO: Restore with triggers
     if (world.keyPickedUp == false) {
       const BoundingBox keybox(world.theKey, 0.3f);
 
@@ -327,6 +406,7 @@ namespace Soleil {
       }
       caption.activate(gval::timeToFadeText, frame.time);
     }
+
 #if 0
     const BoundingBox dbox(
       glm::translate(glm::mat4(), glm::vec3(5.0f * 2.0f, 16.0f * 2.0f, 0)), 5.0f);
@@ -339,6 +419,7 @@ namespace Soleil {
     } else if (state & State::StateDialogue) {
       state &= ~State::StateDialogue;
     }
+#endif
   }
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
@@ -356,9 +437,6 @@ namespace Soleil {
 
     OpenGLDataInstance::Instance().viewport =
       glm::vec2(viewportWidth, viewportHeight);
-
-    camera.yaw      = 0.0f;
-    camera.position = glm::vec3(0.0f);
 
 #ifndef NDEBUG
     console.transformation =
@@ -398,9 +476,6 @@ namespace Soleil {
     }
     if (currentState & State::StateFadingOut) {
       Fade(1.0f - fading.ratio(time));
-      SOLEIL__LOGGER_DEBUG("1.0f - ", fading.ratio(time), " = ",
-                           1.0f - fading.ratio(time));
-
       if (fading.ratio(time) >= 1.0f) state &= ~State::StateFadingOut;
     }
 
@@ -436,7 +511,7 @@ namespace Soleil {
                              " (FPS=", frames, ")");
         FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
                              " (FPS=", frames, ")"),
-                   textCommand, OpenGLDataInstance::Instance().textAtlas, 0.4f);
+                   textCommand, OpenGLDataInstance::Instance().textAtlas, 0.8f);
         firstTime     = time;
         frames        = 0;
         TotalDuration = Timer(0);
@@ -513,7 +588,7 @@ namespace Soleil {
       frame.pointLights[0].position = camera.position;
     } else {
       this->view =
-        TargetPosition(glm::vec3(world.statics.back().transformation[3]), 5.0f,
+        TargetPosition(glm::vec3(world.ghosts.back().transformation[3]), 5.0f,
                        glm::pi<float>() / 2.5f);
       frame.cameraPosition = camera.position;
       frame.updateViewProjectionMatrices(view, projection);
@@ -648,7 +723,6 @@ namespace Soleil {
       state ^= StateDialogue;
     }
 #endif
-      
   }
 
   void Ruine::renderCredits(const Timer& time)
@@ -657,11 +731,12 @@ namespace Soleil {
 
     if (first) {
       // TODO: Replace this by an image, it will be better
-      Text::FillBuffer(L"      RUINE\n       -----\n\n\nPar Florian "
-                       L"GOLESTIN\n\n\n   REMERCIEMENTS\n    "
-                       L"---------------\nAntoine TALLON\nJulien GERBIER\nHoracio "
-                       L"GOLDBERG",
-                       credits, OpenGLDataInstance::Instance().textAtlas, 1.0f);
+      Text::FillBuffer(
+        L"      RUINE\n       -----\n\n\nPar Florian "
+        L"GOLESTIN\n\n\n   REMERCIEMENTS\n    "
+        L"---------------\nAntoine TALLON\nJulien GERBIER\nHoracio "
+        L"GOLDBERG",
+        credits, OpenGLDataInstance::Instance().textAtlas, 1.0f);
       creditsTransformation =
         glm::translate(glm::mat4(), glm::vec3(-0.30f, 0.0f, 0.0f));
     }

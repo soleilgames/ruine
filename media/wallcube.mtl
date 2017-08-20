@@ -1,8 +1,8 @@
-# Blender MTL File: 'wallcube.blend'
+# Blender MTL File: 'entities.blend'
 # Material Count: 1
 
-newmtl Material
-Ns 300.078431
+newmtl Material.001
+Ns 300.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.500000 0.500000 0.500000
 Ks 0.000000 0.000000 0.000000
@@ -10,12 +10,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-#map_Ks wall1-spec.png
-#map_Kd wall1.png
 map_Kd text-mur.png
-#map_Bump wall1-norm.png
-
-#map_Kd text-mur-dalle.png
-
-#map_Kd brickwall.png
-#map_Bump brickwall_normal.png

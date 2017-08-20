@@ -27,44 +27,28 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <functional>
+
 namespace Soleil {
 
   void InitializeWorldModels(World& world)
   {
-    world.wallShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("wallcube.obj"));
-    world.floorShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("floor.obj"));
-    world.torchShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
-    world.gateShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("gate.obj"));
-#if 1
-    world.ghostShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("ghost.obj"));
-#else
-    world.ghostShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("brazero.obj"));
-#endif
-
-#if 0    
-    world.purseShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("purse01.obj"));
-#else
-    world.purseShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("coin.obj"));
-#endif
-
-    world.keyShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("key.obj"));
-
-    world.barrelShape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj"));
-
-#if 0
-        world.barrel2Shape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj"));
-#endif
+    world.shapes = {Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("wallcube.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("barrel.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("floor.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("gate.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("key.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("coin.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("ghost.obj")),
+                    Soleil::WavefrontLoader::fromContent(
+                      AssetService::LoadAsString("couloir.obj"))};
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -77,43 +61,61 @@ namespace Soleil {
       if (line[0] == '#') continue;
 
       std::istringstream sline(line);
-      Door               d;
-      sline >> d.id;
-      sline >> d.level;
-      sline >> d.aoe.x;
-      sline >> d.aoe.y;
-      sline >> d.output;
-      sline >> d.start.x;
-      sline >> d.start.y;
+      glm::vec3          min, max;
 
-      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
-      SOLEIL__LOGGER_DEBUG(toString("d.id", d.id));
-      SOLEIL__LOGGER_DEBUG(toString("d.level", d.level));
-      SOLEIL__LOGGER_DEBUG(toString("d.aoe", d.aoe));
-      SOLEIL__LOGGER_DEBUG(toString("d.output", d.output));
-      SOLEIL__LOGGER_DEBUG(toString("d.start", d.start));
+      Door d;
+
+      std::string id;
+      sline >> d.id; // TODO: to Check
+
+      sline >> d.level;
+      sline >> min.x;
+      sline >> min.y;
+      sline >> min.z;
+      sline >> max.x;
+      sline >> max.y;
+      sline >> max.z;
+      // sline >> d.aoe.x;
+      // sline >> d.aoe.y;
+      sline >> d.output;
+      // sline >> d.start.x;
+      // sline >> d.start.y;
+      d.triggerZone = BoundingBox(min, max);
+
+      d.uid = std::hash<std::string>{}(d.id);
 
       std::string name;
       sline.get(); // Consume \t
       std::getline(sline, name);
       d.name = StringToWstring(name);
       world.doors.push_back(d);
+
+      SOLEIL__LOGGER_DEBUG(toString("d.id:", d.id));
+      SOLEIL__LOGGER_DEBUG(toString("d.level:", d.level));
+      // SOLEIL__LOGGER_DEBUG(toString("d.aoe", d.aoe));
+      SOLEIL__LOGGER_DEBUG(toString("d.triggerZone:", d.triggerZone));
+      SOLEIL__LOGGER_DEBUG(toString("d.output:", d.output));
+      // SOLEIL__LOGGER_DEBUG(toString("d.start", d.start));
     }
   }
 
   void World::resetLevel()
   {
-    bounds = glm::vec3(0.0f);
+    bounds = BoundingBox();
     objects.clear();
     statics.clear();
     sentinels.clear();
     hardSurfaces.clear();
     nextZoneTriggers.clear();
     coinTriggers.clear();
+
+    ghosts.clear();
+    items.clear();
+    elements.clear();
+    triggers.clear();
   }
 
-
-
+#if 0
   static void parseMaze(World& world, std::istringstream& s, Frame& frame)
   {
     std::string            line;
@@ -265,15 +267,162 @@ namespace Soleil {
                   frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
     }
   }
+#endif
+
+  void pushCoin(DrawElement& draw, World& world)
+  {
+    auto pos = std::find(std::begin(world.coinPickedUp),
+                         std::end(world.coinPickedUp), draw.id);
+    if (pos != std::end(world.coinPickedUp)) {
+      return;
+    }
+
+    world.items.push_back(draw);
+    world.triggers.push_back(
+      {BoundingBox(draw.transformation, 0.25f), // TODO: use gval
+       TriggerState::NeverTriggered, TriggerType::Coin, draw.id});
+  }
+
+  void setKey(DrawElement& draw, World& world)
+  {
+    BoundingBox box = world.shapes[ShapeType::Key]->makeBoundingBox();
+
+    box.transform(draw.transformation);
+    world.items.push_back(draw);
+    world.triggers.push_back(
+      {box, TriggerState::NeverTriggered, TriggerType::Key, draw.id});
+  }
+
+  void pushGhost(DrawElement& draw, World& world, Frame& frame)
+  {
+    BoundingBox box = world.shapes[ShapeType::Ghost]->makeBoundingBox();
+    box.transform(draw.transformation);
+    world.ghosts.push_back(draw);
+
+    // TODO: Will replace ghost data?
+    world.triggers.push_back({box, // TODO: use gval
+                              TriggerState::NeverTriggered, TriggerType::Ghost,
+                              0});
+
+    PointLight p;
+
+    p.color     = gval::ghostColor;
+    p.position  = glm::vec3(draw.transformation[3]);
+    p.linear    = 0.09f;
+    p.quadratic = 0.032f;
+    frame.pointLights.push_back(p);
+
+    world.sentinels.push_back(GhostData(&(world.ghosts.back().transformation),
+                                        frame.pointLights.size() - 1,
+                                        glm::vec3(0, 0, 1)));
+  }
+
+  /**
+   * Count the number of line till the next section
+   */
+  static int CountLine(std::istringstream& s)
+  {
+    auto pos = s.tellg();
+
+    int         count = 0;
+    std::string line;
+    while (std::getline(s, line)) {
+      if (line[0] == '#') continue; // Skip comments
+      if (line.size() < 1) {
+        break;
+      }
+
+      count++;
+    }
+
+    s.seekg(pos);
+
+    return count;
+  }
+
+  enum Step
+  {
+    Statics,
+    Coins,
+    Ghosts,
+  };
+
+  static void ReserveArrays(World& world, std::istringstream& s, Step step)
+  {
+    switch (step) {
+      case Statics: world.elements.reserve(CountLine(s)); break;
+      case Ghosts: {
+        // +1 for player ghost
+        auto count = CountLine(s) + 1;
+        world.ghosts.reserve(count);
+        world.sentinels.reserve(count);
+      } break;
+      case Coins: world.items.reserve(CountLine(s)); break;
+    }
+  }
+
+  void loadMap(World& world, Frame& frame, std::istringstream& s)
+  {
+    std::string line;
+
+    world.elements.clear();
+    world.items.clear();
+    world.ghosts.clear();
+    world.triggers.clear();
+    int step = Step::Statics;
+    while (std::getline(s, line)) {
+      if (line[0] == '#') continue; // Skip comments
+      if (line.size() < 1) {
+        step++;
+
+        ReserveArrays(world, s, static_cast<Step>(step));
+        continue;
+      }
+
+      std::istringstream drawStr(line);
+      DrawElement        draw;
+
+      drawStr >> draw.shapeIndex;
+
+      glm::mat4& t = draw.transformation;
+      for (int y = 0; y < 4; ++y) {
+        for (int x = 0; x < 4; ++x) {
+          drawStr >> t[x][y];
+        }
+      }
+      draw.id = DrawElement::Hash(draw);
+
+      switch (step) {
+        case Step::Statics: {
+          world.elements.push_back(draw);
+
+          BoundingBox box = world.shapes[draw.shapeIndex]->makeBoundingBox();
+          box.transform(draw.transformation);
+
+          world.bounds.expandBy(box);
+          world.hardSurfaces.push_back(box);
+        } break;
+        case Step::Coins:
+          if (draw.shapeIndex == ShapeType::Key)
+            setKey(draw, world);
+          else
+            pushCoin(draw, world);
+          break;
+        case Step::Ghosts: pushGhost(draw, world, frame); break;
+      }
+    }
+  }
 
   static const Door getDoor(const std::vector<Door>& doors,
                             const std::string&       doorId)
   {
     for (const Door& door : doors) {
+      SOLEIL__LOGGER_DEBUG(toString("'", door.id, "'"));
+
       if (door.id == doorId) return door;
     }
 
-    throw std::runtime_error(toString("No door found with id =", doorId));
+    throw std::runtime_error(toString("No door found with id ='", doorId, "'"));
   }
 
   void InitializeLevel(World& world, const std::string& doorId, Frame& frame,
@@ -281,27 +430,40 @@ namespace Soleil {
   {
     frame.pointLights.push_back(
       {Position(0.0f), gval::cameraLight, .000010, .00301f});
-    world.bounds.y =
-      1.0f; // TODO: To change if the world become not flat anymore
 
     world.lastDoor = doorId;
-    
+
     const Door         start = getDoor(world.doors, doorId);
     const std::string  level = AssetService::LoadAsString(start.level);
     std::istringstream s(level);
-    parseMaze(world, s, frame);
+    loadMap(world, frame, s);
 
     caption.fillText(start.name, 0.45f);
     caption.activate(gval::timeToFadeText, frame.time);
 
+#if 0    
     // The '2 Times (*= 2.0f)' works because position are in 'lines and
     // columns space'
     // and everything has the same size. It will not work anymore if blocks
     // may have different size and shape.
     const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
-    const glm::vec3 position(2.0f * start.start.x, 0.0f, 2.0f * start.start.y);
+    const glm::vec3 position(2.0f * start.start.x, 0.5f, 2.0f * start.start.y);
     camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
+#endif
+    camera.position =
+      (start.triggerZone.getMax() + start.triggerZone.getMin()) / 2.0f;
+    camera.position.y = 0.6f;
 
+    for (const Door& door : world.doors) {
+      int state = (door.id == doorId) ? TriggerState::CurrentlyActive
+                                      : TriggerState::NeverTriggered;
+
+      if (start.level == door.level)
+        world.triggers.push_back({door.triggerZone, state, TriggerType::Door,
+                                  std::hash<std::string>{}(door.output)});
+    }
+
+#if 0    
     // Parse the triggers
     for (const Door door : world.doors) {
       if (door.level == start.level) {
@@ -323,6 +485,7 @@ namespace Soleil {
         world.nextZoneTriggers.push_back({bbox, door.output});
       }
     }
+#endif
 
 #if 0
     // Test: Render Bézier to image
@@ -367,6 +530,24 @@ namespace Soleil {
     gval::bezierTex = *texture;
 
 #endif
+  }
+
+  std::string DoorUIDToId(const std::vector<Door>& doors, const std::size_t uid)
+  {
+    for (const auto& d : doors) {
+      if (d.uid == uid) return d.id;
+    }
+    assert(false && "No Doors found");
+    return doors[0].id;
+  }
+
+  Door* GetDoorByUID(std::vector<Door>& doors, const std::size_t uid)
+  {
+    for (auto& d : doors) {
+      if (d.uid == uid) return &d;
+    }
+    assert(false && "No Doors found for given UID");
+    return nullptr;
   }
 
   GhostData::GhostData(glm::mat4* transformation, size_t lightPosition,

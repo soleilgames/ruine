@@ -22,10 +22,12 @@
 #ifndef SOLEIL__WORLD_HPP_
 #define SOLEIL__WORLD_HPP_
 
+#include <functional>
 #include <vector>
 
 #include "BoundingBox.hpp"
 #include "Draw.hpp"
+#include "fgl.hpp"
 #include "types.hpp"
 
 namespace Soleil {
@@ -64,7 +66,60 @@ namespace Soleil {
     std::string  output;
     glm::vec2    start;
     std::wstring name;
+    std::size_t  uid;
+    BoundingBox  triggerZone;
   };
+
+  ////////////////////////////
+  // Future WORLD Structure //
+  // vvvvvvvvvvvvvvvvvvvvvv //
+  ////////////////////////////
+
+  enum ShapeType
+  {
+    WallCube,
+    Barrel,
+    Floor,
+    GateHeavy,
+    Key,
+    Coin,
+    Ghost,
+    Couloir,
+    ST_BoundingBox,
+
+    Size
+  };
+  // Position in shapes vector
+
+  enum TriggerState
+  {
+    NeverTriggered   = 0,
+    JustTriggered    = 1,
+    CurrentlyActive  = 2,
+    AlreadyTriggered = 4
+  };
+
+  enum class TriggerType
+  {
+    Coin,
+    Ghost,
+    Door,
+    Key
+  };
+
+  struct Trigger
+  {
+    BoundingBox aoe;
+    int         state;
+    TriggerType type;
+
+    std::size_t link;
+  };
+
+  ////////////////////////////
+  // ^^^^^^^^^^^^^^^^^^^^^^ //
+  // Future WORLD Structure //
+  ////////////////////////////
 
   struct World
   {
@@ -83,7 +138,7 @@ namespace Soleil {
 
     std::vector<Door> doors;
 
-    glm::vec3                    bounds;
+    BoundingBox                  bounds;
     RenderInstances              statics;
     RenderInstances              objects;
     std::vector<GhostData>       sentinels;
@@ -93,9 +148,24 @@ namespace Soleil {
     glm::mat4                    theKey;
 
     // Player's progression
-    std::vector<glm::mat4> coinPickedUp;
-    bool                   keyPickedUp = false;
-    std::string            lastDoor;
+    std::vector<std::size_t> coinPickedUp;
+    bool                     keyPickedUp = false;
+    std::string              lastDoor;
+
+    ////////////////////////////
+    // Future WORLD Structure //
+    // vvvvvvvvvvvvvvvvvvvvvv //
+    ////////////////////////////
+    std::vector<ShapePtr> shapes;
+    // All the Models
+    std::vector<DrawElement> elements;
+    // TODO: Should be named statics. Will have a fixed size
+    std::vector<DrawElement> items;
+    // Coins, keys, ... size will varry
+    std::vector<Trigger> triggers;
+    // Everything the player can walk on
+    std::vector<DrawElement> ghosts;
+    // All monsters
 
     World() {}
     World(const World&) = delete;
@@ -103,54 +173,14 @@ namespace Soleil {
     void   resetLevel(void);
   };
 
+  void loadMap(World& world, Frame& frame, std::istringstream& s);
   void InitializeWorldModels(World& world);
   void InitializeWorldDoors(World& world, const std::string& assetName);
   void InitializeLevel(World& world, const std::string& level, Frame& frame,
                        Camera& camera, PopUp& caption);
-
-  ////////////////////////////
-  // Future WORLD Structure //
-  // vvvvvvvvvvvvvvvvvvvvvv //
-  ////////////////////////////
-
-  enum ShapeType
-  {
-    WallCube,
-    Barrel,
-    Floor,
-    GateHeavy,
-    Key,
-    Coin,
-    Ghost,
-
-    Size
-  };
-  // Position in shapes vector
-
-  enum class TriggerState
-  {
-    NeverTriggered,
-    CurrentlyActive,
-    AlreadyTriggered
-  };
-
-  enum class TriggerType
-  {
-    Coin,
-    Ghost
-  };
-
-  struct Trigger
-  {
-    BoundingBox  aoe;
-    TriggerState state;
-    TriggerType  type;
-  };
-
-  ////////////////////////////
-  // ^^^^^^^^^^^^^^^^^^^^^^ //
-  // Future WORLD Structure //
-  ////////////////////////////
+  std::string DoorUIDToId(const std::vector<Door>& doors,
+                          const std::size_t        uid);
+  Door* GetDoorByUID(std::vector<Door>& doors, const std::size_t uid);
 
 } // Soleil
 

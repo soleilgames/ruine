@@ -29,21 +29,6 @@
 #include "World.hpp"
 
 namespace Soleil {
-  // Render element on screen
-  struct DrawElement
-  {
-    size_t    shapeIndex;     // Index in the shape vector
-    glm::mat4 transformation; // Current transfromation
-    int       id;             // An id that should be unique for picking
-
-    // Generate an unique id for each node
-    static int getNextId(void)
-    {
-      static int next = -1;
-      next++;
-      return next;
-    }
-  };
 
   namespace gui {
 
@@ -99,7 +84,8 @@ namespace Soleil {
     struct Selectable
     {
       BoundingBox boundingBox;
-      int         id;
+      std::size_t id;
+      std::size_t type;
     };
 
     // --- Method for pushing elements on the world
@@ -113,11 +99,7 @@ namespace Soleil {
                 std::vector<DrawElement>& objects,
                 std::vector<DrawElement>& ghosts,
                 std::vector<Trigger>&     triggers);
-    void loadMap(std::vector<DrawElement>&    elements,
-                 std::vector<DrawElement>&    objects,
-                 std::vector<DrawElement>&    ghosts,
-                 std::vector<Trigger>&        triggers,
-                 const std::vector<ShapePtr>& shapes, std::istringstream& s);
+    void loadMap(World& world, const std::string &fileName);
 
     // Method to load legacy levels
     void parseMaze(World& world, std::vector<DrawElement>& elements,
@@ -126,19 +108,18 @@ namespace Soleil {
     // --- Pick Select Delete Move
     void pick(const glm::vec3& orig, const glm::vec3& dir,
               std::vector<Selectable>& selectables);
-    void worldBuilderDelete(int ptr, const std::vector<ShapePtr>& shapes,
-                            std::vector<DrawElement>& elements,
-                            std::vector<DrawElement>& objects,
-                            std::vector<DrawElement>& ghosts);
+    void worldBuilderDelete(std::size_t                  ptr,
+                            const std::vector<ShapePtr>& shapes,
+                            std::vector<DrawElement>&    elements,
+                            std::vector<DrawElement>&    objects,
+                            std::vector<DrawElement>&    ghosts);
     void updateTranslation(glm::vec3& position, glm::vec3& center);
 
     // Transform nodes of the current world into an array of selectables
     void worldAsSelectable(std::vector<Selectable>&        selectables,
-                           const std::vector<ShapePtr>&    shapes,
-                           const std::vector<DrawElement>& elements,
-                           const std::vector<DrawElement>& objects,
-                           const std::vector<DrawElement>& ghosts);
-
+                           const World& world);
+    void clearSelection();
+    
   } // gui
 } // Soleil
 

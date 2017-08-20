@@ -22,6 +22,8 @@
 #ifndef SOLEIL__DRAW_HPP_
 #define SOLEIL__DRAW_HPP_
 
+#include <functional>
+
 #include "OpenGLInclude.hpp"
 #include "Shape.hpp"
 #include "types.hpp"
@@ -33,6 +35,40 @@
 #include <glm/mat4x4.hpp>
 
 namespace Soleil {
+
+  // Render element on screen
+  struct DrawElement
+  {
+    size_t      shapeIndex;     // Index in the shape vector
+    glm::mat4   transformation; // Current transfromation
+    std::size_t id;             // An id that should be unique for picking
+
+    DrawElement(size_t shapeIndex, const glm::mat4& transformation)
+      : shapeIndex(shapeIndex)
+      , transformation(transformation)
+    {
+      id = Hash(*this);
+    }
+
+    DrawElement()
+      : id(0)
+    {
+    }
+
+    // Generate an unique id for each node    
+    static std::size_t Hash(const DrawElement& e)
+    {
+      size_t hash = std::hash<size_t>()(e.shapeIndex);
+
+      const auto fx = std::hash<float>();
+      for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+          hash ^= fx(e.transformation[i][j]);
+        }
+      }
+      return hash;
+    }
+  };
 
   struct DrawCommand
   {

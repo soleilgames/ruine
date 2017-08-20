@@ -23,7 +23,9 @@
 
 #include <chrono>
 #include <memory>
+#include <set>
 #include <stdexcept>
+#include <cstring>
 
 #include "stringutils.hpp"
 #include "types.hpp"
@@ -59,6 +61,8 @@ using namespace Soleil;
 static std::string                           lineDebug;
 static std::unique_ptr<gui::EditorResources> editorResources;
 static World                                 world;
+static std::vector<const char*>              doorNames;
+static int                                   doorSelected;
 
 // TODO: Required by Draw command 'for debug' - Should not be.
 Push&
@@ -76,6 +80,33 @@ Soleil::ControllerService::GetPlayerController() noexcept
   return c;
 }
 // -------------------------
+
+void
+saveMat4(std::ofstream& os, const glm::mat4& mat)
+{
+  for (int y = 0; y < 4; ++y) {
+    for (int x = 0; x < 4; ++x) {
+      os << mat[x][y] << " ";
+    }
+  }
+}
+
+void
+saveVec3(std::ofstream& os, const glm::vec3& v)
+{
+  for (int x = 0; x < 3; ++x) {
+    os << v[x] << " ";
+  }
+}
+
+void
+saveBoundingBox(std::ofstream& os, const BoundingBox& b)
+{
+  saveVec3(os, b.getMin());
+  os << " ";
+  saveVec3(os, b.getMax());
+  os << " ";
+}
 
 static void
 errorCallback(int error, const char* description)
@@ -106,7 +137,7 @@ namespace Soleil {
       objects.push_back(draw);
       triggers.push_back(
         {BoundingBox(draw.transformation, 0.25f), // TODO: use gval
-         TriggerState::NeverTriggered, TriggerType::Coin});
+	    TriggerState::NeverTriggered, TriggerType::Coin, draw.id});
     }
 
     void pushGhost(DrawElement& draw, std::vector<DrawElement>& objects,
@@ -117,7 +148,49 @@ namespace Soleil {
       box.transform(draw.transformation);
       objects.push_back(draw);
       triggers.push_back({box, // TODO: use gval
-                          TriggerState::NeverTriggered, TriggerType::Coin});
+	    TriggerState::NeverTriggered, TriggerType::Ghost, draw.id});
+    }
+
+    void setKey(DrawElement& draw, World& world)
+    {
+      BoundingBox box = world.shapes[ShapeType::Key]->makeBoundingBox();
+
+      box.transform(draw.transformation);
+      world.items.push_back(draw);
+      world.triggers.push_back(
+        {box, TriggerState::NeverTriggered, TriggerType::Key, draw.id});
+    }
+
+    static void refreshDoorList()
+    {
+      doorNames.clear();
+      for (auto& d : world.doors) {
+
+        // TODO: The gui editor requires to have a specific size to works
+        // correctly but we need to resize if here because it invalidate the
+        // 'c_str()' pointer
+        d.id.reserve(64);
+
+        doorNames.push_back(d.id.c_str());
+      }
+    }
+
+    void pushDoor(const glm::mat4& transformation, World& world)
+    {
+      BoundingBox aoe(transformation, 0.1f);
+
+      Door d;
+      d.id          = RandomString(8);
+      d.name        = L"";
+      d.output      = "";
+      d.uid         = std::hash<std::string>{}(d.id);
+      d.triggerZone = aoe;
+      world.doors.push_back(d);
+
+      world.triggers.push_back(
+        Trigger{aoe, TriggerState::NeverTriggered, TriggerType::Door, d.uid});
+
+      refreshDoorList();
     }
 
     void newMap(std::vector<DrawElement>& elements,
@@ -135,51 +208,24 @@ namespace Soleil {
       EventService::Trigger(Events::event_map_loaded);
     }
 
-    void loadMap(std::vector<DrawElement>&    elements,
-                 std::vector<DrawElement>&    objects,
-                 std::vector<DrawElement>&    ghosts,
-                 std::vector<Trigger>&        triggers,
-                 const std::vector<ShapePtr>& shapes, std::istringstream& s)
+    void loadMap(World& world, const std::string& fileName)
     {
-      std::string line;
+      Frame f;
 
-      elements.clear();
-      objects.clear();
-      ghosts.clear();
-      triggers.clear();
-      enum Step
-      {
-        Statics,
-        Coins,
-        Ghosts,
-      };
-      int step = Step::Statics;
-      while (std::getline(s, line)) {
-        if (line[0] == '#') continue; // Skip comments
-        if (line.size() < 1) {
-          step++;
-          continue;
-        }
+      clearSelection();
+      world.resetLevel();
+      world.doors.clear();
 
-        std::istringstream drawStr(line);
-        DrawElement        draw;
+      InitializeWorldModels(world);
+      InitializeWorldDoors(world, "doors.ini");
+      std::istringstream is(AssetService::LoadAsString(fileName));
 
-        drawStr >> draw.shapeIndex;
-
-        glm::mat4& t = draw.transformation;
-        for (int y = 0; y < 4; ++y) {
-          for (int x = 0; x < 4; ++x) {
-            drawStr >> t[x][y];
-          }
-        }
-        switch (step) {
-          case Step::Statics:
-            elements.push_back(draw);
-            // TODO: World bounds and bounding boxes
-            break;
-          case Step::Coins: pushCoin(draw, objects, triggers); break;
-          case Step::Ghosts: pushGhost(draw, ghosts, triggers, shapes); break;
-        }
+      ::Soleil::loadMap(world, f, is);
+      for (const Door& door : world.doors) {
+        if (fileName == door.level)
+          world.triggers.push_back({door.triggerZone,
+                                    TriggerState::NeverTriggered,
+                                    TriggerType::Door, door.uid});
       }
 
       EventService::Trigger(Events::event_map_loaded);
@@ -210,13 +256,13 @@ namespace Soleil {
     {
       int size = lines.capacity();
 
-      size_t current = start;
+      size_t current = end;
       while (size > 0) {
         if (current >= lines.capacity()) current = 0;
-        if (current == end) return;
+        if (current == start) return;
 
         ImGui::Text("> %s", lines[current].c_str());
-        current++;
+        current--;
         size--;
       }
     }
@@ -271,14 +317,13 @@ namespace Soleil {
           if (io.KeyCtrl) {
             clipped.x = (int)clipped.x;
             clipped.z = (int)clipped.z;
-            lineDebug += toString("\n>clipped=", clipped);
           }
           this->transformation = glm::translate(glm::mat4(), clipped);
 
-          lineDebug += toString("\n>worldPosition=", orig);
-          lineDebug += toString("\n>dir=", dir);
-
-          RenderFlatShape(transformation, *shapes[shape], frame);
+          if (shape == ShapeType::ST_BoundingBox)
+            DrawBoundingBox(BoundingBox(transformation, 0.1f), frame);
+          else
+            RenderFlatShape(transformation, *shapes[shape], frame);
         }
       }
       void set(size_t shape)
@@ -388,29 +433,13 @@ namespace Soleil {
           if (c == 'x') {
             const glm::mat4 transformation = glm::translate(scale, position);
 
-            elements.push_back({0, transformation, DrawElement::getNextId()});
-            world.statics.push_back(
-              DrawCommand(*world.wallShape, transformation));
+            elements.push_back({ShapeType::WallCube, transformation});
 
-            BoundingBox box = world.wallShape->makeBoundingBox();
-            box.transform(transformation);
-            world.hardSurfaces.push_back(box);
-
-            world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
-            world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
           } else if (c == 'G') {
             const glm::mat4 transformation = glm::translate(scale, position);
 
-            elements.push_back({3, transformation, DrawElement::getNextId()});
-            world.statics.push_back(
-              DrawCommand(*world.gateShape, transformation));
+            elements.push_back({ShapeType::GateHeavy, transformation});
 
-            BoundingBox box = world.wallShape->makeBoundingBox();
-            box.transform(transformation);
-            world.hardSurfaces.push_back(box);
-
-            world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
-            world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
           } else {
             if (c == 'l') {
               PointLight p;
@@ -423,39 +452,29 @@ namespace Soleil {
                 glm::translate(glm::mat4(),
                                glm::vec3(position.x, -1.0f, position.z)) *
                 glm::scale(glm::mat4(), glm::vec3(0.5f));
-              world.statics.push_back(
-                DrawCommand(*world.torchShape, transformation));
             } else if (c == 'g') {
               glm::mat4 transformation =
                 glm::translate(glm::mat4(),
                                glm::vec3(position.x, -0.60f, position.z)) *
                 glm::scale(glm::mat4(), glm::vec3(.3f));
-              lateComer.push_back(
-                DrawCommand(*world.ghostShape, transformation));
+
+              DrawElement d{ShapeType::Ghost, transformation};
+              pushGhost(d, world.ghosts, world.triggers, world.shapes);
             } else if (c == 'p') {
               const glm::vec3 coinPosition =
                 glm::vec3(position.x, -1.0f, position.z);
               const glm::mat4 transformation =
                 glm::translate(scale, coinPosition);
-              auto pos =
-                std::find(std::begin(world.coinPickedUp),
-                          std::end(world.coinPickedUp), transformation);
-              if (pos == std::end(world.coinPickedUp)) {
-                // TODO: Do put in a specific vector;
-                world.statics.push_back(
-                  DrawCommand(*world.purseShape, transformation));
 
-                BoundingBox bbox(transformation, 0.3f);
-                world.coinTriggers.push_back({bbox, transformation});
-              }
+              DrawElement d{ShapeType::Coin, transformation};
+              pushCoin(d, world.items, world.triggers);
+
             } else if (c == 'k') {
               const glm::vec3 keyPosition =
                 glm::vec3(position.x, -1.0f, position.z);
               const glm::mat4 transformation =
                 glm::scale(glm::translate(scale, keyPosition), glm::vec3(2.0f));
 
-              world.statics.push_back(
-                DrawCommand(*world.keyShape, transformation));
               world.theKey = transformation;
             } else if (c == 'b' || c == 'B') {
               const glm::vec3 barrelPosition =
@@ -463,17 +482,6 @@ namespace Soleil {
               const glm::mat4 transformation =
                 glm::translate(scale, barrelPosition);
 
-              BoundingBox box = world.barrelShape->makeBoundingBox();
-              box.transform(transformation);
-              world.hardSurfaces.push_back(box);
-#if 0
-	    if (c == 'b')
-            world.statics.push_back(
-              DrawCommand(*world.barrel2Shape, transformation));
-	    else
-#endif
-              world.statics.push_back(
-                DrawCommand(*world.barrelShape, transformation));
             } else if (c == 'A') {
               glm::mat4 transformation =
                 glm::rotate(
@@ -481,9 +489,6 @@ namespace Soleil {
                                  glm::vec3(position.x, -0.60f, position.z)),
                   glm::half_pi<float>(), glm::vec3(0, 1, 0)) *
                 glm::scale(glm::mat4(), glm::vec3(.3f));
-
-              world.statics.push_back(
-                DrawCommand(*world.ghostShape, transformation));
             }
 
             glm::mat4 groundTransformation =
@@ -494,40 +499,12 @@ namespace Soleil {
               glm::rotate(glm::mat4(), glm::pi<float>(),
                           glm::vec3(0.0f, 0.0f, 1.0f));
 
-            elements.push_back(
-              {2, groundTransformation, DrawElement::getNextId()});
-            world.statics.push_back(
-              DrawCommand(*world.floorShape, groundTransformation));
-            world.statics.push_back(
-              DrawCommand(*world.floorShape, ceilTransformation));
+            elements.push_back({ShapeType::Floor, groundTransformation});
           }
           x += 1.0f;
         }
         z += 1.0f;
         x = 0.0f;
-      }
-
-      // TODO: In a future release move the ghost in a specific vector instead
-      // of
-      // using the static one. +1 is for the player ghost.
-      world.statics.reserve(world.statics.size() + lateComer.size() + 1);
-
-      for (size_t i = 0; i < lateComer.size(); ++i) {
-        const auto& o = lateComer[i];
-
-        world.statics.push_back(o);
-
-        PointLight p;
-
-        p.color     = gval::ghostColor;
-        p.position  = glm::vec3(world.statics.back().transformation[3]);
-        p.linear    = 0.09f;
-        p.quadratic = 0.032f;
-        frame.pointLights.push_back(p);
-
-        world.sentinels.push_back(
-          GhostData(&(world.statics.back().transformation),
-                    frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
       }
     }
 
@@ -535,15 +512,20 @@ namespace Soleil {
     static gui::CursorSelection     cursorSelection;
     static gui::Console             console;
     static std::vector<BoundingBox> debugBox;
-    static int                      selection = -1;
+    static std::size_t              selection     = 0;
+    static std::size_t              selectionType = 0;
+    static bool                     selected      = false;
+    static std::string              loadLevelOnStartup;
 
     void pick(const glm::vec3& orig, const glm::vec3& dir,
               std::vector<Selectable>& selectables)
     {
-      debugBox.clear();
+      clearSelection();
+
       BoundingBox bbox;
       float       distance = std::numeric_limits<float>::max();
 
+      selected = false;
       for (const auto s : selectables) {
         float     t;
         glm::vec3 point;
@@ -552,64 +534,104 @@ namespace Soleil {
             toString("Intersection with ptr=", s.id, " at distance:", t));
 
           if (t < distance) {
-            distance  = t;
-            selection = s.id;
-            bbox      = s.boundingBox;
+            distance      = t;
+            selection     = s.id;
+            selectionType = s.type;
+            bbox          = s.boundingBox;
+            selected      = true;
           }
         }
       }
+
+      if (selected == false) return;
 
       bbox.expandBy(bbox.getMin() - 0.1f);
       bbox.expandBy(bbox.getMax() + 0.1f);
       debugBox.push_back(bbox);
     }
 
-    void worldAsSelectable(std::vector<Selectable>&        selectables,
-                           const std::vector<ShapePtr>&    shapes,
-                           const std::vector<DrawElement>& elements,
-                           const std::vector<DrawElement>& objects,
-                           const std::vector<DrawElement>& ghosts)
+    void worldAsSelectable(std::vector<Selectable>& selectables,
+                           const World&             world)
     {
       std::map<int, BoundingBox> prepared;
       selectables.clear();
 
-      const auto items = {elements, objects, ghosts};
+      const auto items = {world.elements, world.items, world.ghosts};
 
       for (const auto& item : items) {
         for (auto it = item.begin(); it != item.end(); ++it) {
           auto& element = *it;
           if (prepared.find(element.shapeIndex) == prepared.end()) {
             prepared[element.shapeIndex] =
-              shapes[element.shapeIndex]->makeBoundingBox();
+              world.shapes[element.shapeIndex]->makeBoundingBox();
           }
 
           BoundingBox b = prepared[element.shapeIndex];
           b.transform(element.transformation);
 
           console.push(toString("> ", (void*)&element));
-          selectables.push_back({b, element.id});
+          selectables.push_back({b, element.id, element.shapeIndex});
+        }
+      }
+
+      for (const auto& t : world.triggers) {
+        if (t.type == TriggerType::Door) {
+          selectables.push_back({t.aoe, t.link, ShapeType::ST_BoundingBox});
         }
       }
     }
 
-    void worldBuilderDelete(int ptr, const std::vector<ShapePtr>& shapes,
-                            std::vector<DrawElement>& elements,
-                            std::vector<DrawElement>& objects,
-                            std::vector<DrawElement>& ghosts)
+    static bool RemoveFromVector(std::vector<DrawElement>& elements,
+                                 std::size_t               uid)
     {
-      const auto items = {elements, objects, ghosts};
+      for (auto it = elements.begin(); it != elements.end(); ++it) {
+        auto& el = *it;
 
-      for (const auto& item : items) {
-        for (auto it = item.begin(); it != item.end(); ++it) {
-          auto& element = *it;
-
-          console.push(toString("+ ", (void*)&element));
-          if (element.id == ptr) {
-            elements.erase(it);
-            return;
-          }
+        if (el.id == uid) {
+          elements.erase(it);
+          return true;
         }
       }
+      return false;
+    }
+
+    static bool RemoveFromTriggers(std::vector<Trigger>& triggers, World& world,
+                                   std::size_t uid)
+    {
+      for (auto it = triggers.begin(); it != triggers.end(); ++it) {
+        auto& el = *it;
+
+        if (el.link == uid) {
+          // If it's a door we also need to remove it's name in the door list.
+          // Otherwise we also need to remove the World object,
+          bool doContinueRemoval = (it->type != TriggerType::Door);
+
+          triggers.erase(it);
+
+          if (doContinueRemoval) return false;
+
+          // Also remove the door from the list
+          for (auto itd = world.doors.begin(); itd != world.doors.end();
+               ++itd) {
+            if (itd->uid == uid) {
+              world.doors.erase(itd);
+              return true;
+            }
+          }
+
+          assert(false && "No door associated with trigger");
+        }
+      }
+      return false;
+    }
+
+    void worldBuilderDelete(std::size_t ptr, World& world)
+    {
+      if (RemoveFromTriggers(world.triggers, world, ptr)) return;
+      if (RemoveFromVector(world.elements, ptr)) return;
+      if (RemoveFromVector(world.items, ptr)) return;
+      if (RemoveFromVector(world.ghosts, ptr)) return;
+
       console.push(toString("No item found!! ", ptr));
     }
 
@@ -637,12 +659,21 @@ namespace Soleil {
       }
     }
 
+    void clearSelection()
+    {
+      debugBox.clear();
+      selection     = 0;
+      selectionType = 0;
+      selected      = false;
+      doorSelected  = -1;
+    }
+
     static void render(GLFWwindow* window)
     {
 
       // Any options the gui may temporary customize
       bool   doRenderStatics  = true;
-      bool   doRenderTriggers = false;
+      bool   doRenderTriggers = true;
       ImVec4 clear_color      = ImColor(114, 144, 154);
       int    width, height;
       glfwGetFramebufferSize(window, &width, &height);
@@ -667,43 +698,35 @@ namespace Soleil {
       grid3.transformation =
         glm::rotate(glm::mat4(), glm::half_pi<float>(), glm::vec3(0, 0, 1));
 
-      std::vector<ShapePtr> shapes = {
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("wallcube.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("barrel.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("floor.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("gate.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("key.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("coin.obj")),
-        Soleil::WavefrontLoader::fromContent(
-          AssetService::LoadAsString("ghost.obj"))};
+      world.shapes = {Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("wallcube.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("barrel.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("floor.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("gate.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("key.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("coin.obj")),
+                      Soleil::WavefrontLoader::fromContent(
+                        AssetService::LoadAsString("ghost.obj"))};
       // All the shape that can be used in game. In a future release it could be
       // configured per level?
-
-      std::vector<DrawElement> elements;
-      // TODO: Should be named statics. Will have a fixed size
-
-      std::vector<DrawElement> objects;
-      // Coins, keys, ... size will varry
-
-      std::vector<Trigger> triggers;
-
-      std::vector<DrawElement> ghosts;
 
       std::vector<gui::ShapeElement> guiStaticsShapes = {
         {ShapeType::WallCube, "Wall cube"},
         {ShapeType::Barrel, "Barrel"},
         {ShapeType::Floor, "Floor"},
         {ShapeType::GateHeavy, "Gate heavy"},
+        {ShapeType::Couloir, "Couloir"},
       };
 
       std::vector<gui::ShapeElement> guiObjectsShapes = {
-        {ShapeType::Coin, "Coin"}, {ShapeType::Ghost, "Ghost"},
+        {ShapeType::Coin, "Coin"},
+        {ShapeType::Ghost, "Ghost"},
+        {ShapeType::Key, "The Key"},
       };
 
       Frame                          frame;
@@ -747,23 +770,22 @@ namespace Soleil {
         Frame dummyFrame;
 
         EventService::Push(Events::event_map_loaded, [&]() {
-          worldAsSelectable(selectables, shapes, elements, objects, ghosts);
+          worldAsSelectable(selectables, world);
           console.push(toString("selectable size: ", selectables.size()));
+          refreshDoorList();
         });
-        // TODO: ! Warning ! Also add any new objects
 
         InitializeWorldModels(world);
-#if 0
-    std::istringstream is(AssetService::LoadAsString("corpsdegarde.level.new"));
-#else
-        std::istringstream is(AssetService::LoadAsString("empty.new"));
-#endif
-        loadMap(elements, objects, ghosts, triggers, shapes, is);
+        // Load a level if requested
+        if (loadLevelOnStartup.empty() == false) {
+          loadMap(world, loadLevelOnStartup);
+        }
       }
 
       while (!glfwWindowShouldClose(window)) {
         Soleil::Timer time((int)(glfwGetTime() * 1000));
         glfwPollEvents();
+        const ImGuiIO& io = ImGui::GetIO();
 
 #if 0    
     view = glm::rotate(view, 0.01f, glm::vec3(0, 1, 0));
@@ -799,39 +821,38 @@ namespace Soleil {
           glEnable(GL_BLEND);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-          cursorSelection.draw(shapes, frame);
+          cursorSelection.draw(world.shapes, frame);
           grid.draw(frame);
           grid2.draw(frame);
           grid3.draw(frame);
           // RenderFlatShape(statics, frame);
           // RenderFlatShape(world.statics, frame);
           if (doRenderStatics) {
-            for (const auto& e : elements) {
-              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            for (const auto& e : world.elements) {
+              RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex],
+                              frame);
             }
-            for (const auto& e : objects) {
-              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            for (const auto& e : world.items) {
+              RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex],
+                              frame);
             }
-            for (const auto& e : ghosts) {
-              RenderFlatShape(e.transformation, *shapes[e.shapeIndex], frame);
+            for (const auto& e : world.ghosts) {
+              RenderFlatShape(e.transformation, *world.shapes[e.shapeIndex],
+                              frame);
             }
           }
           if (doRenderTriggers) {
-            for (const auto& t : triggers) {
+            for (const auto& t : world.triggers) {
               DrawBoundingBox(t.aoe, frame);
             }
           }
 
           for (const auto b : debugBox) {
-            DrawBoundingBox(b, frame);
+            DrawBoundingBox(b, frame, RGBA(1.0f, 0.5f, 0.2f, 0.5f));
           }
         }
 
         ImGui_ImplGlfwGL3_NewFrame();
-
-        // Update Eye z;
-        const ImGuiIO& io = ImGui::GetIO();
-        eye.y -= io.MouseWheel;
 
 #if 0
     ImGui::Begin("Another Window");
@@ -859,6 +880,12 @@ namespace Soleil {
                        ImGuiWindowFlags_NoScrollWithMouse |
                        ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+        // Update Eye z;
+        if (ImGui::IsWindowHovered()) {
+          const ImGuiIO& io = ImGui::GetIO();
+          eye.y -= io.MouseWheel;
+        }
+
         // Get the current cursor position (where your window is)
         ImVec2 pos = ImGui::GetCursorScreenPos();
 
@@ -879,18 +906,26 @@ namespace Soleil {
           // Check if we have to add an entity
           if (cursorSelection.isActive()) {
             DrawElement draw{cursorSelection.getShape(),
-                             cursorSelection.getTransformation(),
-                             DrawElement::getNextId()};
+                             cursorSelection.getTransformation()};
             switch (cursorSelection.getShape()) {
               case ShapeType::WallCube:
               case ShapeType::Barrel:
               case ShapeType::Floor:
-              case ShapeType::GateHeavy: elements.push_back(draw); break;
-              case ShapeType::Coin: pushCoin(draw, objects, triggers); break;
-              case ShapeType::Ghost:
-                pushGhost(draw, ghosts, triggers, shapes);
+              case ShapeType::Couloir:
+              case ShapeType::GateHeavy: world.elements.push_back(draw); break;
+              case ShapeType::Coin:
+                pushCoin(draw, world.items, world.triggers);
                 break;
+              case ShapeType::Ghost:
+                pushGhost(draw, world.ghosts, world.triggers, world.shapes);
+                break;
+              case ShapeType::ST_BoundingBox:
+                pushDoor(draw.transformation, world);
+                break;
+              case ShapeType::Key: setKey(draw, world); break;
             }
+            // TODO: Triggers
+            worldAsSelectable(selectables, world);
           } else {
             glm::vec3 orig;
             glm::vec3 dir;
@@ -924,6 +959,10 @@ namespace Soleil {
                                     guiObjectsShapes[i].shapeIndex))
             cursorSelection.set(guiObjectsShapes[i].shapeIndex);
         }
+        if (ImGui::Selectable("Door trigger", cursorSelection.isActive() &&
+                                                cursorSelection.getShape() ==
+                                                  ShapeType::ST_BoundingBox))
+          cursorSelection.set(ShapeType::ST_BoundingBox);
         ImGui::EndChild();
         ImGui::SameLine();
         ImGui::BeginChild("buttons");
@@ -942,7 +981,7 @@ namespace Soleil {
         static char fileName[255] = "corpsdegarde.level";
         ImGui::InputText("input text", fileName, 255);
         if (ImGui::Button("Save")) {
-          std::ofstream outfile("media/" + std::string(fileName) + ".new");
+          std::ofstream outfile("media/" + std::string(fileName));
 
           // I. MAP
           // # Statics:
@@ -957,22 +996,32 @@ namespace Soleil {
           // key true
           // dialogue 3
 
-          const auto view = {elements, objects, ghosts};
+          const auto view = {world.elements, world.items, world.ghosts};
 
           for (const auto& current : view) {
             for (const auto& e : current) {
               outfile << e.shapeIndex << " ";
 
-              const glm::mat4& t = e.transformation;
-              for (int y = 0; y < 4; ++y) {
-                for (int x = 0; x < 4; ++x) {
-                  outfile << t[x][y] << " ";
-                }
-              }
+              saveMat4(outfile, e.transformation);
               outfile << "\n";
             }
 
             outfile << "\n";
+          }
+
+          // Save the doors:
+          std::ofstream doorsfile("media/doors.ini");
+          for (const auto& door : world.doors) {
+            // TODO: to check
+            doorsfile << door.id.c_str();
+            doorsfile << " ";
+            doorsfile << ((door.level.empty()) ? std::string(fileName)
+                                               : door.level.c_str());
+            doorsfile << " ";
+            saveBoundingBox(doorsfile, door.triggerZone);
+            doorsfile << door.output.c_str() << " ";
+            doorsfile << (char*)door.name.data();
+            doorsfile << "\n";
           }
 
           /*
@@ -985,33 +1034,87 @@ namespace Soleil {
         if (ImGui::Button("Load Old")) {
           Frame dummyFrame;
 
+          clearSelection();
+
+          clearSelection();
+          world.resetLevel();
+          world.doors.clear();
+
           InitializeWorldModels(world);
+          InitializeWorldDoors(world, "doors.ini");
           std::istringstream is(AssetService::LoadAsString(fileName));
-          gui::parseMaze(world, elements, is, dummyFrame);
+          gui::parseMaze(world, world.elements, is, dummyFrame);
         }
 
         if (ImGui::Button("Load New")) {
-          Frame dummyFrame;
-
-          InitializeWorldModels(world);
-          std::istringstream is(AssetService::LoadAsString(fileName));
-          loadMap(elements, objects, ghosts, triggers, shapes, is);
+          loadMap(world, fileName);
         }
 
         if (ImGui::Button("New")) {
           Frame dummyFrame;
 
           InitializeWorldModels(world);
-          newMap(elements, objects, ghosts, triggers);
+          newMap(world.elements, world.items, world.ghosts, world.triggers);
         }
 
         ImGui::End();
 
-        if (selection >= 0) {
+        if (selected) {
           ImGui::Begin("Selection");
-          if (ImGui::Button("Delete")) {
-            worldBuilderDelete(selection, shapes, elements, objects, ghosts);
+
+          switch (selectionType) {
+            case ShapeType::ST_BoundingBox:
+              Door* d = GetDoorByUID(world.doors, selection);
+
+              ImGui::InputText("ID", &(d->id[0]), 64);
+
+              if (doorSelected < 0) {
+                for (const auto& listed : doorNames) {
+                  doorSelected++;
+
+                  if (listed == d->output) break;
+                }
+              }
+              int c = doorSelected;
+              ImGui::ListBox("Target", &c, doorNames.data(), doorNames.size());
+              if (c != doorSelected) {
+                doorSelected = c;
+                d->output    = doorNames[doorSelected];
+              }
+
+              d->name.resize(255, '\0');
+              ImGui::InputText("Name", (char*)&(d->name[0]), 32);
+
+
+	      float x = 0.0f;
+	      float y = 0.0f;
+	      bool modification = false;
+	      modification += ImGui::DragFloat("Shift x", &x, 0.001f);
+	      modification += ImGui::DragFloat("Shift Y", &y, 0.001f);
+	      if (modification) {
+		d->triggerZone.transform(glm::translate(glm::mat4(), glm::vec3(x, 0.0f, y)));
+
+		// also update the trigger
+		for (auto& t : world.triggers) {
+		  if (t.link == d->uid) {
+		    t.aoe = d->triggerZone;
+		    break;
+		  }
+		}
+	      }
+	      
+	      
+              // ImGui::Button("Save");
+              break;
           }
+          if (ImGui::Button("Delete") ||
+              (io.KeyCtrl && io.KeysDown[(int)'X'])) {
+            worldBuilderDelete(selection, world);
+            worldAsSelectable(selectables, world);
+            clearSelection();
+          }
+
+	  
           ImGui::End();
         }
 
@@ -1025,6 +1128,44 @@ namespace Soleil {
                       ImGui::GetIO().Framerate);
           ImGui::Text(">%s", lineDebug.c_str());
           console.render();
+        }
+
+        bool popupLoad = io.KeyCtrl && io.KeysDown[(int)'O'];
+
+        if (io.KeysDown[io.KeyMap[ImGuiKey_::ImGuiKey_Escape]]) {
+          if (selection > 0)
+            clearSelection();
+          else if (cursorSelection.isActive())
+            cursorSelection.clear();
+        }
+
+        static std::vector<std::string> levels;
+        if (popupLoad) {
+          ImGui::OpenPopup("PopupLoad");
+
+          std::set<std::string> set;
+          for (const auto& d : world.doors) {
+            set.emplace(d.level);
+          }
+          levels.clear();
+          levels.reserve(set.size());
+          std::copy(std::begin(set), std::end(set), std::back_inserter(levels));
+        }
+
+        if (ImGui::BeginPopup("PopupLoad")) {
+
+          ImGui::Text("Load New Level");
+          ImGui::BeginChild("Levels", ImVec2(150, 150), true);
+          for (size_t i = 0; i < levels.size(); i++) {
+            if (ImGui::Selectable(levels[i].c_str())) {
+	      std::strncpy(fileName, levels[i].c_str(), 255);
+              loadMap(world, levels[i]);
+              ImGui::CloseCurrentPopup();
+            }
+          }
+          ImGui::EndChild();
+
+          ImGui::EndPopup();
         }
 
         // Rendering
@@ -1092,6 +1233,9 @@ main(int argc, char* argv[])
 
   ImGui_ImplGlfwGL3_Init(window, true);
 
+  if (argc == 2) {
+    Soleil::gui::loadLevelOnStartup = argv[1];
+  }
   Soleil::gui::render(window);
 
   glfwTerminate();

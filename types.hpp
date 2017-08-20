@@ -43,6 +43,7 @@ namespace Soleil {
   typedef glm::vec3 Position;
   typedef glm::vec4 Color;
   typedef glm::vec3 RGB;
+  typedef glm::vec4 RGBA;
   typedef glm::vec3 Normal;
   typedef glm::vec2 Coord2D;
 
@@ -125,7 +126,7 @@ namespace Soleil {
     static const glm::vec3 ambiantLight(1.0f);
     static const glm::vec3 cameraLight(0.35f);
     static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
-    static const float     ghostSpeed     = 0.01f;
+    static const float     ghostSpeed     = 0.005f;
     static const float     cameraYawSpeed = 0.002f;
     static const float     cameraSpeed    = 0.05f;
     static const char*     firstLevel     = "0";
