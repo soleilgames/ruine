@@ -33,22 +33,22 @@ namespace Soleil {
 
   void InitializeWorldModels(World& world)
   {
-    world.shapes = {Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("wallcube.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("barrel.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("floor.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("gate.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("key.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("coin.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("ghost.obj")),
-                    Soleil::WavefrontLoader::fromContent(
-                      AssetService::LoadAsString("couloir.obj"))};
+    world.shapes = {
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("wallcube.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("barrel.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("floor.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("gate.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("key.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("coin.obj")),
+      Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("ghost.obj")),
+    };
   }
 
   void InitializeWorldDoors(World& world, const std::string& assetName)
@@ -452,7 +452,7 @@ namespace Soleil {
 #endif
     camera.position =
       (start.triggerZone.getMax() + start.triggerZone.getMin()) / 2.0f;
-    camera.position.y = 0.6f;
+    camera.position.y = 1.0f;
 
     for (const Door& door : world.doors) {
       int state = (door.id == doorId) ? TriggerState::CurrentlyActive

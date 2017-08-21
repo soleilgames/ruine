@@ -186,59 +186,35 @@ namespace Soleil {
       uint32_t flags  = action & AMOTION_EVENT_ACTION_MASK;
 
       switch (flags) {
-        case AMOTION_EVENT_ACTION_UP:
-          controllerService.player.dpad        = glm::vec3(0.0f);
-          controllerService.player.push.active = PushState::Release | PushState::Fresh;
-          break;
+        case AMOTION_EVENT_ACTION_UP: {
+          Push&        push = controllerService.player.push;
+          const double now  = AMotionEvent_getEventTime(event) / 1000000.0f;
+          const double diff = now - push.triggerTime;
+	  Logger::error(toString("Now=", now, ". Diff=", diff));
+          push.triggerTime  = now;
+          if (diff > 100.0f && diff < 600.0f) {
+            push.active      = PushState::DoubleClick | PushState::Fresh;
+            push.triggerTime = 0; // Avoid triple click
+          } else {
+            controllerService.player.push.active =
+              PushState::Release | PushState::Fresh;
+          }
+        } break;
         case AMOTION_EVENT_ACTION_DOWN:
         case AMOTION_EVENT_ACTION_MOVE: {
-          const float x = AMotionEvent_getX(event, 0);
-          const float y = AMotionEvent_getY(event, 0);
+          const float x    = AMotionEvent_getX(event, 0);
+          const float y    = AMotionEvent_getY(event, 0);
+          Push&       push = controllerService.player.push;
 
-          const glm::vec2& point = controllerService.padPosition;
-          const glm::vec2  touch(x / (float)This->glContext->getScreenWidth(),
-                                y / (float)This->glContext->getScreenHeight());
-
-          SOLEIL__LOGGER_DEBUG(toString("touch:", touch));
-
-          controllerService.player.push.position =
-            (glm::vec2(touch.x, -touch.y) - glm::vec2(0.5, -0.5f)) * 2.0f;
-
-          if (flags == AMOTION_EVENT_ACTION_DOWN)
-            controllerService.player.push.active = PushState::Down | PushState::Fresh;
-          else
-            controllerService.player.push.active = PushState::Active;
-
-          const glm::vec2 distance = point - touch;
-          const float     length   = glm::length(distance);
-
-          static const float min = 0.05f;
-          static const float max = 0.175f;
-
-          if (length >= min && length <= max) {
-            // SOLEIL__LOGGER_DEBUG(toString("Touch= ", touch, ". Length=",
-            // length,
-            //                               ". Distance=", distance * 6.666f));
-
-            static const float A     = 0.0f;
-            static const float B     = 0.05f;
-            static const float C     = 0.5f;
-            static const float D     = 1.0f;
-            const float        signx = sgn(distance.x);
-            const float        signy = sgn(distance.y);
-
-            // SOLEIL__LOGGER_DEBUG(toString("Bezier(",signx, "*", distance.x,
-            // "*", "6.666f)=", bezier(A, B, C, D, signx * distance.x *
-            // 6.666f)));
-
-            controllerService.player.dpad.x =
-              signx * bezier(A, B, C, D, signx * distance.x * 6.666f);
-            controllerService.player.dpad.z =
-              signy * bezier(A, B, C, D, signy * distance.y * 6.666f);
-            // SOLEIL__LOGGER_DEBUG(
-            //   toString("PAD(after)=", controllerService.player.dpad));
-          }
-        }; break;
+          const glm::vec2 touch(x / (float)This->glContext->getScreenWidth(),
+                                -y / (float)This->glContext->getScreenHeight());
+          push.position = (touch + glm::vec2(-0.5f, 0.5f)) * 2.0f;
+          if (flags == AMOTION_EVENT_ACTION_DOWN) {
+            push.active = PushState::Down | PushState::Fresh;
+            push.start  = push.position;
+          } else
+            push.active = PushState::Active;
+        } break;
       }
     }
     return 0;

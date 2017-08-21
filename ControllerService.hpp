@@ -34,17 +34,20 @@ namespace Soleil {
   {
     // Actually Inactive, Moving, Up, Down
     Inactive = 0,
-    Active   = 0x01,
-    Release  = 0x02,
-    Down     = 0x04,
+    Active   = 1,
+    Release  = 2,
+    Down     = 4,
+    DoubleClick = 8,
 
-    Fresh = 0x08
+    Fresh = 16
   };
 
   struct Push
   {
+    glm::vec2 start;
     glm::vec2 position;
     int active;
+    double triggerTime;
   };
 
   struct Controller

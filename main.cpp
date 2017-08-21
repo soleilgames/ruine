@@ -35,7 +35,7 @@ using namespace Soleil;
 class DesktopControllerService
 {
 public:
-  DesktopControllerService() {}
+  DesktopControllerService() { player.push.triggerTime = 0.0f; }
   virtual ~DesktopControllerService() {}
 
 public:
@@ -130,13 +130,16 @@ cursor_positionCallback(GLFWwindow* window, double xpos, double ypos)
   glfwGetFramebufferSize(window, &width, &height); // TODO: Can use a static
                                                    // viewport instead of
                                                    // calling this each frames
-  controllerService.player.push.position =
-    (glm::vec2(xpos / (float)width, -ypos / (float)height) +
-     glm::vec2(-0.5f, 0.5f)) *
-    2.0f;
 
-  if (controllerService.player.push.active == PushState::Down)
-    controllerService.player.push.active = PushState::Active;
+  Push& push    = controllerService.player.push;
+  push.position = (glm::vec2(xpos / (float)width, -ypos / (float)height) +
+                   glm::vec2(-0.5f, 0.5f)) *
+                  2.0f;
+
+  if (push.active == PushState::Down) {
+    push.active = PushState::Active;
+    push.start  = controllerService.player.push.position;
+  }
 }
 
 void
@@ -144,9 +147,21 @@ mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
                      int /*mods*/)
 {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    controllerService.player.push.active =
+    Push& push = controllerService.player.push;
+
+    push.active =
       ((action == GLFW_RELEASE) ? PushState::Release : PushState::Down) |
       PushState::Fresh;
+
+    if (action == GLFW_RELEASE) {
+      const double now  = glfwGetTime() * 1000.0f;
+      const double diff = now - push.triggerTime;
+      push.triggerTime  = now;
+      if (diff > 100.0f && diff < 600.0f) {
+        push.active      = PushState::DoubleClick | PushState::Fresh;
+        push.triggerTime = 0;	// Avoid triple click
+      }
+    }
   }
 }
 

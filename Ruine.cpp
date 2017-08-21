@@ -166,7 +166,6 @@ namespace Soleil {
 #endif
     }
 #endif
-    if (ControllerService::GetPlayerController().locked == false) DrawPad();
   }
 
   static glm::mat4 updateCamera(Camera* camera, const glm::vec3& translation,
@@ -250,9 +249,8 @@ namespace Soleil {
 
     for (const auto& ghost : world.sentinels) {
       if (playerbox.intersect(ghost.bounds)) {
-        glm::mat4 transformation =
-          glm::translate(glm::mat4(), glm::vec3(camera.position.x, 0.0f,
-                                                camera.position.z));
+        glm::mat4 transformation = glm::translate(
+          glm::mat4(), glm::vec3(camera.position.x, 0.0f, camera.position.z));
 
         DrawElement draw;
         draw.shapeIndex     = ShapeType::Ghost;
@@ -578,10 +576,22 @@ namespace Soleil {
     Controller& playerPad = ControllerService::GetPlayerController();
 
     if (playerPad.locked == false) {
-      const glm::vec3 translation(0.0f, 0.0f, playerPad.dpad.z / 20.0f);
-      const float     yaw = playerPad.dpad.x;
-      this->view = updateCamera(&camera, translation, yaw, world.hardSurfaces,
-                                frame.delta);
+      if (playerPad.push.active == PushState::Active) {
+        const glm::vec3 translation(
+          0.0f, 0.0f,
+          (playerPad.push.position.y - playerPad.push.start.y) / 10.0f);
+        const float yaw = playerPad.push.start.x - playerPad.push.position.x;
+        this->view = updateCamera(&camera, translation, yaw, world.hardSurfaces,
+                                  frame.delta);
+      } else if (playerPad.push.active == (PushState::DoubleClick|PushState::Fresh)) {
+	camera.yaw += glm::pi<float>();
+        this->view = updateCamera(&camera, glm::vec3(0.0f), 0.0f,
+                                  world.hardSurfaces, frame.delta);
+      } else {
+        this->view = updateCamera(&camera, glm::vec3(0.0f), 0.0f,
+                                  world.hardSurfaces, frame.delta);
+        // TODO: Only required for the first frame
+      }
 
       frame.cameraPosition = camera.position;
       frame.updateViewProjectionMatrices(view, projection);

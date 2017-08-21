@@ -9,7 +9,7 @@ find_package(X11 REQUIRED)
 find_library(GLFW "glfw" REQUIRED)
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -W -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -W -Wall -Wextra") #-Weverything
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 

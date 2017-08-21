@@ -27,7 +27,6 @@
 
 #include "BoundingBox.hpp"
 #include "Draw.hpp"
-#include "fgl.hpp"
 #include "types.hpp"
 
 namespace Soleil {
