@@ -22,10 +22,12 @@
 #include "editor.hpp"
 
 #include <chrono>
+#include <cstring>
 #include <memory>
 #include <set>
 #include <stdexcept>
-#include <cstring>
+
+#include <unistd.h> // getopt
 
 #include "stringutils.hpp"
 #include "types.hpp"
@@ -63,6 +65,8 @@ static std::unique_ptr<gui::EditorResources> editorResources;
 static World                                 world;
 static std::vector<const char*>              doorNames;
 static int                                   doorSelected;
+constexpr int                                FILENAMESIZE = 255;
+static char fileName[FILENAMESIZE] = "corpsdegarde.level";
 
 // TODO: Required by Draw command 'for debug' - Should not be.
 Push&
@@ -137,7 +141,7 @@ namespace Soleil {
       objects.push_back(draw);
       triggers.push_back(
         {BoundingBox(draw.transformation, 0.25f), // TODO: use gval
-	    TriggerState::NeverTriggered, TriggerType::Coin, draw.id});
+         TriggerState::NeverTriggered, TriggerType::Coin, draw.id});
     }
 
     void pushGhost(DrawElement& draw, std::vector<DrawElement>& objects,
@@ -148,7 +152,8 @@ namespace Soleil {
       box.transform(draw.transformation);
       objects.push_back(draw);
       triggers.push_back({box, // TODO: use gval
-	    TriggerState::NeverTriggered, TriggerType::Ghost, draw.id});
+                          TriggerState::NeverTriggered, TriggerType::Ghost,
+                          draw.id});
     }
 
     void setKey(DrawElement& draw, World& world)
@@ -170,6 +175,7 @@ namespace Soleil {
         // correctly but we need to resize if here because it invalidate the
         // 'c_str()' pointer
         d.id.reserve(64);
+        d.name.reserve(64);
 
         doorNames.push_back(d.id.c_str());
       }
@@ -417,8 +423,15 @@ namespace Soleil {
     };
 
     void parseMaze(World& world, std::vector<DrawElement>& elements,
-                   std::istringstream& s, Frame& frame)
+                   std::istringstream& s)
     {
+      clearSelection();
+      world.resetLevel();
+      world.doors.clear();
+
+      InitializeWorldModels(world);
+      InitializeWorldDoors(world, "doors.ini");
+
       std::string            line;
       float                  x     = 0.0f;
       float                  z     = 0.0f;
@@ -441,30 +454,19 @@ namespace Soleil {
             elements.push_back({ShapeType::GateHeavy, transformation});
 
           } else {
-            if (c == 'l') {
-              PointLight p;
-
-              p.color    = glm::vec3(0.5f, 0.0f, 0.0f);
-              p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-              frame.pointLights.push_back(p);
-
+            if (c == 'g') {
               glm::mat4 transformation =
                 glm::translate(glm::mat4(),
-                               glm::vec3(position.x, -1.0f, position.z)) *
-                glm::scale(glm::mat4(), glm::vec3(0.5f));
-            } else if (c == 'g') {
-              glm::mat4 transformation =
-                glm::translate(glm::mat4(),
-                               glm::vec3(position.x, -0.60f, position.z)) *
-                glm::scale(glm::mat4(), glm::vec3(.3f));
+                               glm::vec3(position.x, 0.00f, position.z)) *
+                glm::scale(glm::mat4(), glm::vec3(1.0f));
 
               DrawElement d{ShapeType::Ghost, transformation};
               pushGhost(d, world.ghosts, world.triggers, world.shapes);
             } else if (c == 'p') {
               const glm::vec3 coinPosition =
-                glm::vec3(position.x, -1.0f, position.z);
+                glm::vec3(position.x, 0.0f, position.z);
               const glm::mat4 transformation =
-                glm::translate(scale, coinPosition);
+                glm::translate(glm::mat4(), coinPosition);
 
               DrawElement d{ShapeType::Coin, transformation};
               pushCoin(d, world.items, world.triggers);
@@ -492,10 +494,10 @@ namespace Soleil {
             }
 
             glm::mat4 groundTransformation =
-              glm::translate(scale, glm::vec3(2.0f * x, -1.0f, 2.0f * z));
+              glm::translate(scale, glm::vec3(2.0f * x, -0.0f, 2.0f * z));
 
             glm::mat4 ceilTransformation =
-              glm::translate(scale, glm::vec3(2.0f * x, 1.0f, 2.0f * z)) *
+              glm::translate(scale, glm::vec3(2.0f * x, 0.0f, 2.0f * z)) *
               glm::rotate(glm::mat4(), glm::pi<float>(),
                           glm::vec3(0.0f, 0.0f, 1.0f));
 
@@ -506,6 +508,7 @@ namespace Soleil {
         z += 1.0f;
         x = 0.0f;
       }
+      EventService::Trigger(Events::event_map_loaded);
     }
 
     static float                    TranslationSpeed = -1.0f;
@@ -516,6 +519,7 @@ namespace Soleil {
     static std::size_t              selectionType = 0;
     static bool                     selected      = false;
     static std::string              loadLevelOnStartup;
+    static std::string              loadOldLevelOnStartup;
 
     void pick(const glm::vec3& orig, const glm::vec3& dir,
               std::vector<Selectable>& selectables)
@@ -778,7 +782,19 @@ namespace Soleil {
         InitializeWorldModels(world);
         // Load a level if requested
         if (loadLevelOnStartup.empty() == false) {
+          assert(loadLevelOnStartup.size() < FILENAMESIZE &&
+                 "File name too long");
+          strncpy(fileName, loadLevelOnStartup.data(), FILENAMESIZE);
+
           loadMap(world, loadLevelOnStartup);
+        } else if (loadOldLevelOnStartup.empty() == false) {
+          assert(loadOldLevelOnStartup.size() < FILENAMESIZE &&
+                 "File name too long");
+          strncpy(fileName, loadOldLevelOnStartup.data(), FILENAMESIZE);
+
+          std::istringstream is(
+            AssetService::LoadAsString(loadOldLevelOnStartup));
+          parseMaze(world, world.elements, is);
         }
       }
 
@@ -959,9 +975,10 @@ namespace Soleil {
                                     guiObjectsShapes[i].shapeIndex))
             cursorSelection.set(guiObjectsShapes[i].shapeIndex);
         }
-        if (ImGui::Selectable("Door trigger", cursorSelection.isActive() &&
-                                                cursorSelection.getShape() ==
-                                                  ShapeType::ST_BoundingBox))
+        if (ImGui::Selectable("Door trigger",
+                              cursorSelection.isActive() &&
+                                cursorSelection.getShape() ==
+                                  ShapeType::ST_BoundingBox))
           cursorSelection.set(ShapeType::ST_BoundingBox);
         ImGui::EndChild();
         ImGui::SameLine();
@@ -978,8 +995,7 @@ namespace Soleil {
         ImGui::End();
 
         ImGui::Begin("Export");
-        static char fileName[255] = "corpsdegarde.level";
-        ImGui::InputText("input text", fileName, 255);
+        ImGui::InputText("input text", fileName, FILENAMESIZE);
         if (ImGui::Button("Save")) {
           std::ofstream outfile("media/" + std::string(fileName));
 
@@ -1032,8 +1048,6 @@ namespace Soleil {
         }
 
         if (ImGui::Button("Load Old")) {
-          Frame dummyFrame;
-
           clearSelection();
 
           clearSelection();
@@ -1043,7 +1057,7 @@ namespace Soleil {
           InitializeWorldModels(world);
           InitializeWorldDoors(world, "doors.ini");
           std::istringstream is(AssetService::LoadAsString(fileName));
-          gui::parseMaze(world, world.elements, is, dummyFrame);
+          gui::parseMaze(world, world.elements, is);
         }
 
         if (ImGui::Button("Load New")) {
@@ -1085,25 +1099,24 @@ namespace Soleil {
               d->name.resize(255, '\0');
               ImGui::InputText("Name", (char*)&(d->name[0]), 32);
 
+              float x            = 0.0f;
+              float y            = 0.0f;
+              bool  modification = false;
+              modification += ImGui::DragFloat("Shift x", &x, 0.001f);
+              modification += ImGui::DragFloat("Shift Y", &y, 0.001f);
+              if (modification) {
+                d->triggerZone.transform(
+                  glm::translate(glm::mat4(), glm::vec3(x, 0.0f, y)));
 
-	      float x = 0.0f;
-	      float y = 0.0f;
-	      bool modification = false;
-	      modification += ImGui::DragFloat("Shift x", &x, 0.001f);
-	      modification += ImGui::DragFloat("Shift Y", &y, 0.001f);
-	      if (modification) {
-		d->triggerZone.transform(glm::translate(glm::mat4(), glm::vec3(x, 0.0f, y)));
+                // also update the trigger
+                for (auto& t : world.triggers) {
+                  if (t.link == d->uid) {
+                    t.aoe = d->triggerZone;
+                    break;
+                  }
+                }
+              }
 
-		// also update the trigger
-		for (auto& t : world.triggers) {
-		  if (t.link == d->uid) {
-		    t.aoe = d->triggerZone;
-		    break;
-		  }
-		}
-	      }
-	      
-	      
               // ImGui::Button("Save");
               break;
           }
@@ -1114,7 +1127,6 @@ namespace Soleil {
             clearSelection();
           }
 
-	  
           ImGui::End();
         }
 
@@ -1158,7 +1170,7 @@ namespace Soleil {
           ImGui::BeginChild("Levels", ImVec2(150, 150), true);
           for (size_t i = 0; i < levels.size(); i++) {
             if (ImGui::Selectable(levels[i].c_str())) {
-	      std::strncpy(fileName, levels[i].c_str(), 255);
+              std::strncpy(fileName, levels[i].c_str(), FILENAMESIZE);
               loadMap(world, levels[i]);
               ImGui::CloseCurrentPopup();
             }
@@ -1233,8 +1245,25 @@ main(int argc, char* argv[])
 
   ImGui_ImplGlfwGL3_Init(window, true);
 
-  if (argc == 2) {
-    Soleil::gui::loadLevelOnStartup = argv[1];
+  if (argc >= 2) {
+
+    int  c;
+    auto remove_media = [](std::string s) {
+      if (s.find("media/") == 0) {
+        return s.substr(strlen("media/"));
+      }
+      return s;
+    };
+    while ((c = getopt(argc, argv, "n:o:")) != -1) {
+      switch (c) {
+        case 'n': {
+          Soleil::gui::loadLevelOnStartup = remove_media(optarg);
+        } break;
+        case 'o': {
+          Soleil::gui::loadOldLevelOnStartup = remove_media(optarg);
+        } break;
+      }
+    }
   }
   Soleil::gui::render(window);
 

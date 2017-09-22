@@ -490,7 +490,6 @@ namespace Soleil {
     DrawText(label, transformation, color);
   }
 
-#ifndef NDEBUG
   void DrawBoundingBox(const BoundingBox& box, const Frame& frame,
                        const glm::vec4& color)
   {
@@ -523,6 +522,5 @@ namespace Soleil {
                    indices.data());
     throwOnGlError();
   }
-#endif
 
 } // Soleil

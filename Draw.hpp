@@ -24,13 +24,10 @@
 
 #include <functional>
 
+#include "BoundingBox.hpp"
 #include "OpenGLInclude.hpp"
 #include "Shape.hpp"
 #include "types.hpp"
-
-#ifndef NDEBUG
-#include "BoundingBox.hpp"
-#endif
 
 #include <glm/mat4x4.hpp>
 
@@ -55,7 +52,7 @@ namespace Soleil {
     {
     }
 
-    // Generate an unique id for each node    
+    // Generate an unique id for each node
     static std::size_t Hash(const DrawElement& e)
     {
       size_t hash = std::hash<size_t>()(e.shapeIndex);
@@ -154,11 +151,9 @@ namespace Soleil {
   void DrawText(const TextCommand& textCommand, const glm::mat4& transformation,
                 const glm::vec4& color);
   void Fade(const float ratio);
-#ifndef NDEBUG
   void DrawBoundingBox(const BoundingBox& box, const Frame& frame,
                        const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f,
                                                           0.5f));
-#endif
 } // Soleil
 
 #endif /* SOLEIL__DRAW_HPP_ */

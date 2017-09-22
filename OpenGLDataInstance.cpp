@@ -148,7 +148,6 @@ namespace Soleil {
     }
     throwOnGlError();
 
-#ifndef NDEBUG
     BoundingBoxShape& box     = instance.box;
     Program&          program = box.program;
 
@@ -191,7 +190,6 @@ namespace Soleil {
     box.max      = program.getUniform("max");
     box.color    = program.getUniform("color");
     box.VPMatrix = program.getUniform("VPMatrix");
-#endif
   }
 
   static inline void initializeText(void)

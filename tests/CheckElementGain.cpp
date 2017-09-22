@@ -26,6 +26,7 @@
 #include <regex>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "mcut.hpp"
 

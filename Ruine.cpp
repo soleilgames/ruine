@@ -180,6 +180,8 @@ namespace Soleil {
     // There is no pitch nor Roll, to the equation is simplified:
     glm::vec3 direction =
       glm::normalize(glm::vec3(sin(camera->yaw), 0.0f, cos(camera->yaw)));
+
+
     glm::vec3 newPosition =
       camera->position + (translation.z * direction * speed);
     const glm::vec3 positionForward(camera->position.x, newPosition.y,
@@ -191,7 +193,7 @@ namespace Soleil {
     BoundingBox bboxForward;
     bboxForward.expandBy(positionForward);
     bboxForward.expandBy(positionForward + 0.20f);
-    bboxForward.expandBy(positionForward - 0.2f);
+    bboxForward.expandBy(positionForward - 0.20f);
     BoundingBox bboxSideward;
     bboxSideward.expandBy(positionSideward);
     bboxSideward.expandBy(positionSideward + 0.2f);
@@ -577,14 +579,21 @@ namespace Soleil {
 
     if (playerPad.locked == false) {
       if (playerPad.push.active == PushState::Active) {
+#if 0
+	// Old (dynamic) Forward translation system
         const glm::vec3 translation(
           0.0f, 0.0f,
           (playerPad.push.position.y - playerPad.push.start.y) / 10.0f);
+#else
+        const glm::vec3 translation(0.0f, 0.0f, 0.055f);
+#endif
+
         const float yaw = playerPad.push.start.x - playerPad.push.position.x;
         this->view = updateCamera(&camera, translation, yaw, world.hardSurfaces,
                                   frame.delta);
-      } else if (playerPad.push.active == (PushState::DoubleClick|PushState::Fresh)) {
-	camera.yaw += glm::pi<float>();
+      } else if (playerPad.push.active ==
+                 (PushState::DoubleClick | PushState::Fresh)) {
+        camera.yaw += glm::pi<float>();
         this->view = updateCamera(&camera, glm::vec3(0.0f), 0.0f,
                                   world.hardSurfaces, frame.delta);
       } else {

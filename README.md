@@ -17,6 +17,10 @@ C'est un mélange entre un jeu d'aventure et un Pac Man 3D.
 ## Étape 3
 ![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape3.png)
 ![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape3bis.png)
+## Étape 4 Finale
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape4.png)
+![Image of Ruine](https://raw.githubusercontent.com/soleilgames/ruine/master/presse/etape4editeur.png)
+
 
 ---
 
@@ -35,10 +39,13 @@ C'est un mélange entre un jeu d'aventure et un Pac Man 3D.
 Android is the target for this game. To build it, you need a recent version of the NDK and SDK installed.
 
 ```
-cd ruine/android
-./gradlew build					   # Build the application
-adb install -r app/build/outputs/apk/app-debug.apk # Install the app
-adb logcat | tee tmp.txt | grep soleil		   # Just to follow logs
+$ cd ruine/android
+$ cat local.properties
+ndk.dir=/opt/android/android-ndk-r15c
+sdk.dir=/home/florian/Android/Sdk
+$ ./gradlew build					# Build the application
+$ adb install -r app/build/outputs/apk/app-debug.apk	# Install the app
+$ adb logcat | tee tmp.txt | grep soleil		# Just to follow logs
 ```
 
 

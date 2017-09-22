@@ -438,7 +438,7 @@ namespace Soleil {
     std::istringstream s(level);
     loadMap(world, frame, s);
 
-    caption.fillText(start.name, 0.45f);
+    caption.fillText(start.name, 1.f);
     caption.activate(gval::timeToFadeText, frame.time);
 
 #if 0    
