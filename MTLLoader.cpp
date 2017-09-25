@@ -40,8 +40,8 @@ namespace Soleil {
   static void commandNOOP(const std::string& command,
                           const std::string& arguments)
   {
-    SOLEIL__LOGGER_DEBUG("Noop for command: ", command, " with arguments: ",
-                         arguments);
+    SOLEIL__LOGGER_DEBUG("Noop for command: ", command,
+                         " with arguments: ", arguments);
   }
 
   static void commandParseVec3(glm::vec3* vec3, const std::string& arguments)
@@ -91,32 +91,45 @@ namespace Soleil {
 
     commandMap->clear();
 
+    commandMap->emplace("newmtl",
+                        [materials, commandMap](const std::string& line) {
+                          commandPushMaterial(materials, commandMap, line);
+                        });
+
+    commandMap->emplace("Ns", [materials, argument](const std::string& line) {
+      commandParseFloat(&(materials->at(argument).shininess), line);
+    });
+
+    commandMap->emplace("Ka", [materials, argument](const std::string& line) {
+      commandParseVec3(&(materials->at(argument).ambiantColor), line);
+    });
+
+    commandMap->emplace("Kd", [materials, argument](const std::string& line) {
+      commandParseVec3(&(materials->at(argument).diffuseColor), line);
+    });
+
+    commandMap->emplace("Ks", [materials, argument](const std::string& line) {
+      commandParseVec3(&(materials->at(argument).specularColor), line);
+    });
+
+    commandMap->emplace("Ke", [materials, argument](const std::string& line) {
+      commandParseVec3(&(materials->at(argument).emissiveColor), line);
+    });
     commandMap->emplace(
-      "newmtl", std::bind(commandPushMaterial, materials, commandMap, _1));
+      "map_Kd", [materials, argument](const std::string& line) {
+        commandLoadTexture(&(materials->at(argument).diffuseMap), line);
+      });
 
     commandMap->emplace(
-      "Ns",
-      std::bind(commandParseFloat, &(materials->at(argument).shininess), _1));
+      "Ni", [](const std::string& line) { commandNOOP("Ni", line); });
     commandMap->emplace(
-      "Ka",
-      std::bind(commandParseVec3, &(materials->at(argument).ambiantColor), _1));
+      "d", [](const std::string& line) { commandNOOP("Ni", line); });
     commandMap->emplace(
-      "Kd",
-      std::bind(commandParseVec3, &(materials->at(argument).diffuseColor), _1));
+      "illum", [](const std::string& line) { commandNOOP("Ni", line); });
     commandMap->emplace(
-      "Ks", std::bind(commandParseVec3,
-                      &(materials->at(argument).specularColor), _1));
+      "map_Ks", [](const std::string& line) { commandNOOP("Ni", line); });
     commandMap->emplace(
-      "Ke", std::bind(commandParseVec3,
-                      &(materials->at(argument).emissiveColor), _1));
-    commandMap->emplace(
-      "map_Kd",
-      std::bind(commandLoadTexture, &(materials->at(argument).diffuseMap), _1));
-    commandMap->emplace("Ni", std::bind(commandNOOP, "Ni", _1));
-    commandMap->emplace("d", std::bind(commandNOOP, "d", _1));
-    commandMap->emplace("illum", std::bind(commandNOOP, "illum", _1));
-    commandMap->emplace("map_Ks", std::bind(commandNOOP, "map_Ks", _1));
-    commandMap->emplace("map_Bump", std::bind(commandNOOP, "map_Bump", _1));
+      "map_Bump", [](const std::string& line) { commandNOOP("Ni", line); });
   }
 
   class MTLCommands
@@ -126,8 +139,9 @@ namespace Soleil {
     {
       using std::placeholders::_1;
 
-      map.emplace("newmtl",
-                  std::bind(commandPushMaterial, &materials, &map, _1));
+      map.emplace("newmtl", [this](const std::string& line) {
+        commandPushMaterial(&materials, &map, line);
+      });
     }
 
     virtual ~MTLCommands() {}

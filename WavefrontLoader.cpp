@@ -190,8 +190,9 @@ namespace Soleil {
     componentsStore->back().material = materials->at(materialName);
 
     using std::placeholders::_1;
-    (*map)["f"] =
-      std::bind(commandMatchFace, store, &(componentsStore->back()), _1);
+    (*map)["f"] = [store, componentsStore](const std::string& line) {
+      commandMatchFace(store, &(componentsStore->back()), line);
+    };
   }
 
   class Commands
@@ -201,16 +202,27 @@ namespace Soleil {
     {
       using std::placeholders::_1;
 
-      this->map.emplace("o", std::bind(commandNOOP, "o", _1));
-      this->map.emplace("s", std::bind(commandNOOP, "s", _1));
-
-      this->map.emplace("usemtl", std::bind(commandUseMTL, &componentsStore,
-                                            &store, &map, &materials, _1));
-      this->map.emplace("mtllib", std::bind(commandLoadMTL, &(materials), _1));
-      this->map.emplace("v", std::bind(commandVector, &(store.vertices), _1));
       this->map.emplace(
-        "vt", std::bind(commandTextureCoords, &(store.textureCoords), _1));
-      this->map.emplace("vn", std::bind(commandNormals, &(store.normals), _1));
+        "o", [](const std::string& line) { commandNOOP("o", line); });
+      this->map.emplace(
+        "s", [](const std::string& line) { commandNOOP("o", line); });
+
+      this->map.emplace("usemtl", [this](const std::string& line) {
+        commandUseMTL(&componentsStore, &store, &map, &materials, line);
+      });
+      this->map.emplace("mtllib", [this](const std::string& line) {
+        commandLoadMTL(&materials, line);
+      });
+      this->map.emplace("v", [this](const std::string& line) {
+        commandVector(&(store.vertices), line);
+      });
+
+      this->map.emplace("vt", [this](const std::string& line) {
+        commandTextureCoords(&(store.textureCoords), line);
+      });
+      this->map.emplace("vn", [this](const std::string& line) {
+        commandNormals(&(store.normals), line);
+      });
     }
 
   public:
