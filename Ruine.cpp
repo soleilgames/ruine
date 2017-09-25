@@ -47,6 +47,10 @@
 
 namespace Soleil {
 
+#if 0
+  /**
+   * Draw a round shaped pad
+   */
   static void DrawPad()
   {
     static const glm::mat4 modelMatrix =
@@ -55,11 +59,11 @@ namespace Soleil {
 
     DrawImage(*OpenGLDataInstance::Instance().texturePad, modelMatrix);
   }
+#endif
 
   static void InitializeWorld(World& world, Frame& frame, Camera& camera,
                               PopUp& caption, int& goldScore)
   {
-    // TODO: A method for that:
     world.doors.clear();
     world.bounds = BoundingBox();
     world.objects.clear();
@@ -81,15 +85,6 @@ namespace Soleil {
 #if 1
     SoundService::PlayMusic("farlands.ogg");
 #endif
-  }
-
-  static void UpdateTorchColor(std::vector<PointLight>& lights)
-  {
-    for (unsigned int i = 1; i < lights.size(); ++i) {
-      int r                          = std::rand() % 65;
-      int doit                       = std::rand() % 100;
-      if (doit > 50) lights[i].color = glm::vec3(r / 255.0f);
-    }
   }
 
   static void UpdateGhost(std::vector<GhostData>&  ghosts,
@@ -122,10 +117,6 @@ namespace Soleil {
                   world.bounds);
 
     if (ControllerService::GetPlayerController().option3) {
-
-#if 0
-        UpdateTorchColor(frame.pointLights);
-#endif
       glEnable(GL_CULL_FACE);
       glCullFace(GL_BACK);
 
@@ -141,6 +132,7 @@ namespace Soleil {
     }
 
 #ifndef NDEBUG
+    // On development allow to draw bonding box of elements
     if (ControllerService::GetPlayerController().option4) {
       glDisable(GL_DEPTH_TEST);
 
@@ -181,7 +173,6 @@ namespace Soleil {
     glm::vec3 direction =
       glm::normalize(glm::vec3(sin(camera->yaw), 0.0f, cos(camera->yaw)));
 
-
     glm::vec3 newPosition =
       camera->position + (translation.z * direction * speed);
     const glm::vec3 positionForward(camera->position.x, newPosition.y,
@@ -189,7 +180,8 @@ namespace Soleil {
     const glm::vec3 positionSideward(newPosition.x, newPosition.y,
                                      camera->position.z);
 
-#if 1 // TODO: controller Option
+#if 1 // TODO: Enable/Disable via a controller option
+    // Collision test
     BoundingBox bboxForward;
     bboxForward.expandBy(positionForward);
     bboxForward.expandBy(positionForward + 0.20f);
@@ -227,28 +219,17 @@ namespace Soleil {
     return glm::lookAt(position + target, target, glm::vec3(0, 1, 0));
   }
 
-  // TODO: Refactor this method as it has too much parameters
   void Ruine::updateTriggers(World& world, Frame& frame)
   {
-    BoundingBox playerbox;
-    playerbox.expandBy(camera.position);
-    playerbox.expandBy(camera.position + glm::vec3(0.25f, 1.5f, 0.25f));
-    playerbox.expandBy(camera.position - glm::vec3(0.25f, 1.5f, 0.25f));
+    const BoundingBox playerbox = [this]() -> BoundingBox {
+      BoundingBox box;
+      box.expandBy(camera.position);
+      box.expandBy(camera.position + glm::vec3(0.25f, 1.5f, 0.25f));
+      box.expandBy(camera.position - glm::vec3(0.25f, 1.5f, 0.25f));
+      return box;
+    }();
 
-#if 0
-    for (const auto& trigger : world.nextZoneTriggers) {
-      if (playerbox.intersect(trigger.aoe)) {
-        world.resetLevel();
-        frame.pointLights.clear();
-
-        SoundService::FireSound("doors.wav", SoundProperties(100));
-
-        InitializeLevel(world, trigger.nextZone, frame, camera, caption);
-        return;
-      }
-    }
-#endif
-
+    // First check if the player is not colliding with a monster
     for (const auto& ghost : world.sentinels) {
       if (playerbox.intersect(ghost.bounds)) {
         glm::mat4 transformation = glm::translate(
@@ -261,13 +242,13 @@ namespace Soleil {
         world.sentinels.push_back(GhostData(
           &(world.ghosts.back().transformation), 0, glm::vec3(0, 0, 1)));
 
-        SOLEIL__LOGGER_DEBUG(toString("Perduuuuuuuuuuuuuuuuuuuuuuuu"));
         ControllerService::GetPlayerController().locked = true;
         timeToReset = frame.time + Timer(5000);
         return;
       }
     }
 
+    // If not but he's close to one, play a frightening sound
     if (nextGhostSound.count() <= 0) {
       for (const auto& ghost : world.sentinels) {
         if (playerbox.intersect(ghost.stressBounds)) {
@@ -278,24 +259,25 @@ namespace Soleil {
       }
     }
 
-    for (auto coinTrigger = world.triggers.begin();
-         coinTrigger != world.triggers.end();) {
+    // Finally money and doors!
+    for (auto trigger = world.triggers.begin();
+         trigger != world.triggers.end();) {
       bool doIncrement = true;
 
-      if (playerbox.intersect(coinTrigger->aoe)) {
+      if (playerbox.intersect(trigger->aoe)) {
 
-        if (coinTrigger->state & TriggerState::JustTriggered) {
-          coinTrigger->state &= ~TriggerState::JustTriggered;
-          coinTrigger->state |= TriggerState::CurrentlyActive;
-          coinTrigger->state |= TriggerState::AlreadyTriggered;
-        } else if (!(coinTrigger->state & TriggerState::CurrentlyActive)) {
-          coinTrigger->state |= TriggerState::JustTriggered;
-          coinTrigger->state |= TriggerState::CurrentlyActive;
+        if (trigger->state & TriggerState::JustTriggered) {
+          trigger->state &= ~TriggerState::JustTriggered;
+          trigger->state |= TriggerState::CurrentlyActive;
+          trigger->state |= TriggerState::AlreadyTriggered;
+        } else if (!(trigger->state & TriggerState::CurrentlyActive)) {
+          trigger->state |= TriggerState::JustTriggered;
+          trigger->state |= TriggerState::CurrentlyActive;
         }
         // else
-        assert(coinTrigger->state & TriggerState::CurrentlyActive);
+        assert(trigger->state & TriggerState::CurrentlyActive);
 
-        switch (coinTrigger->type) {
+        switch (trigger->type) {
 
           case TriggerType::Coin: {
             SOLEIL__LOGGER_DEBUG(toString("GOLDDDDD"));
@@ -306,20 +288,20 @@ namespace Soleil {
 
             for (auto it = world.items.begin(); it != world.items.end(); ++it) {
               const auto& coinItem = *it;
-              if (coinItem.id == coinTrigger->link) {
+              if (coinItem.id == trigger->link) {
                 world.items.erase(it);
                 break;
               }
             }
 
             doIncrement = false;
-            world.coinPickedUp.push_back(coinTrigger->link);
-            world.triggers.erase(coinTrigger);
+            world.coinPickedUp.push_back(trigger->link);
+            world.triggers.erase(trigger);
             SoundService::FireSound("coins.wav", SoundProperties(100));
           } break;
           case TriggerType::Door: {
-            if (coinTrigger->state & TriggerState::JustTriggered) {
-              const Door* door = GetDoorByUID(world.doors, coinTrigger->link);
+            if (trigger->state & TriggerState::JustTriggered) {
+              const Door* door = GetDoorByUID(world.doors, trigger->link);
 
               // Before, check if it's not the final door:
               if (door->id.compare("0") == 0) {
@@ -348,78 +330,26 @@ namespace Soleil {
           case TriggerType::Key: {
             for (auto it = world.items.begin(); it != world.items.end(); ++it) {
               const auto& coinItem = *it;
-              if (coinItem.id == coinTrigger->link) {
+              if (coinItem.id == trigger->link) {
                 world.items.erase(it);
                 break;
               }
             }
             doIncrement       = false;
             world.keyPickedUp = true;
-            world.triggers.erase(coinTrigger);
+            world.triggers.erase(trigger);
             SoundService::FireSound("key.wav", SoundProperties(100));
           } break;
         }
       } else {
-        coinTrigger->state &= ~TriggerState::JustTriggered;
-        coinTrigger->state &= ~TriggerState::CurrentlyActive;
+        trigger->state &= ~TriggerState::JustTriggered;
+        trigger->state &= ~TriggerState::CurrentlyActive;
       }
 
       // Only increment the iterator if it's not of type coin because iterator
       // already moved
-      if (doIncrement) ++coinTrigger;
+      if (doIncrement) ++trigger;
     }
-
-#if 0
-    // TODO: Restore with triggers
-    if (world.keyPickedUp == false) {
-      const BoundingBox keybox(world.theKey, 0.3f);
-
-      if (playerbox.intersect(keybox)) {
-        world.keyPickedUp = true;
-        auto pos = std::find(std::begin(world.objects), std::end(world.objects),
-                             DrawCommand(*world.keyShape, world.theKey));
-        assert(pos != std::end(world.objects) && "Key was not found");
-        world.objects.erase(pos);
-
-        SoundService::FireSound("key.wav", SoundProperties(100));
-      }
-    }
-
-    // Quick hack before a better implementation: ------------
-    const bool entrance = (world.lastDoor.compare(0, 1, "0") == 0 ||
-                           world.lastDoor.compare(0, 1, "1") == 0);
-    if (!entrance) return;
-
-    const BoundingBox start(glm::vec3(4.9f, 0.0f, 0.0f),
-                            glm::vec3(7.1f, 0.0f, 1.1f));
-    if (caption.isActive() == false && playerbox.intersect(start)) {
-      SoundService::FireSound("locked.wav", SoundProperties(100));
-
-      if (world.keyPickedUp) {
-#if 0
-        caption.fillText(L"BRAVO ! IL N'Y A RIEN D'AUTRE À FAIRE...", 0.25f);
-#else
-        state = State::StateCredits;
-#endif
-      } else {
-        caption.fillText(L"IL FAUT UNE CLEF", 0.45f);
-      }
-      caption.activate(gval::timeToFadeText, frame.time);
-    }
-
-#if 0
-    const BoundingBox dbox(
-      glm::translate(glm::mat4(), glm::vec3(5.0f * 2.0f, 16.0f * 2.0f, 0)), 5.0f);
-#else
-    const BoundingBox dbox(
-      glm::translate(glm::mat4(), glm::vec3(2.0f, 2.0f, 0)), 2.0f);
-#endif
-    if (playerbox.intersect(dbox)) {
-      state |= State::StateDialogue;
-    } else if (state & State::StateDialogue) {
-      state &= ~State::StateDialogue;
-    }
-#endif
   }
 
   Ruine::Ruine(AssetService* assetService, SoundService* soundService,
@@ -449,7 +379,6 @@ namespace Soleil {
   void Ruine::render(Timer time)
   {
 #ifndef NDEBUG
-    // TODO: Use CPU clock
     auto workBegin = std::chrono::high_resolution_clock::now();
 #endif
 
@@ -502,11 +431,7 @@ namespace Soleil {
         workEnd - workBegin);
 
       if (time - firstTime > oneSec) {
-#if 0
-        const auto duration = (time - firstTime) / frames;
-#else
         const auto duration = TotalDuration / frames;
-#endif
         SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
                              " (FPS=", frames, ")");
         FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
@@ -523,13 +448,6 @@ namespace Soleil {
         Color(0.8f));
 
       SOLEIL__CONSOLE_DRAW();
-#if 0 // TextAtlas
-      glm::mat4 transformation =
-        glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
-                   glm::vec3(2.0f));
-      DrawImage(*OpenGLDataInstance::Instance().textDefaultFontAtlas,
-                transformation);
-#endif
     }
 #endif
   }
@@ -622,19 +540,11 @@ namespace Soleil {
       caption.render(time);
     }
     DrawText(goldLabel, goldLabelTransformation, gval::textLabelColor);
-// --------------- Render Scene ---------------
-
-#if 0
-    glm::mat4 transformation =
-      glm::scale(glm::translate(glm::mat4(), glm::vec3(-1.0f, -1.0f, 0.0f)),
-                 glm::vec3(2.0f));
-    DrawImage(gval::bezierTex, transformation);
-#endif
+    // --------------- Render Scene ---------------
 
     if (playerPad.locked == false)
       updateTriggers(world, frame);
     else if (time >= timeToReset) {
-      // TODO: Use different function for each scene or camera
       playerPad.locked = false;
       world.resetLevel();
       frame.pointLights.clear();
@@ -650,7 +560,6 @@ namespace Soleil {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // TODO: Do not use static for that:
     static Menu     menu;
     static Frame    frame;
     static Pristine firstFrame;
@@ -684,18 +593,8 @@ namespace Soleil {
 
     if (ControllerService::GetPush().active & PushState::Down &&
         ControllerService::GetPush().active & PushState::Fresh) {
-#if 0      
-      SOLEIL__CONSOLE_TEXT(toWString(L"Push: ", push.position));      
-      if (menu.newGameBounds.containsFlat(push.position)) {
-        state  = State::StateFadingIn;
-        fading = FadeTimer(time, Timer(1000));
-      } else
-        SOLEIL__CONSOLE_APPEND(StringToWstring(toString(menu.newGameBounds)));
-#else
       state  = State::StateFadingIn;
       fading = FadeTimer(time, Timer(1000));
-
-#endif
     }
   }
 
@@ -744,7 +643,7 @@ namespace Soleil {
 #endif
   }
 
-  void Ruine::renderCredits(const Timer& time)
+  void Ruine::renderCredits(const Timer&)
   {
     static Pristine first;
 
@@ -763,7 +662,6 @@ namespace Soleil {
     glClearColor(0.0f, 0.05f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // TODO: Delta time
     creditsTransformation =
       glm::translate(creditsTransformation, glm::vec3(0.0f, 0.001f, 0.0f));
     DrawText(credits, creditsTransformation, gval::textLabelColor);

@@ -139,7 +139,7 @@ namespace Soleil {
     };
     OpenGLDataInstance(const OpenGLDataInstance&) = delete;
 
-  private:
+  public:
     static std::unique_ptr<OpenGLDataInstance> instance;
   };
 

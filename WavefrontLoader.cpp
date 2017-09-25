@@ -22,7 +22,6 @@
 #include <functional>
 #include <istream>
 #include <map>
-#include <map>
 #include <regex>
 
 #include "AssetService.hpp"
@@ -69,8 +68,8 @@ namespace Soleil {
   static void commandNOOP(const std::string& command,
                           const std::string& arguments)
   {
-    SOLEIL__LOGGER_DEBUG("Noop for command: ", command, " with arguments: ",
-                         arguments);
+    SOLEIL__LOGGER_DEBUG("Noop for command: ", command,
+                         " with arguments: ", arguments);
   }
 
   static void commandVector(std::vector<glm::vec4>* vertices,
@@ -257,8 +256,6 @@ namespace Soleil {
       }
     }
 
-    // // TODO:  assert(commands.componentsStore[0].materials.size() > 0 &&
-    //        "Currently only one or more (not zero) material are supported");
     return std::make_shared<Shape>(commands.componentsStore);
   }
 
