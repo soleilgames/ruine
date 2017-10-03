@@ -148,7 +148,7 @@ namespace Soleil {
 
     // Player's progression
     std::vector<std::size_t> coinPickedUp;
-    bool                     keyPickedUp = false;
+    bool                     keyPickedUp = false; // TODO: Put it in Ruine.hpp
     std::string              lastDoor;
 
     ////////////////////////////

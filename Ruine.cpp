@@ -28,6 +28,7 @@
 #include "Logger.hpp"
 #include "OpenGLDataInstance.hpp"
 #include "Pristine.hpp"
+#include "Recorder.hpp"
 #include "Shape.hpp"
 #include "SoundService.hpp"
 #include "TypesToOStream.hpp"
@@ -382,6 +383,9 @@ namespace Soleil {
     auto workBegin = std::chrono::high_resolution_clock::now();
 #endif
 
+    // const Push& push = ControllerService::GetPlayerController().push;
+    // SOLEIL__RECORD_INPUT(push.active, push.start, push.position);
+
     frame.delta = time - frame.time;
     frame.time  = time;
 
@@ -414,6 +418,11 @@ namespace Soleil {
     if (ControllerService::GetPush().active == PushState::Release) {
       ControllerService::GetPush().active = PushState::Inactive;
     }
+
+    Recorder::currentFrameHash = Recorder::hashFrame(
+      frame.cameraPosition, state, goldScore, world.keyPickedUp);
+// SOLEIL__RECORD_FRAME(frame.cameraPosition, state, goldScore,
+//                      world.keyPickedUp);
 
 #ifndef NDEBUG
     {

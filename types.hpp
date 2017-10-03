@@ -23,6 +23,7 @@
 #define SOLEIL__TYPES_HPP_
 
 #include <chrono>
+#include <climits>
 #include <vector>
 
 #include <glm/mat4x4.hpp>
@@ -120,6 +121,57 @@ namespace Soleil {
     glm::vec3 position;
     float     yaw;
   };
+
+  /**
+   * Convert a float to an int with the specified precision. Do not check for
+   * overflow
+   */
+  template <int decimals> constexpr int trail_point(const double f)
+  {
+    constexpr int decimalTable[] = {1,         10,        100,     1000,
+                                    10000,     100000,    1000000, 10000000,
+                                    100000000, 1000000000};
+    const double r = f * decimalTable[decimals];
+    return static_cast<int>(r);
+  }
+
+  /**
+   * Combine current hash with new value
+   */
+  template <class T> void hash_combine(std::size_t& h, const T& v)
+  {
+    std::hash<T> hasher;
+    h ^= hasher(v) + 0x9e3779b9 + (h << 6) + (h >> 2);
+  }
+
+  constexpr bool is_big_endian(void)
+  {
+    union
+    {
+      uint32_t i;
+      char     c[4];
+    } bint = {0x01020304};
+
+    return bint.c[0] == 1;
+  }
+
+  template <typename T> T constexpr swap_endian(T u)
+  {
+    static_assert(CHAR_BIT == 8, "CHAR_BIT != 8");
+
+    union
+    {
+      T             u;
+      unsigned char u8[sizeof(T)];
+    } source, dest;
+
+    source.u = u;
+
+    for (size_t k = 0; k < sizeof(T); k++)
+      dest.u8[k]  = source.u8[sizeof(T) - k - 1];
+
+    return dest.u;
+  }
 
   namespace gval {
     // static const glm::vec3 ambiantLight(0.01f);

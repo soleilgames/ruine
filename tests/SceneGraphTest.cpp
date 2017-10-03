@@ -24,6 +24,7 @@
 #include "Group.hpp"
 #include "Node.hpp"
 #include "TypesToOStream.hpp"
+#include "types.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -74,10 +75,8 @@ GroupAndChildren()
     const glm::mat4 transformation =
       glm::translate(glm::mat4(), glm::vec3(10.0f, 0.0f, 0.0f));
     mcut::assertEquals(transformation, passenger2->getTransformation());
-
   }
 
-  
   // He saw an iceberg and move to the front of the boat:
   passenger1->translate(glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -86,6 +85,19 @@ GroupAndChildren()
       glm::translate(glm::mat4(), glm::vec3(11.0f, 1.0f, 0.0f));
     mcut::assertEquals(transformation, passenger1->getTransformation());
   }
+}
+
+void
+trail_point_test()
+{  
+  mcut::assertEquals(123, trail_point<2>(1.23456789));
+  mcut::assertEquals(12, trail_point<2>(.123456789));
+  mcut::assertEquals(1234567, trail_point<3>(1234.56789));
+  mcut::assertEquals(10000, trail_point<4>(1));
+  mcut::assertEquals(12340000, trail_point<4>(1234));
+  mcut::assertEquals(12345678, trail_point<4>(1234.56789));
+  mcut::assertEquals(123456789, trail_point<5>(1234.56789));
+  mcut::assertFalse(trail_point<2>(1.23456789) == 12);
 }
 
 int
@@ -98,6 +110,10 @@ main(int, char* [])
   mcut::TestSuite groups("Groups");
   groups.add(GroupAndChildren);
   groups.run();
+
+  mcut::TestSuite trail("Trail Point");
+  trail.add(trail_point_test);
+  trail.run();
 
   return 0;
 }

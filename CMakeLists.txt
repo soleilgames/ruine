@@ -47,6 +47,7 @@ add_library(ruinelib
   Draw.cpp
   World.cpp
   Text.cpp
+  Recorder.cpp
   )
 
 

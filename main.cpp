@@ -27,6 +27,7 @@
 #include "DesktopAssetService.hpp"
 #include "DesktopSoundService.hpp"
 #include "OpenGLInclude.hpp"
+#include "Recorder.hpp"
 #include "Ruine.hpp"
 #include "stringutils.hpp"
 
@@ -66,6 +67,9 @@ ControllerService::GetPush(void) noexcept
 static void
 render(GLFWwindow* window, Ruine& r)
 {
+  Recorder::Record* record           = Recorder::records.data();
+  std::size_t       currentRecordRow = 0;
+
   while (!glfwWindowShouldClose(window)) {
     double time = glfwGetTime();
 
@@ -73,6 +77,17 @@ render(GLFWwindow* window, Ruine& r)
 
     glfwSwapBuffers(window);
     glfwPollEvents();
+
+    Push& push    = ControllerService::GetPush();
+    push.active   = record->pushState;
+    push.start    = glm::vec2(record->startx, record->starty);
+    push.position = glm::vec2(record->positionx, record->positiony);
+
+    SOLEIL__LOGGER_DEBUG(Recorder::currentFrameHash, "==", record->frameHash);
+    //assert(Recorder::currentFrameHash == record->frameHash);
+    if (++currentRecordRow > Recorder::records.size())
+      glfwSetWindowShouldClose(window, 1);
+    record++;
   }
 }
 
@@ -159,7 +174,7 @@ mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
       push.triggerTime  = now;
       if (diff > 100.0f && diff < 600.0f) {
         push.active      = PushState::DoubleClick | PushState::Fresh;
-        push.triggerTime = 0;	// Avoid triple click
+        push.triggerTime = 0; // Avoid triple click
       }
     }
   }
@@ -204,12 +219,16 @@ main(int /*argc*/
   AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
   SoundService::Instance = std::make_unique<DesktopSoundService>();
 
+  Recorder::loadRecords("record"); // TODO: Macro
+
   // TODO: Use correct method to retrieve viewport size
   Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get(),
                   width, height);
   render(window, r);
 
   glfwTerminate();
+
+  SOLEIL__RECORD_DUMP("last_record"); // TODO: Undefined macro on compilation?
 
   return 0;
 }
