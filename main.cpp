@@ -22,6 +22,7 @@
 #include <chrono>
 #include <memory>
 #include <stdexcept>
+#include <unistd.h>
 
 #include "ControllerService.hpp"
 #include "DesktopAssetService.hpp"
@@ -67,27 +68,44 @@ ControllerService::GetPush(void) noexcept
 static void
 render(GLFWwindow* window, Ruine& r)
 {
-  Recorder::Record* record           = Recorder::records.data();
-  std::size_t       currentRecordRow = 0;
+  const Recorder::Record* record           = Recorder::records.data();
+  std::size_t             currentRecordRow = 0;
 
   while (!glfwWindowShouldClose(window)) {
-    double time = glfwGetTime();
+    std::chrono::milliseconds time((int)(glfwGetTime() * 1000));
 
-    r.render(std::chrono::milliseconds((int)(time * 1000)));
+    if (Recorder::state == Recorder::DoReplay) {
+      time = std::chrono::milliseconds(record->time);
+
+      Push& push    = ControllerService::GetPush();
+      push.active   = record->pushState;
+      push.start    = glm::vec2(record->startx, record->starty);
+      push.position = glm::vec2(record->positionx, record->positiony);
+    }
+
+    r.render(time);
+
+    if (Recorder::state == Recorder::DoReplay) {
+      // SOLEIL__LOGGER_DEBUG(
+      //   "CUR:", Recorder::currentRecord.frameHash, "==REC:",
+      //   record->frameHash,
+      //   " - ", Recorder::currentRecord.frameNumber, "==",
+      //   record->frameNumber,
+      //   " - ", Recorder::currentRecord.debug, "->", record->debug);
+      assert(Recorder::currentRecord.frameHash == record->frameHash);
+      if (Recorder::currentRecord.frameHash != record->frameHash)
+        throw std::runtime_error(
+          toString("CUR:", Recorder::currentRecord.frameHash,
+                   "==REC:", record->frameHash));
+
+      ++record;
+      ++currentRecordRow;
+      if (currentRecordRow >= Recorder::records.size())
+        glfwSetWindowShouldClose(window, 1);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
-
-    Push& push    = ControllerService::GetPush();
-    push.active   = record->pushState;
-    push.start    = glm::vec2(record->startx, record->starty);
-    push.position = glm::vec2(record->positionx, record->positiony);
-
-    SOLEIL__LOGGER_DEBUG(Recorder::currentFrameHash, "==", record->frameHash);
-    //assert(Recorder::currentFrameHash == record->frameHash);
-    if (++currentRecordRow > Recorder::records.size())
-      glfwSetWindowShouldClose(window, 1);
-    record++;
   }
 }
 
@@ -181,10 +199,7 @@ mouse_buttonCallback(GLFWwindow* /*window*/, int button, int action,
 }
 
 int
-main(int /*argc*/
-     ,
-     char* /*argv*/
-     [])
+main(int argc, char* argv[])
 {
   GLFWwindow* window;
   int         width  = 1920;
@@ -219,7 +234,29 @@ main(int /*argc*/
   AssetService::Instance = std::make_shared<DesktopAssetService>("media/");
   SoundService::Instance = std::make_unique<DesktopSoundService>();
 
-  Recorder::loadRecords("record"); // TODO: Macro
+  Recorder::state         = Recorder::DoNothing;
+  Recorder::currentRecord = {0, 0, 0, 0, 0, 0, 0}; // TODO: constructor
+  int         opt;
+  std::string recordFileName = "last_record";
+  while ((opt = getopt(argc, argv, "r:p:")) != -1) {
+    switch (opt) {
+      case 'r':
+        Recorder::state = Recorder::DoRecord;
+        recordFileName  = optarg;
+        break;
+      case 'p':
+        Recorder::state = Recorder::DoReplay;
+        recordFileName  = optarg;
+        Recorder::loadRecords(recordFileName);
+        glfwSwapInterval(0); // Active or Deactivate that is the question
+        break;
+      default:
+        std::cout << "usage: " << argv[0]
+                  << " [-r record_file | -p play_file]\n";
+        return 1;
+        break;
+    }
+  }
 
   // TODO: Use correct method to retrieve viewport size
   Soleil::Ruine r(AssetService::Instance.get(), SoundService::Instance.get(),
@@ -228,7 +265,9 @@ main(int /*argc*/
 
   glfwTerminate();
 
-  SOLEIL__RECORD_DUMP("last_record"); // TODO: Undefined macro on compilation?
+  if (Recorder::state == Recorder::DoRecord)
+    SOLEIL__RECORD_DUMP(
+      recordFileName); // TODO: Undefined macro on compilation?
 
   return 0;
 }

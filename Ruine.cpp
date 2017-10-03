@@ -382,10 +382,7 @@ namespace Soleil {
 #ifndef NDEBUG
     auto workBegin = std::chrono::high_resolution_clock::now();
 #endif
-
-    // const Push& push = ControllerService::GetPlayerController().push;
-    // SOLEIL__RECORD_INPUT(push.active, push.start, push.position);
-
+    
     frame.delta = time - frame.time;
     frame.time  = time;
 
@@ -412,18 +409,18 @@ namespace Soleil {
       if (fading.ratio(time) >= 1.0f) state &= ~State::StateFadingOut;
     }
 
+    const Push& push = ControllerService::GetPlayerController().push;
+    SOLEIL__RECORD_INPUT(push.active, push.start, push.position);
+    SOLEIL__RECORD_FRAME(frame.cameraPosition, state, goldScore,
+                         world.keyPickedUp, time);
+
+    
     // TODO: Should be in a parent method
     // Reset the release state
     ControllerService::GetPush().active &= ~PushState::Fresh;
     if (ControllerService::GetPush().active == PushState::Release) {
       ControllerService::GetPush().active = PushState::Inactive;
     }
-
-    Recorder::currentFrameHash = Recorder::hashFrame(
-      frame.cameraPosition, state, goldScore, world.keyPickedUp);
-// SOLEIL__RECORD_FRAME(frame.cameraPosition, state, goldScore,
-//                      world.keyPickedUp);
-
 #ifndef NDEBUG
     {
       /* --- Peformance log --- */

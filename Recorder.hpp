@@ -44,17 +44,31 @@ namespace Soleil {
       float positiony;
 
       // Frame
+      int         time;
       std::size_t frameHash;
+      std::size_t frameNumber;
+
+// Debug
+#ifndef NDEBUG
+      char debug[128];
+#endif
+    };
+    enum
+    {
+      DoNothing = (1u << 0),
+      DoRecord  = (1u << 1),
+      DoReplay  = (1u << 2)
     };
 
   public:
     static std::vector<Record> records;
-    static std::size_t currentFrameHash;
+    static short               state;
+    static Record              currentRecord;
 
     static void recordInput(int active, const glm::vec2& start,
                             const glm::vec2& position);
     static void recordFrame(const glm::vec3& cameraPosition, int state,
-                            int score, int keyPickedUp);
+                            int score, int keyPickedUp, const Timer& time);
     static void dumpRecords(const std::string& fileName);
     static void loadRecords(const std::string& fileName);
     static std::size_t hashFrame(const glm::vec3& cameraPosition, int state,
@@ -63,8 +77,9 @@ namespace Soleil {
 #define SOLEIL__RECORD_INPUT(active, start, position)                          \
   ::Soleil::Recorder::recordInput(active, start, position)
 
-#define SOLEIL__RECORD_FRAME(cameraPosition, state, score, keyPickedUp)        \
-  ::Soleil::Recorder::recordFrame(cameraPosition, state, score, keyPickedUp)
+#define SOLEIL__RECORD_FRAME(cameraPosition, state, score, keyPickedUp, time)  \
+  ::Soleil::Recorder::recordFrame(cameraPosition, state, score, keyPickedUp,   \
+                                  time)
   };
 
 #define SOLEIL__RECORD_DUMP(fileName) ::Soleil::Recorder::dumpRecords(fileName);

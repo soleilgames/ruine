@@ -21,8 +21,10 @@
 
 #include "Recorder.hpp"
 #include "Logger.hpp"
+#include "stringutils.hpp"
 
 #include <fstream>
+#include <string.h>
 
 #include <glm/gtx/string_cast.hpp>
 
@@ -30,17 +32,18 @@ namespace Soleil {
 
   std::vector<Recorder::Record> Recorder::records;
 
-  std::size_t Recorder::currentFrameHash;
+  Recorder::Record Recorder::currentRecord;
 
-  
+  short Recorder::state;
+
   void Recorder::recordInput(int active, const glm::vec2& start,
                              const glm::vec2& position)
   {
-    records.push_back({active, start.x, start.y, position.x, position.y, 0});
+    currentRecord = {active, start.x, start.y, position.x, position.y, 0, 0, currentRecord.frameNumber};
   }
 
   std::size_t Recorder::hashFrame(const glm::vec3& cameraPosition, int state,
-                             int score, int keyPickedUp)
+                                  int score, int keyPickedUp)
   {
     std::size_t h = 0;
 
@@ -51,27 +54,33 @@ namespace Soleil {
     hash_combine(h, score);
     hash_combine(h, keyPickedUp);
 
-
     return h;
   }
- 
-  
+
   void Recorder::recordFrame(const glm::vec3& cameraPosition, int state,
-                             int score, int keyPickedUp)
+                             int score, int keyPickedUp, const Timer& time)
   {
+    currentRecord.time = time.count();
+    currentRecord.frameHash =
+      hashFrame(cameraPosition, state, score, keyPickedUp);
 
-    assert(records.size() > 0);
-
-    records.back().frameHash = hashFrame(cameraPosition, state, score, keyPickedUp);
-
-    SOLEIL__LOGGER_DEBUG(
-      records.back().pushState, ", ", records.back().startx, ", ",
+    const std::string debugLog = toString(
+      "RECORD: ",
+      /*records.back().pushState, ", ", records.back().startx, ", ",
       records.back().starty, ", ", records.back().positionx, ", ",
-      records.back().positiony, ", ", records.back().frameHash,
-      "(camera=", glm::to_string(cameraPosition), ", state=", state,
-      ", score=", score, ", key=", keyPickedUp
+      records.back().positiony, ", ", */
+      currentRecord.frameHash, "(camera=", glm::to_string(cameraPosition),
+      ", state=", state, ", score=", score, ", key=", keyPickedUp, ", time=", time.count());
 
-      );
+    currentRecord.frameNumber++;
+#ifndef NDEBUG
+    strncpy(currentRecord.debug, debugLog.c_str(), 128);
+#endif
+
+    if (Recorder::state == DoRecord) {
+      records.push_back(currentRecord); // TODO: swap?
+    }
+    SOLEIL__LOGGER_DEBUG(debugLog);
   }
 
   void Recorder::dumpRecords(const std::string& fileName)
