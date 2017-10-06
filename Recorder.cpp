@@ -47,9 +47,9 @@ namespace Soleil {
   {
     std::size_t h = 0;
 
-    // hash_combine(h, trail_point<3>(cameraPosition.x));
-    // hash_combine(h, trail_point<3>(cameraPosition.y));
-    // hash_combine(h, trail_point<3>(cameraPosition.z));
+    hash_combine(h, trail_point<3>(cameraPosition.x));
+    hash_combine(h, trail_point<3>(cameraPosition.y));
+    hash_combine(h, trail_point<3>(cameraPosition.z));
     hash_combine(h, state);
     hash_combine(h, score);
     hash_combine(h, keyPickedUp);

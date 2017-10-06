@@ -238,17 +238,18 @@ main(int argc, char* argv[])
   Recorder::currentRecord = {0, 0, 0, 0, 0, 0, 0}; // TODO: constructor
   int         opt;
   std::string recordFileName = "last_record";
-  while ((opt = getopt(argc, argv, "r:p:")) != -1) {
+  while ((opt = getopt(argc, argv, "r:p:P:")) != -1) {
     switch (opt) {
       case 'r':
         Recorder::state = Recorder::DoRecord;
         recordFileName  = optarg;
         break;
+      case 'P':
       case 'p':
         Recorder::state = Recorder::DoReplay;
         recordFileName  = optarg;
         Recorder::loadRecords(recordFileName);
-        glfwSwapInterval(0); // Active or Deactivate that is the question
+        if (opt == 'p') glfwSwapInterval(0);
         break;
       default:
         std::cout << "usage: " << argv[0]
