@@ -382,7 +382,7 @@ namespace Soleil {
 #ifndef NDEBUG
     auto workBegin = std::chrono::high_resolution_clock::now();
 #endif
-    
+
     frame.delta = time - frame.time;
     frame.time  = time;
 
@@ -414,7 +414,6 @@ namespace Soleil {
     SOLEIL__RECORD_FRAME(frame.cameraPosition, state, goldScore,
                          world.keyPickedUp, time);
 
-    
     // TODO: Should be in a parent method
     // Reset the release state
     ControllerService::GetPush().active &= ~PushState::Fresh;
@@ -475,7 +474,7 @@ namespace Soleil {
       glm::scale(glm::translate(glm::mat4(), glm::vec3(-0.45f, -0.8f, 0.0f)),
                  glm::vec3(1.55f, .8f, 1.0f));
 
-    state    = State::StateFadingOut | State::StateGame;
+    state    = State::StateFadingOut | State::StateGame | State::StateDialogue;
     sentence = 0;
     dirty    = true;
   }
@@ -529,6 +528,9 @@ namespace Soleil {
       frame.cameraPosition = camera.position;
       frame.updateViewProjectionMatrices(view, projection);
       frame.pointLights[0].position = camera.position;
+    } else if ((state & StateDialogue)) {
+      this->view = updateCamera(&camera, glm::vec3(0.0f), 0.0f,
+                                world.hardSurfaces, frame.delta);
     } else {
       this->view =
         TargetPosition(glm::vec3(world.ghosts.back().transformation[3]), 5.0f,
@@ -609,9 +611,14 @@ namespace Soleil {
     const BoundingBox bounds(glm::vec3(-0.45f, -0.8f, 0.0f),
                              glm::vec3(1.0f, 1.0f, 0.0f));
 
-    static const std::wstring text[] = {L"SI TU VEUX SORTIR DE CET ENDROIT",
-                                        L"IL TE FAUDRA TROUVER LA CLEF",
-                                        L"CHERCHE!"};
+    static const std::wstring text[] = {
+      L"TU ES MAINTENANT ENFERME DANS CETTE RUINE",
+      L"APPUIE SUR TON ECRAN POUR AVANCER",
+      L"DEPLACE TON DOIGT VERS LA GAUCHE OU LA DROITE POUR TOURNER",
+      L"TROUVE LA CLEF POUR SORTIR DE CE LIEU",
+      L"BON COURAGE MON AMI ET FAIS ATTENTION A MES CONGENERES"};
+
+    ControllerService::GetPlayerController().locked = true;
 
     if (dialogueQueue.size() < 1) {
       if (sentence == 0) {
@@ -642,9 +649,10 @@ namespace Soleil {
       dirty = true;
     }
 
-#if 0 // TODO: require work on triggers
+#if 1 // TODO: require work on triggers
     if (dialogueQueue.size() < 1) {
       state ^= StateDialogue;
+      ControllerService::GetPlayerController().locked = false;
     }
 #endif
   }

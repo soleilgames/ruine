@@ -33,6 +33,8 @@ namespace Soleil {
 
   void InitializeWorldModels(World& world)
   {
+    auto ghost = Soleil::WavefrontLoader::fromContent(
+      AssetService::LoadAsString("ghost.obj"));
     world.shapes = {
       Soleil::WavefrontLoader::fromContent(
         AssetService::LoadAsString("wallcube.obj")),
@@ -46,8 +48,8 @@ namespace Soleil {
         AssetService::LoadAsString("key.obj")),
       Soleil::WavefrontLoader::fromContent(
         AssetService::LoadAsString("coin.obj")),
-      Soleil::WavefrontLoader::fromContent(
-        AssetService::LoadAsString("ghost.obj")),
+      ghost, // The bad One
+      ghost  // The Good one
     };
   }
 

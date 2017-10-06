@@ -83,7 +83,7 @@ namespace Soleil {
     Key,
     Coin,
     Ghost,
-    Couloir,
+    GhostFriend,
     ST_BoundingBox,
 
     Size

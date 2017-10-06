@@ -639,6 +639,29 @@ namespace Soleil {
       console.push(toString("No item found!! ", ptr));
     }
 
+    void worldBuilderYawItem(const std::size_t ptr, const float yaw,
+                             World& world)
+    {
+      auto search = [&ptr, yaw](std::vector<DrawElement>& elements) {
+        for (auto it = elements.begin(); it != elements.end(); ++it) {
+          auto& el = *it;
+
+          if (el.id == ptr) {
+            el.transformation =
+              glm::rotate(el.transformation, yaw, glm::vec3(0, 1, 0));
+            return true;
+          }
+        }
+        return false;
+      };
+
+      if (search(world.elements)) return;
+      if (search(world.items)) return;
+      if (search(world.ghosts)) return;
+
+      console.push(toString("No item found!! ", ptr));
+    }
+
     void updateTranslation(glm::vec3& position, glm::vec3& center)
     {
       ImGuiIO& io = ImGui::GetIO();
@@ -702,6 +725,8 @@ namespace Soleil {
       grid3.transformation =
         glm::rotate(glm::mat4(), glm::half_pi<float>(), glm::vec3(0, 0, 1));
 
+      auto ghost = Soleil::WavefrontLoader::fromContent(
+        AssetService::LoadAsString("ghost.obj"));
       world.shapes = {Soleil::WavefrontLoader::fromContent(
                         AssetService::LoadAsString("wallcube.obj")),
                       Soleil::WavefrontLoader::fromContent(
@@ -714,8 +739,8 @@ namespace Soleil {
                         AssetService::LoadAsString("key.obj")),
                       Soleil::WavefrontLoader::fromContent(
                         AssetService::LoadAsString("coin.obj")),
-                      Soleil::WavefrontLoader::fromContent(
-                        AssetService::LoadAsString("ghost.obj"))};
+                      ghost,
+                      ghost};
       // All the shape that can be used in game. In a future release it could be
       // configured per level?
 
@@ -724,7 +749,7 @@ namespace Soleil {
         {ShapeType::Barrel, "Barrel"},
         {ShapeType::Floor, "Floor"},
         {ShapeType::GateHeavy, "Gate heavy"},
-        {ShapeType::Couloir, "Couloir"},
+        {ShapeType::GhostFriend, "Friend"},
       };
 
       std::vector<gui::ShapeElement> guiObjectsShapes = {
@@ -927,7 +952,7 @@ namespace Soleil {
               case ShapeType::WallCube:
               case ShapeType::Barrel:
               case ShapeType::Floor:
-              case ShapeType::Couloir:
+              case ShapeType::GhostFriend:
               case ShapeType::GateHeavy: world.elements.push_back(draw); break;
               case ShapeType::Coin:
                 pushCoin(draw, world.items, world.triggers);
@@ -1039,12 +1064,6 @@ namespace Soleil {
             doorsfile << (char*)door.name.data();
             doorsfile << "\n";
           }
-
-          /*
-    Here I've multiple choices: What I save into the map ?
-    - indices of Shape?
-    - Directly vertices as world?
-           */
         }
 
         if (ImGui::Button("Load Old")) {
@@ -1120,6 +1139,14 @@ namespace Soleil {
               // ImGui::Button("Save");
               break;
           }
+
+          float yaw = 0.0f;
+          ImGui::DragFloat("Shift x", &yaw, 0.001f);
+	  if (yaw > 0.0f || yaw < 0.0f)
+	    {
+	      worldBuilderYawItem(selection, yaw, world);
+	    }
+
           if (ImGui::Button("Delete") ||
               (io.KeyCtrl && io.KeysDown[(int)'X'])) {
             worldBuilderDelete(selection, world);
