@@ -14,7 +14,7 @@ android {
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_PLATFORM=android-13', '-DANDROID_STL=c++_static'
-		cppFlags "-fexceptions -frtti -g"
+		cppFlags "-fexceptions -frtti -std=c++14"
 
 		targets 'ruine-activity'
             }

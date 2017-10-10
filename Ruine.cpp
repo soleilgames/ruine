@@ -614,7 +614,8 @@ namespace Soleil {
     static const std::wstring text[] = {
       L"TU ES MAINTENANT ENFERME DANS CETTE RUINE",
       L"APPUIE SUR TON ECRAN POUR AVANCER",
-      L"DEPLACE TON DOIGT VERS LA GAUCHE OU LA DROITE POUR TOURNER",
+      L"DEPLACE TON DOIGT VERS LA GAUCHE OU LA DROITE POUR TOURNER. APPUIE "
+      L"DEUX FOIS POUR UN DEMI-TOUR",
       L"TROUVE LA CLEF POUR SORTIR DE CE LIEU",
       L"BON COURAGE MON AMI ET FAIS ATTENTION A MES CONGENERES"};
 
@@ -647,6 +648,7 @@ namespace Soleil {
         bounds.containsFlat(ControllerService::GetPush().position)) {
       dialogueQueue.pop();
       dirty = true;
+      SoundService::FireSound("psasasa.wav", SoundProperties(80));
     }
 
 #if 1 // TODO: require work on triggers

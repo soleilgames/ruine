@@ -144,7 +144,10 @@ namespace Soleil {
     h ^= hasher(v) + 0x9e3779b9 + (h << 6) + (h >> 2);
   }
 
-  constexpr bool is_big_endian(void)
+#if 0
+    // Not used yet
+    constexpr bool
+    is_big_endian(void)
   {
     union
     {
@@ -172,6 +175,7 @@ namespace Soleil {
 
     return dest.u;
   }
+#endif
 
   namespace gval {
     // static const glm::vec3 ambiantLight(0.01f);

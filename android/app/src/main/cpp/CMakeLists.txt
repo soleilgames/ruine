@@ -37,6 +37,7 @@ add_library(ruine-activity SHARED
   ${RUINE_SOURCES}/Draw.cpp
   ${RUINE_SOURCES}/World.cpp
   ${RUINE_SOURCES}/Text.cpp
+  ${RUINE_SOURCES}/Recorder.cpp
   )
 
 target_include_directories(ruine-activity PRIVATE

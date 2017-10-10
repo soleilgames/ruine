@@ -12,6 +12,8 @@ find_library(GLFW "glfw" REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -W -Wall -Wextra") #-Weverything
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
 
 
 include_directories (SYSTEM
@@ -62,13 +64,12 @@ set(RUINELIBS
   ${GLFW}
   ${OPENGL_LIBRARIES}
   ${GLEW_LIB}
+  # asan
   )
 
 add_executable(ruine
   main.cpp
   )
-
-
 
 target_link_libraries(ruine
   ${RUINELIBS}
@@ -77,6 +78,7 @@ target_link_libraries(ruine
 add_custom_command(TARGET ruine PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/media" "$<TARGET_FILE_DIR:ruine>/media"
   )
+
 
 
 add_custom_command(TARGET ruine POST_BUILD
