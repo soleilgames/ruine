@@ -94,7 +94,7 @@ BM_WavefrontLoading(benchmark::State& state)
 {
   while (state.KeepRunning()) {
     std::shared_ptr<Shape> shape =
-      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel2.obj"));
+      WavefrontLoader::fromContent(AssetService::LoadAsString("barrel.obj"));
   }
 }
 // Register the function as a benchmark
