@@ -65,13 +65,7 @@ namespace Soleil {
   static void InitializeWorld(World& world, Frame& frame, Camera& camera,
                               PopUp& caption, int& goldScore)
   {
-    world.doors.clear();
-    world.bounds = BoundingBox();
-    world.objects.clear();
-    world.statics.clear();
-    world.sentinels.clear();
-    world.hardSurfaces.clear();
-    world.coinTriggers.clear();
+    world.resetLevel();
     world.theKey = glm::mat4();
     world.coinPickedUp.clear();
     world.keyPickedUp = false;

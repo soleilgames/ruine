@@ -108,168 +108,12 @@ namespace Soleil {
     statics.clear();
     sentinels.clear();
     hardSurfaces.clear();
-    nextZoneTriggers.clear();
-    coinTriggers.clear();
 
     ghosts.clear();
     items.clear();
     elements.clear();
     triggers.clear();
   }
-
-#if 0
-  static void parseMaze(World& world, std::istringstream& s, Frame& frame)
-  {
-    std::string            line;
-    float                  x     = 0.0f;
-    float                  z     = 0.0f;
-    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
-
-    RenderInstances lateComer;
-
-    while (std::getline(s, line) && line.size() > 0) {
-      for (auto const& c : line) {
-        const glm::vec3 position(2.0f * x, 0.0f, 2.0f * z);
-
-        if (c == 'x') {
-          const glm::mat4 transformation = glm::translate(scale, position);
-
-          world.statics.push_back(
-            DrawCommand(*world.wallShape, transformation));
-
-          BoundingBox box = world.wallShape->makeBoundingBox();
-          box.transform(transformation);
-          world.hardSurfaces.push_back(box);
-
-          world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
-          world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
-        } else if (c == 'G') {
-          const glm::mat4 transformation = glm::translate(scale, position);
-
-          world.statics.push_back(
-            DrawCommand(*world.gateShape, transformation));
-
-          BoundingBox box = world.wallShape->makeBoundingBox();
-          box.transform(transformation);
-          world.hardSurfaces.push_back(box);
-
-          world.bounds.x = glm::max(world.bounds.x, box.getMax().x);
-          world.bounds.z = glm::max(world.bounds.z, box.getMax().z);
-        } else {
-          if (c == 'l') {
-            PointLight p;
-
-            p.color    = glm::vec3(0.5f, 0.0f, 0.0f);
-            p.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-            frame.pointLights.push_back(p);
-
-            glm::mat4 transformation =
-              glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -1.0f, position.z)) *
-              glm::scale(glm::mat4(), glm::vec3(0.5f));
-            world.statics.push_back(
-              DrawCommand(*world.torchShape, transformation));
-          } else if (c == 'g') {
-            glm::mat4 transformation =
-              glm::translate(glm::mat4(),
-                             glm::vec3(position.x, -0.60f, position.z)) *
-              glm::scale(glm::mat4(), glm::vec3(.3f));
-            lateComer.push_back(DrawCommand(*world.ghostShape, transformation));
-          } else if (c == 'p') {
-            const glm::vec3 coinPosition =
-              glm::vec3(position.x, -1.0f, position.z);
-            const glm::mat4 transformation =
-              glm::translate(scale, coinPosition);
-            auto pos = std::find(std::begin(world.coinPickedUp),
-                                 std::end(world.coinPickedUp), transformation);
-            if (pos == std::end(world.coinPickedUp)) {
-              // TODO: Do put in a specific vector;
-              world.objects.push_back(
-                DrawCommand(*world.purseShape, transformation));
-
-              BoundingBox bbox(transformation, 0.3f);
-              world.coinTriggers.push_back({bbox, transformation});
-            }
-          } else if (c == 'k') {
-            const glm::vec3 keyPosition =
-              glm::vec3(position.x, -1.0f, position.z);
-            const glm::mat4 transformation =
-              glm::scale(glm::translate(scale, keyPosition), glm::vec3(4.0f));
-
-            world.objects.push_back(
-              DrawCommand(*world.keyShape, transformation));
-            world.theKey = transformation;
-          } else if (c == 'b' || c == 'B') {
-            const glm::vec3 barrelPosition =
-              glm::vec3(position.x, -1.0f, position.z);
-            const glm::mat4 transformation =
-              glm::translate(scale, barrelPosition);
-
-            BoundingBox box = world.barrelShape->makeBoundingBox();
-            box.transform(transformation);
-            world.hardSurfaces.push_back(box);
-#if 0
-	    if (c == 'b')
-            world.statics.push_back(
-              DrawCommand(*world.barrel2Shape, transformation));
-	    else
-#endif
-            world.statics.push_back(
-              DrawCommand(*world.barrelShape, transformation));
-          } else if (c == 'A') {
-            glm::mat4 transformation =
-              glm::rotate(
-                glm::translate(glm::mat4(),
-                               glm::vec3(position.x, -0.60f, position.z)),
-                glm::half_pi<float>(), glm::vec3(0, 1, 0)) *
-              glm::scale(glm::mat4(), glm::vec3(.3f));
-
-            world.statics.push_back(
-              DrawCommand(*world.ghostShape, transformation));
-          }
-
-          glm::mat4 groundTransformation =
-            glm::translate(scale, glm::vec3(2.0f * x, -1.0f, 2.0f * z));
-
-          glm::mat4 ceilTransformation =
-            glm::translate(scale, glm::vec3(2.0f * x, 1.0f, 2.0f * z)) *
-            glm::rotate(glm::mat4(), glm::pi<float>(),
-                        glm::vec3(0.0f, 0.0f, 1.0f));
-
-          world.statics.push_back(
-            DrawCommand(*world.floorShape, groundTransformation));
-          world.statics.push_back(
-            DrawCommand(*world.floorShape, ceilTransformation));
-        }
-        x += 1.0f;
-      }
-      z += 1.0f;
-      x = 0.0f;
-    }
-
-    // TODO: In a future release move the ghost in a specific vector instead of
-    // using the static one. +1 is for the player ghost.
-    world.statics.reserve(world.statics.size() + lateComer.size() + 1);
-
-    for (size_t i = 0; i < lateComer.size(); ++i) {
-      const auto& o = lateComer[i];
-
-      world.statics.push_back(o);
-
-      PointLight p;
-
-      p.color     = gval::ghostColor;
-      p.position  = glm::vec3(world.statics.back().transformation[3]);
-      p.linear    = 0.09f;
-      p.quadratic = 0.032f;
-      frame.pointLights.push_back(p);
-
-      world.sentinels.push_back(
-        GhostData(&(world.statics.back().transformation),
-                  frame.pointLights.size() - 1, glm::vec3(0, 0, 1)));
-    }
-  }
-#endif
 
   void pushCoin(DrawElement& draw, World& world)
   {
@@ -443,15 +287,6 @@ namespace Soleil {
     caption.fillText(start.name, 1.f);
     caption.activate(gval::timeToFadeText, frame.time);
 
-#if 0    
-    // The '2 Times (*= 2.0f)' works because position are in 'lines and
-    // columns space'
-    // and everything has the same size. It will not work anymore if blocks
-    // may have different size and shape.
-    const static glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(1.0f));
-    const glm::vec3 position(2.0f * start.start.x, 0.5f, 2.0f * start.start.y);
-    camera.position = glm::vec3(scale * glm::vec4(position, 1.0f));
-#endif
     camera.position =
       (start.triggerZone.getMax() + start.triggerZone.getMin()) / 2.0f;
     camera.position.y = 1.0f;
@@ -464,30 +299,6 @@ namespace Soleil {
         world.triggers.push_back({door.triggerZone, state, TriggerType::Door,
                                   std::hash<std::string>{}(door.output)});
     }
-
-#if 0    
-    // Parse the triggers
-    for (const Door door : world.doors) {
-      if (door.level == start.level) {
-
-        // The '2 Times (*= 2.0f)' works because position are in 'lines and
-        // columns space'
-        // and everything has the same size. It will not work anymore if blocks
-        // may have different size and shape.
-        glm::vec3 aoe(door.aoe.x, 0.0f, door.aoe.y);
-        aoe *= 2.0f;
-
-        BoundingBox bbox;
-        bbox.expandBy(aoe);
-        bbox.expandBy(aoe + 1.1f);
-        bbox.expandBy(aoe - 1.1f);
-
-        SOLEIL__LOGGER_DEBUG(toString("AOE: ", bbox));
-
-        world.nextZoneTriggers.push_back({bbox, door.output});
-      }
-    }
-#endif
 
 #if 0
     // Test: Render Bézier to image

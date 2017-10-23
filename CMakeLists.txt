@@ -12,9 +12,6 @@ find_library(GLFW "glfw" REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -W -Wall -Wextra") #-Weverything
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=leak -fsanitize=undefined")
-
 
 include_directories (SYSTEM
   ${OPENGL_INCLUDE_DIR}
@@ -24,8 +21,6 @@ include_directories (SYSTEM
 include_directories(
   ./
   )
-
-
 
 add_library(ruinelib
   DesktopAssetService.cpp
@@ -53,11 +48,8 @@ add_library(ruinelib
   )
 
 
-enable_testing()
-add_subdirectory(tests)
 
-add_test(SceneGraphTest tests/sceneGraphTest)
-add_test(WavefrontTest tests/wavefrontTest)
+enable_testing()
 
 set(RUINELIBS
   ruinelib
@@ -100,3 +92,11 @@ add_custom_command(TARGET reditor PRE_BUILD
 target_link_libraries(reditor
   ${RUINELIBS}
   )
+
+add_subdirectory(tests)
+add_test(SceneGraphTest tests/sceneGraphTest)
+add_test(WavefrontTest tests/wavefrontTest)
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+  add_subdirectory(coverage)
+endif()

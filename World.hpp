@@ -45,18 +45,6 @@ namespace Soleil {
     void updateBounds(void) noexcept;
   };
 
-  struct NextZoneTrigger
-  {
-    BoundingBox aoe;
-    std::string nextZone;
-  };
-
-  struct CoinTrigger
-  {
-    BoundingBox aoe;
-    glm::mat4   coinTransformation;
-  };
-
   struct Door
   {
     std::string  id;
@@ -68,11 +56,6 @@ namespace Soleil {
     std::size_t  uid;
     BoundingBox  triggerZone;
   };
-
-  ////////////////////////////
-  // Future WORLD Structure //
-  // vvvvvvvvvvvvvvvvvvvvvv //
-  ////////////////////////////
 
   enum ShapeType
   {
@@ -115,26 +98,8 @@ namespace Soleil {
     std::size_t link;
   };
 
-  ////////////////////////////
-  // ^^^^^^^^^^^^^^^^^^^^^^ //
-  // Future WORLD Structure //
-  ////////////////////////////
-
   struct World
   {
-    // TODO:  std::vector<ShapePtr>  models;
-    ShapePtr wallShape;
-    ShapePtr floorShape;
-    ShapePtr torchShape;
-    ShapePtr ghostShape;
-    ShapePtr gateShape;
-    ShapePtr purseShape;
-    ShapePtr keyShape;
-#if 0
-    ShapePtr barrel2Shape;
-#endif
-    ShapePtr barrelShape;
-
     std::vector<Door> doors;
 
     BoundingBox                  bounds;
@@ -142,8 +107,6 @@ namespace Soleil {
     RenderInstances              objects;
     std::vector<GhostData>       sentinels;
     std::vector<BoundingBox>     hardSurfaces;
-    std::vector<NextZoneTrigger> nextZoneTriggers;
-    std::vector<CoinTrigger>     coinTriggers;
     glm::mat4                    theKey;
 
     // Player's progression
@@ -151,10 +114,6 @@ namespace Soleil {
     bool                     keyPickedUp = false; // TODO: Put it in Ruine.hpp
     std::string              lastDoor;
 
-    ////////////////////////////
-    // Future WORLD Structure //
-    // vvvvvvvvvvvvvvvvvvvvvv //
-    ////////////////////////////
     std::vector<ShapePtr> shapes;
     // All the Models
     std::vector<DrawElement> elements;
