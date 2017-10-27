@@ -44,6 +44,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <glm/matrix.hpp>
 
 namespace Soleil {
@@ -84,7 +85,8 @@ namespace Soleil {
 
   static void UpdateGhost(std::vector<GhostData>&  ghosts,
                           std::vector<PointLight>& lights, const Timer& delta,
-                          const BoundingBox& worldSize)
+                          const BoundingBox& worldSize,
+                          const glm::vec3&   playerPosition)
   {
     for (GhostData& ghost : ghosts) {
       const glm::mat4 transformation = glm::translate(
@@ -105,11 +107,41 @@ namespace Soleil {
     }
   }
 
+  static void UpdateHunters(std::vector<GhostData>&  ghosts,
+                            std::vector<PointLight>& lights, const Timer& delta,
+                            const glm::vec3& playerPosition)
+  {
+    // Do not update the hunters if the player is not moving:
+    if (ControllerService::GetPlayerController().locked) return;
+
+    for (GhostData& ghost : ghosts) {
+      const glm::vec3 ghostPosition = glm::vec3((*(ghost.transformation))[3]);
+      const glm::vec3 cam = glm::vec3(playerPosition.x, 0.0f, playerPosition.z);
+      const glm::mat4 fixGhostRotation =
+        glm::rotate(glm::mat4(), glm::pi<float>(), glm::vec3(0, 1, 0));
+      // TODO: ^ A fix because the ghost model is not pointing forward
+
+      const glm::mat4 transformation =
+        glm::translate(
+          glm::inverse(glm::lookAt(ghostPosition, cam, glm::vec3(0, 1, 0))),
+          glm::vec3(0, 0, -1) * gval::ghostSpeed * (float)delta.count() /
+            10.0f) *
+        fixGhostRotation;
+
+      *(ghost.transformation) = transformation;
+      ghost.updateBounds();
+      lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
+    }
+  }
+
   static void RenderScene(World& world, Frame& frame)
   {
-    if (ControllerService::GetPlayerController().option2)
-      UpdateGhost(world.sentinels, frame.pointLights, frame.delta,
-                  world.bounds);
+    if (ControllerService::GetPlayerController().option2) {
+      UpdateGhost(world.sentinels, frame.pointLights, frame.delta, world.bounds,
+                  frame.cameraPosition);
+      // UpdateHunters(world.sentinels, frame.pointLights, frame.delta,
+      //               frame.cameraPosition);
+    }
 
     if (ControllerService::GetPlayerController().option3) {
       glEnable(GL_CULL_FACE);

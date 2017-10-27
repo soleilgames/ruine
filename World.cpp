@@ -141,17 +141,14 @@ namespace Soleil {
 
   void pushGhost(DrawElement& draw, World& world, Frame& frame)
   {
-    BoundingBox box = world.shapes[ShapeType::Ghost]->makeBoundingBox();
-    box.transform(draw.transformation);
     world.ghosts.push_back(draw);
 
-    // TODO: Will replace ghost data?
-    world.triggers.push_back({box, // TODO: use gval
-                              TriggerState::NeverTriggered, TriggerType::Ghost,
-                              0});
+    BoundingBox box = world.shapes[ShapeType::Ghost]->makeBoundingBox();
+    box.transform(draw.transformation);
+    world.triggers.push_back(
+      {box, TriggerState::NeverTriggered, TriggerType::Ghost, 0});
 
     PointLight p;
-
     p.color     = gval::ghostColor;
     p.position  = glm::vec3(draw.transformation[3]);
     p.linear    = 0.09f;
