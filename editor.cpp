@@ -151,9 +151,10 @@ namespace Soleil {
       BoundingBox box = shapes[ShapeType::Ghost]->makeBoundingBox();
       box.transform(draw.transformation);
       objects.push_back(draw);
-      triggers.push_back({box, // TODO: use gval
-                          TriggerState::NeverTriggered, TriggerType::Ghost,
-                          draw.id});
+      assert(false && "Restore ghost bounds in editor");
+      // triggers.push_back({box, // TODO: use gval
+      //                     TriggerState::NeverTriggered, TriggerType::Ghost,
+      //                     draw.id});
     }
 
     void setKey(DrawElement& draw, World& world)

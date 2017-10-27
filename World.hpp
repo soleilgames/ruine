@@ -34,15 +34,14 @@ namespace Soleil {
   struct GhostData
   {
     glm::mat4*  transformation;
-    size_t      lightPosition;
+    std::size_t lightPosition;
+    std::size_t deathBoxPosition;
     glm::vec3   direction;
     BoundingBox bounds;
     BoundingBox stressBounds;
 
-    GhostData(glm::mat4* transformation, size_t lightPosition,
-              const glm::vec3& direction);
-
-    void updateBounds(void) noexcept;
+    GhostData(glm::mat4* transformation, std::size_t lightPosition,
+              std::size_t deathBoxPosition, const glm::vec3& direction);
   };
 
   struct Door
@@ -84,7 +83,6 @@ namespace Soleil {
   enum class TriggerType
   {
     Coin,
-    Ghost,
     Door,
     Key
   };
@@ -102,12 +100,13 @@ namespace Soleil {
   {
     std::vector<Door> doors;
 
-    BoundingBox                  bounds;
-    RenderInstances              statics;
-    RenderInstances              objects;
-    std::vector<GhostData>       sentinels;
-    std::vector<BoundingBox>     hardSurfaces;
-    glm::mat4                    theKey;
+    BoundingBox              bounds;
+    RenderInstances          statics;
+    RenderInstances          objects;
+    std::vector<GhostData>   sentinels;
+    std::vector<GhostData>   hunters;
+    std::vector<BoundingBox> hardSurfaces;
+    glm::mat4                theKey;
 
     // Player's progression
     std::vector<std::size_t> coinPickedUp;
@@ -122,6 +121,10 @@ namespace Soleil {
     // Coins, keys, ... size will varry
     std::vector<Trigger> triggers;
     // Everything the player can walk on
+    std::vector<BoundingBox> deathTriggers;
+    // Change the player into ghost - game over!
+    std::vector<BoundingBox> frighteningTriggers;
+    // Change the player into ghost - game over!
     std::vector<DrawElement> ghosts;
     // All monsters
 

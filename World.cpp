@@ -107,6 +107,8 @@ namespace Soleil {
     objects.clear();
     statics.clear();
     sentinels.clear();
+    hunters.clear();
+    deathTriggers.clear();
     hardSurfaces.clear();
 
     ghosts.clear();
@@ -145,8 +147,6 @@ namespace Soleil {
 
     BoundingBox box = world.shapes[ShapeType::Ghost]->makeBoundingBox();
     box.transform(draw.transformation);
-    world.triggers.push_back(
-      {box, TriggerState::NeverTriggered, TriggerType::Ghost, 0});
 
     PointLight p;
     p.color     = gval::ghostColor;
@@ -155,9 +155,11 @@ namespace Soleil {
     p.quadratic = 0.032f;
     frame.pointLights.push_back(p);
 
-    world.sentinels.push_back(GhostData(&(world.ghosts.back().transformation),
-                                        frame.pointLights.size() - 1,
-                                        glm::vec3(0, 0, 1)));
+    world.deathTriggers.push_back(box);
+    world.frighteningTriggers.push_back(box);
+    world.sentinels.push_back(GhostData(
+      &(world.ghosts.back().transformation), frame.pointLights.size() - 1,
+      world.deathTriggers.size() - 1, glm::vec3(0, 0, 1)));
   }
 
   /**
@@ -361,17 +363,12 @@ namespace Soleil {
   }
 
   GhostData::GhostData(glm::mat4* transformation, size_t lightPosition,
-                       const glm::vec3& direction)
+                       std::size_t deathBoxPosition, const glm::vec3& direction)
     : transformation(transformation)
     , lightPosition(lightPosition)
+    , deathBoxPosition(deathBoxPosition)
     , direction(direction)
   {
-  }
-
-  void GhostData::updateBounds(void) noexcept
-  {
-    bounds       = BoundingBox(*this->transformation, 0.35f);
-    stressBounds = BoundingBox(*this->transformation, 5.5f);
   }
 
 } // Soleil

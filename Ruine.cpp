@@ -83,10 +83,11 @@ namespace Soleil {
 #endif
   }
 
-  static void UpdateGhost(std::vector<GhostData>&  ghosts,
-                          std::vector<PointLight>& lights, const Timer& delta,
-                          const BoundingBox& worldSize,
-                          const glm::vec3&   playerPosition)
+  static void UpdateGhost(std::vector<GhostData>&   ghosts,
+                          std::vector<PointLight>&  lights,
+                          std::vector<BoundingBox>& deathTriggers,
+                          std::vector<BoundingBox>  frighteningTriggers,
+                          const Timer& delta, const BoundingBox& worldSize)
   {
     for (GhostData& ghost : ghosts) {
       const glm::mat4 transformation = glm::translate(
@@ -102,14 +103,19 @@ namespace Soleil {
         *(ghost.transformation) = transformation;
       }
 
-      ghost.updateBounds();
+      // ghost.updateBounds();
+      deathTriggers[ghost.deathBoxPosition] =
+        BoundingBox(transformation, 0.35f);
+      frighteningTriggers[ghost.deathBoxPosition] =
+        BoundingBox(transformation, 5.5f);
       lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
     }
   }
 
-  static void UpdateHunters(std::vector<GhostData>&  ghosts,
-                            std::vector<PointLight>& lights, const Timer& delta,
-                            const glm::vec3& playerPosition)
+  static void UpdateHunters(std::vector<GhostData>&   ghosts,
+                            std::vector<PointLight>&  lights,
+                            std::vector<BoundingBox>& deathTriggers,
+                            const Timer& delta, const glm::vec3& playerPosition)
   {
     // Do not update the hunters if the player is not moving:
     if (ControllerService::GetPlayerController().locked) return;
@@ -125,11 +131,13 @@ namespace Soleil {
         glm::translate(
           glm::inverse(glm::lookAt(ghostPosition, cam, glm::vec3(0, 1, 0))),
           glm::vec3(0, 0, -1) * gval::ghostSpeed * (float)delta.count() /
-            10.0f) *
+            1000.0f) *
         fixGhostRotation;
 
       *(ghost.transformation) = transformation;
-      ghost.updateBounds();
+      // ghost.updateBounds();
+      deathTriggers[ghost.deathBoxPosition] =
+        BoundingBox(transformation, 0.35f);
       lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
     }
   }
@@ -137,12 +145,11 @@ namespace Soleil {
   static void RenderScene(World& world, Frame& frame)
   {
     if (ControllerService::GetPlayerController().option2) {
-      UpdateGhost(world.sentinels, frame.pointLights, frame.delta, world.bounds,
-                  frame.cameraPosition);
-      // UpdateHunters(world.sentinels, frame.pointLights, frame.delta,
-      //               frame.cameraPosition);
+      UpdateGhost(world.sentinels, frame.pointLights, world.deathTriggers,
+                  world.frighteningTriggers, frame.delta, world.bounds);
+      UpdateHunters(world.hunters, frame.pointLights, world.deathTriggers,
+                    frame.delta, frame.cameraPosition);
     }
-
     if (ControllerService::GetPlayerController().option3) {
       glEnable(GL_CULL_FACE);
       glCullFace(GL_BACK);
@@ -169,6 +176,10 @@ namespace Soleil {
 
       for (const auto& box : world.triggers) {
         DrawBoundingBox(box.aoe, frame, RGBA(1.0f, 0.3f, 0.3f, 0.5f));
+      }
+
+      for (const auto& box : world.deathTriggers) {
+        DrawBoundingBox(box, frame, RGBA(0.0f, 0.1f, 0.3f, 0.5f));
       }
 
 #if 0      
@@ -257,8 +268,8 @@ namespace Soleil {
     }();
 
     // First check if the player is not colliding with a monster
-    for (const auto& ghost : world.sentinels) {
-      if (playerbox.intersect(ghost.bounds)) {
+    for (const auto& bounds : world.deathTriggers) {
+      if (playerbox.intersect(bounds)) {
         glm::mat4 transformation = glm::translate(
           glm::mat4(), glm::vec3(camera.position.x, 0.0f, camera.position.z));
 
@@ -267,7 +278,7 @@ namespace Soleil {
         draw.transformation = transformation;
         world.ghosts.emplace_back(draw);
         world.sentinels.push_back(GhostData(
-          &(world.ghosts.back().transformation), 0, glm::vec3(0, 0, 1)));
+          &(world.ghosts.back().transformation), 0, 0, glm::vec3(0, 0, 1)));
 
         ControllerService::GetPlayerController().locked = true;
         timeToReset = frame.time + Timer(5000);
@@ -277,8 +288,8 @@ namespace Soleil {
 
     // If not but he's close to one, play a frightening sound
     if (nextGhostSound.count() <= 0) {
-      for (const auto& ghost : world.sentinels) {
-        if (playerbox.intersect(ghost.stressBounds)) {
+      for (const auto& box : world.frighteningTriggers) {
+        if (playerbox.intersect(box)) {
           SoundService::FireSound("ghost.wav", SoundProperties(100));
           nextGhostSound = gval::timeBeforeWhisper;
           break;
@@ -353,7 +364,6 @@ namespace Soleil {
             }
 
           } break;
-          case TriggerType::Ghost: break;
           case TriggerType::Key: {
             for (auto it = world.items.begin(); it != world.items.end(); ++it) {
               const auto& coinItem = *it;
