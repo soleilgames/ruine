@@ -103,7 +103,6 @@ namespace Soleil {
         *(ghost.transformation) = transformation;
       }
 
-      // ghost.updateBounds();
       deathTriggers[ghost.deathBoxPosition] =
         BoundingBox(transformation, 0.35f);
       frighteningTriggers[ghost.deathBoxPosition] =
@@ -131,12 +130,11 @@ namespace Soleil {
       const glm::mat4 transformation =
         glm::translate(
           glm::inverse(glm::lookAt(ghostPosition, cam, glm::vec3(0, 1, 0))),
-          glm::vec3(0, 0, -1) * gval::ghostSpeed * (float)delta.count() /
-            1000.0f) *
+          glm::vec3(0, 0, -1) * gval::hunterSpeed * (float)delta.count()) *
         fixGhostRotation;
 
       *(ghost.transformation) = transformation;
-      // ghost.updateBounds();
+
       deathTriggers[ghost.deathBoxPosition] =
         BoundingBox(transformation, 0.35f);
       frighteningTriggers[ghost.deathBoxPosition] =

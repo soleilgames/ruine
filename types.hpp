@@ -183,6 +183,7 @@ namespace Soleil {
     static const glm::vec3 cameraLight(0.35f);
     static const glm::vec3 ghostColor(0.20f, 0.20f, 0.30f);
     static const float     ghostSpeed     = 0.005f;
+    static const float     hunterSpeed    = 0.001f;
     static const float     cameraYawSpeed = 0.002f;
     static const float     cameraSpeed    = 0.05f;
     static const char*     firstLevel     = "0";

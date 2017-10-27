@@ -37,8 +37,6 @@ namespace Soleil {
     std::size_t lightPosition;
     std::size_t deathBoxPosition;
     glm::vec3   direction;
-    BoundingBox bounds;
-    BoundingBox stressBounds;
 
     GhostData(glm::mat4* transformation, std::size_t lightPosition,
               std::size_t deathBoxPosition, const glm::vec3& direction);
@@ -124,7 +122,7 @@ namespace Soleil {
     std::vector<BoundingBox> deathTriggers;
     // Change the player into ghost - game over!
     std::vector<BoundingBox> frighteningTriggers;
-    // Change the player into ghost - game over!
+    // Zone to frighten the player
     std::vector<DrawElement> ghosts;
     // All monsters
 

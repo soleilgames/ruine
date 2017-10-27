@@ -141,7 +141,8 @@ namespace Soleil {
       {box, TriggerState::NeverTriggered, TriggerType::Key, draw.id});
   }
 
-  void pushGhost(DrawElement& draw, World& world, Frame& frame)
+  void pushGhost(DrawElement& draw, World& world, Frame& frame,
+                 const std::string& arguments)
   {
     world.ghosts.push_back(draw);
 
@@ -157,9 +158,17 @@ namespace Soleil {
 
     world.deathTriggers.push_back(box);
     world.frighteningTriggers.push_back(box);
-    world.sentinels.push_back(GhostData(
-      &(world.ghosts.back().transformation), frame.pointLights.size() - 1,
-      world.deathTriggers.size() - 1, glm::vec3(0, 0, 1)));
+
+    // Only two options so far
+    if (arguments.empty()) {
+      world.sentinels.push_back(GhostData(
+        &(world.ghosts.back().transformation), frame.pointLights.size() - 1,
+        world.deathTriggers.size() - 1, glm::vec3(0, 0, 1)));
+    } else {
+      world.hunters.push_back(GhostData(
+        &(world.ghosts.back().transformation), frame.pointLights.size() - 1,
+        world.deathTriggers.size() - 1, glm::vec3(0, 0, 1)));
+    }
   }
 
   /**
@@ -237,6 +246,12 @@ namespace Soleil {
       }
       draw.id = DrawElement::Hash(draw);
 
+      const std::string arguments = [&drawStr]() {
+        std::string value;
+        drawStr >> value;
+        return value;
+      }();
+
       switch (step) {
         case Step::Statics: {
           world.elements.push_back(draw);
@@ -253,7 +268,7 @@ namespace Soleil {
           else
             pushCoin(draw, world);
           break;
-        case Step::Ghosts: pushGhost(draw, world, frame); break;
+        case Step::Ghosts: pushGhost(draw, world, frame, arguments); break;
       }
     }
   }

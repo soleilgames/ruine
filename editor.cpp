@@ -151,7 +151,7 @@ namespace Soleil {
       BoundingBox box = shapes[ShapeType::Ghost]->makeBoundingBox();
       box.transform(draw.transformation);
       objects.push_back(draw);
-      assert(false && "Restore ghost bounds in editor");
+      //assert(false && "Restore ghost bounds in editor");
       // triggers.push_back({box, // TODO: use gval
       //                     TriggerState::NeverTriggered, TriggerType::Ghost,
       //                     draw.id});
@@ -1033,6 +1033,10 @@ namespace Soleil {
           // # objects:
           // 0 0.000 0.000 0.000 ...
           // ...
+          //
+          // # ghost:
+          // 0 0.000 0.000 0.000 ...
+          // ...
 
           // II. Save
           // key true
@@ -1142,7 +1146,7 @@ namespace Soleil {
           }
 
           float yaw = 0.0f;
-          ImGui::DragFloat("Shift x", &yaw, 0.001f);
+          ImGui::DragFloat("Yaw x", &yaw, 0.001f);
 	  if (yaw > 0.0f || yaw < 0.0f)
 	    {
 	      worldBuilderYawItem(selection, yaw, world);
