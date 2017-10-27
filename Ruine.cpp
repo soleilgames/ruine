@@ -115,6 +115,7 @@ namespace Soleil {
   static void UpdateHunters(std::vector<GhostData>&   ghosts,
                             std::vector<PointLight>&  lights,
                             std::vector<BoundingBox>& deathTriggers,
+                            std::vector<BoundingBox>  frighteningTriggers,
                             const Timer& delta, const glm::vec3& playerPosition)
   {
     // Do not update the hunters if the player is not moving:
@@ -138,6 +139,8 @@ namespace Soleil {
       // ghost.updateBounds();
       deathTriggers[ghost.deathBoxPosition] =
         BoundingBox(transformation, 0.35f);
+      frighteningTriggers[ghost.deathBoxPosition] =
+        BoundingBox(transformation, 5.5f);
       lights[ghost.lightPosition].position = glm::vec3(transformation[3]);
     }
   }
@@ -148,7 +151,8 @@ namespace Soleil {
       UpdateGhost(world.sentinels, frame.pointLights, world.deathTriggers,
                   world.frighteningTriggers, frame.delta, world.bounds);
       UpdateHunters(world.hunters, frame.pointLights, world.deathTriggers,
-                    frame.delta, frame.cameraPosition);
+                    world.frighteningTriggers, frame.delta,
+                    frame.cameraPosition);
     }
     if (ControllerService::GetPlayerController().option3) {
       glEnable(GL_CULL_FACE);
