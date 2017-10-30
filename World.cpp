@@ -203,15 +203,16 @@ namespace Soleil {
 
   static void ReserveArrays(World& world, std::istringstream& s, Step step)
   {
+    const auto numberOfElements = CountLine(s);
     switch (step) {
-      case Statics: world.elements.reserve(CountLine(s)); break;
+      case Statics: world.elements.reserve(numberOfElements); break;
       case Ghosts: {
-        // +1 for player ghost
-        auto count = CountLine(s) + 1;
+        // +1 for player ghost + 4 for hunters
+        auto count = numberOfElements + 5;
         world.ghosts.reserve(count);
         world.sentinels.reserve(count);
       } break;
-      case Coins: world.items.reserve(CountLine(s)); break;
+      case Coins: world.items.reserve(numberOfElements); break;
     }
   }
 

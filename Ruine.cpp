@@ -83,10 +83,27 @@ namespace Soleil {
 #endif
   }
 
+  static void addTheKeyHunters(World& world, Frame& frame)
+  {
+    auto addHunter = [&world, &frame](const glm::vec3& position) {
+      DrawElement draw(ShapeType::Ghost, glm::translate(glm::mat4(), position));
+      pushGhost(draw, world, frame, "Hunter");
+    };
+
+    addHunter(
+      glm::vec3(world.bounds.getMin().x, 0.0f, world.bounds.getMin().z));
+    addHunter(
+      glm::vec3(world.bounds.getMax().x, 0.0f, world.bounds.getMin().z));
+    addHunter(
+      glm::vec3(world.bounds.getMax().x, 0.0f, world.bounds.getMax().z));
+    addHunter(
+      glm::vec3(world.bounds.getMin().x, 0.0f, world.bounds.getMax().z));
+  }
+
   static void UpdateGhost(std::vector<GhostData>&   ghosts,
                           std::vector<PointLight>&  lights,
                           std::vector<BoundingBox>& deathTriggers,
-                          std::vector<BoundingBox>  frighteningTriggers,
+                          std::vector<BoundingBox>&  frighteningTriggers,
                           const Timer& delta, const BoundingBox& worldSize)
   {
     for (GhostData& ghost : ghosts) {
@@ -114,7 +131,7 @@ namespace Soleil {
   static void UpdateHunters(std::vector<GhostData>&   ghosts,
                             std::vector<PointLight>&  lights,
                             std::vector<BoundingBox>& deathTriggers,
-                            std::vector<BoundingBox>  frighteningTriggers,
+                            std::vector<BoundingBox>&  frighteningTriggers,
                             const Timer& delta, const glm::vec3& playerPosition)
   {
     // Do not update the hunters if the player is not moving:
@@ -361,6 +378,10 @@ namespace Soleil {
 
                 const std::string nextZone = door->id;
                 InitializeLevel(world, nextZone, frame, camera, caption);
+
+                if (world.keyPickedUp) {
+                  addTheKeyHunters(world, frame);
+                }
               }
               return;
             }
@@ -377,7 +398,8 @@ namespace Soleil {
             doIncrement       = false;
             world.keyPickedUp = true;
             world.triggers.erase(trigger);
-            SoundService::FireSound("key.wav", SoundProperties(100));
+            SoundService::FireSound("key.wav", SoundProperties(100));	    
+	    addTheKeyHunters(world, frame);
           } break;
         }
       } else {
@@ -476,9 +498,9 @@ namespace Soleil {
       if (time - firstTime > oneSec) {
         const auto duration = TotalDuration / frames;
         SOLEIL__LOGGER_DEBUG("Time to draw previous frame: ", duration,
-                             " (FPS=", frames, ")");
+                             " (FPS=", frames, ") --", frame.pointLights.size());
         FillBuffer(toWString("TIME TO DRAW PREVIOUS FRAME: ", duration,
-                             " (FPS=", frames, ")"),
+                             " (FPS=", frames, ")--", frame.pointLights.size()),
                    textCommand, OpenGLDataInstance::Instance().textAtlas, 0.8f);
         firstTime     = time;
         frames        = 0;

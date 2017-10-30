@@ -141,6 +141,9 @@ namespace Soleil {
                           const std::size_t        uid);
   Door* GetDoorByUID(std::vector<Door>& doors, const std::size_t uid);
 
+  void pushGhost(DrawElement& draw, World& world, Frame& frame,
+                 const std::string& arguments);
+
 } // Soleil
 
 #endif /* SOLEIL__WORLD_HPP_ */
